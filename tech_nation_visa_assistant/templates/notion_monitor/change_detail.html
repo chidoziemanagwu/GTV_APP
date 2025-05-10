@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Change Details - Tech Nation Visa Assistant{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-6">
+        <a href="{% url 'notion_monitor:change_list' %}" class="text-primary-600 hover:text-primary-800">
+            &larr; Back to Changes
+        </a>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h1 class="text-2xl font-bold mb-4">Change in {{ change.section }}</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+                <h2 class="text-lg font-medium mb-2">Change Details</h2>
+                <dl class="grid grid-cols-1 gap-x-4 gap-y-2">
+                    <div class="sm:col-span-1">
+                        <dt class="text-sm font-medium text-gray-500">Section</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ change.section }}</dd>
+                    </div>
+                    <div class="sm:col-span-1">
+                        <dt class="text-sm font-medium text-gray-500">Change Type</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if change.change_type == 'major' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ change.get_change_type_display }}
+                            </span>
+                        </dd>
+                    </div>
+                    <div class="sm:col-span-1">
+                        <dt class="text-sm font-medium text-gray-500">Detected At</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ change.detected_at|date:"M d, Y H:i" }}</dd>
+                    </div>
+                    <div class="sm:col-span-1">
+                        <dt class="text-sm font-medium text-gray-500">URL</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
+                            <a href="{{ change.url }}" target="_blank" class="text-primary-600 hover:text-primary-900">
+                                View Page
+                            </a>
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+            
+            <div>
+                <h2 class="text-lg font-medium mb-2">Description</h2>
+                <p class="text-gray-700">{{ change.description }}</p>
+            </div>
+        </div>
+        
+        <div class="border-t border-gray-200 pt-6">
+            <h2 class="text-lg font-medium mb-4">Changes</h2>
+            <div class="bg-gray-50 p-4 rounded overflow-auto max-h-96">
+                {{ change.diff_html|safe }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

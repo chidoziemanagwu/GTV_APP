@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Tech Nation Visa Assistant{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Flowbite CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.css" rel="stylesheet" />
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.10.5/dist/cdn.min.js"></script>
+    
+    <!-- DataTables -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/dataTables.tailwindcss.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
+    <!-- Custom Styles -->
+    <style>
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #0284c7 100%);
+        }
+        
+        .hover-gradient:hover {
+            background: linear-gradient(135deg, #6366f1 0%, #0284c7 100%);
+        }
+        
+        .sidebar-item {
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-item:hover {
+            transform: translateX(5px);
+        }
+        
+        .nav-gradient {
+            background: linear-gradient(to right, #ffffff, #f3f4f6);
+        }
+        
+        .custom-shadow {
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+
+        /* New styles for enhanced sidebar */
+        .menu-item-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .menu-item-hover:hover {
+            transform: translateX(5px) scale(1.02);
+        }
+
+        .icon-container {
+            transition: all 0.3s ease;
+        }
+
+        .menu-item-hover:hover .icon-container {
+            transform: scale(1.1);
+        }
+        
+        /* Fix for mobile toggle button outline */
+        button:focus {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+        
+        /* Ensure text doesn't overflow containers */
+        .text-truncate {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Mobile sidebar positioning */
+        @media (max-width: 640px) {
+            #logo-sidebar {
+                top: 0;
+                padding-top: 60px; /* Reduced from 20 to fix spacing */
+            }
+            
+            .sidebar-bottom-section {
+                position: relative;
+                margin-top: 2rem;
+                padding-bottom: 1rem;
+            }
+        }
+    </style>
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {"50":"#f0f9ff","100":"#e0f2fe","200":"#bae6fd","300":"#7dd3fc","400":"#38bdf8","500":"#0ea5e9","600":"#0284c7","700":"#0369a1","800":"#075985","900":"#0c4a6e","950":"#082f49"}
+                    }
+                }
+            }
+        }
+    </script>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="antialiased bg-gradient-to-br from-gray-50 to-gray-100">
+
+<!-- Toast Messages -->
+{% if messages %}
+<div class="fixed top-4 right-4 z-[9999] space-y-4" id="toast-container">
+    {% for message in messages %}
+    {% if 'chat_message' not in message.tags %}  <!-- Changed condition to check tags instead of extra_tags -->
+    <div x-data="{ show: true }" 
+         x-show="show" 
+         x-init="setTimeout(() => show = false, 3000)"
+         class="flex items-center w-full max-w-xs p-4 text-gray-500 glass-effect rounded-xl custom-shadow" 
+         role="alert">
+        <!-- Rest of toast content remains the same -->
+        <div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 
+            {% if message.tags == 'error' %}text-red-500 bg-red-100
+            {% elif message.tags == 'success' %}text-green-500 bg-green-100
+            {% else %}text-blue-500 bg-blue-100{% endif %} 
+            rounded-lg">
+            <!-- Icon content remains the same -->
+        </div>
+        <div class="ml-3 text-sm font-medium">{{ message }}</div>
+        <button @click="show = false" class="ml-auto -mx-1.5 -my-1.5 bg-white/30 text-gray-400 hover:text-gray-900 rounded-lg p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 transition-all duration-300">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+
+    <!-- Navigation Bar -->
+    <nav class="fixed top-0 z-50 w-full glass-effect">
+        <div class="px-3 py-3 lg:px-5 lg:pl-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center justify-start rtl:justify-end">
+                    <button data-drawer-target="logo-sidebar" data-drawer-toggle="logo-sidebar" aria-controls="logo-sidebar" type="button" class="inline-flex items-center p-2 text-sm text-gray-500 rounded-lg sm:hidden hover:bg-gray-100 focus:outline-none focus:ring-0 transition-all duration-300">
+                        <span class="sr-only">Open sidebar</span>
+                        <i class="fas fa-bars fa-lg"></i>
+                    </button>
+                    <a href="{% url 'home' %}" class="flex items-center ms-2 md:me-24">
+                        <span class="self-center text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-800">Tech Nation VA</span>
+                    </a>
+                </div>
+                <div class="flex items-center">
+                    <div class="flex items-center ms-3">
+                        <div>
+                            <button type="button" class="flex text-sm bg-gradient-to-r from-primary-500 to-primary-600 rounded-full focus:ring-0 p-1 transition-all duration-300" aria-expanded="false" data-dropdown-toggle="dropdown-user">
+                                <span class="sr-only">Open user menu</span>
+                                <div class="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center text-primary-800 font-bold">
+                                    {{ user.email|slice:":1"|upper }}
+                                </div>
+                            </button>
+                        </div>
+                        <div class="z-50 hidden my-4 text-base list-none glass-effect divide-y divide-gray-100 rounded-xl custom-shadow" id="dropdown-user">
+                            <div class="px-4 py-3" role="none">
+                                <p class="text-sm font-medium text-gray-900 text-truncate" role="none">
+                                    {{ user.get_full_name|default:user.email }}
+                                </p>
+                                <p class="text-sm text-gray-600 text-truncate" role="none">
+                                    {{ user.email }}
+                                </p>
+                            </div>
+                            <ul class="py-1" role="none">
+                                <li>
+                                    <a href="{% url 'accounts:dashboard' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 transition-all duration-300" role="menuitem">
+                                        <i class="fas fa-gauge-high mr-2"></i>Dashboard
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{% url 'accounts:profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 transition-all duration-300" role="menuitem">
+                                        <i class="fas fa-user mr-2"></i>Profile
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{% url 'account_logout' %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-all duration-300" role="menuitem">
+                                        <i class="fas fa-right-from-bracket mr-2"></i>Sign out
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+<!-- Enhanced Sidebar -->
+<aside id="logo-sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen pt-14 sm:pt-20 transition-transform -translate-x-full sm:translate-x-0" aria-label="Sidebar">
+    <div class="h-full px-3 pb-4 overflow-y-auto bg-white/40 backdrop-blur-lg border-gray-200/30 flex flex-col">
+        <!-- User Profile Section -->
+        <div class="mb-6 p-4 mt-2 bg-gradient-to-r from-blue-500/10 to-blue-600/10 rounded-2xl backdrop-blur-sm border border-white/20">
+            <div class="flex items-center space-x-3">
+                <div class="min-w-[3rem] w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0">
+                    {{ user.email|slice:":1"|upper }}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-sm font-semibold text-gray-800 text-truncate">{{ user.get_full_name|default:user.email }}</h3>
+                    <p class="text-xs text-gray-500 text-truncate">Global Talent Visa Applicant</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <div class="space-y-2 flex-grow">
+            <!-- Dashboard -->
+            <div class="px-3 py-2 text-xs font-medium text-gray-500">Main Menu</div>
+            <a href="{% url 'accounts:dashboard' %}" class="menu-item-hover flex items-center p-3 text-gray-700 rounded-xl hover:bg-gradient-to-r from-blue-500/10 to-blue-600/10 group transition-all duration-300">
+                <div class="icon-container flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg shadow-blue-500/20 flex-shrink-0">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="ml-3 flex-1 min-w-0">
+                    <div class="text-sm font-medium text-truncate">Dashboard</div>
+                    <div class="text-xs text-gray-500 text-truncate">View your progress</div>
+                </div>
+                <i class="fas fa-chevron-right ml-auto text-gray-400 group-hover:text-gray-600 flex-shrink-0"></i>
+            </a>
+
+            <!-- Documents -->
+            <div class="px-3 py-2 text-xs font-medium text-gray-500 mt-6">Application</div>
+            <a href="{% url 'document_manager:document_list' %}" class="menu-item-hover flex items-center p-3 text-gray-700 rounded-xl hover:bg-gradient-to-r from-blue-500/10 to-blue-600/10 group transition-all duration-300">
+                <div class="icon-container flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg shadow-blue-500/20 flex-shrink-0">
+                    <i class="fas fa-file-lines"></i>
+                </div>
+                <div class="ml-3 flex-1 min-w-0">
+                    <div class="text-sm font-medium text-truncate">Documents</div>
+                    <div class="text-xs text-gray-500 text-truncate">Manage your files</div>
+                </div>
+                <i class="fas fa-chevron-right ml-auto text-gray-400 group-hover:text-gray-600 flex-shrink-0"></i>
+            </a>
+
+            <!-- AI Assistant -->
+            <a href="{% url 'ai_assistant:chat' %}" class="menu-item-hover flex items-center p-3 text-gray-700 rounded-xl hover:bg-gradient-to-r from-blue-500/10 to-blue-600/10 group transition-all duration-300">
+                <div class="icon-container flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg shadow-blue-500/20 flex-shrink-0">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="ml-3 flex-1 min-w-0">
+                    <div class="text-sm font-medium text-truncate">AI Assistant</div>
+                    <div class="text-xs text-gray-500 text-truncate">Get instant help</div>
+                </div>
+                <i class="fas fa-chevron-right ml-auto text-gray-400 group-hover:text-gray-600 flex-shrink-0"></i>
+            </a>
+
+            <!-- Expert Marketplace -->
+            <div class="px-3 py-2 text-xs font-medium text-gray-500 mt-6">Support</div>
+            <a href="{% url 'expert_marketplace:expert_marketplace' %}" class="menu-item-hover flex items-center p-3 text-gray-700 rounded-xl hover:bg-gradient-to-r from-blue-500/10 to-blue-600/10 group transition-all duration-300">
+                <div class="icon-container flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg shadow-blue-500/20 flex-shrink-0">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <div class="ml-3 flex-1 min-w-0">
+                    <div class="text-sm font-medium text-truncate">Expert Help</div>
+                    <div class="text-xs text-gray-500 text-truncate">Connect with experts</div>
+                </div>
+                <i class="fas fa-chevron-right ml-auto text-gray-400 group-hover:text-gray-600 flex-shrink-0"></i>
+            </a>
+
+
+
+            <!-- Referral Program -->
+            <div class="px-3 py-2 text-xs font-medium text-gray-500 mt-6">Rewards</div>
+            <a href="{% url 'referrals:share' %}" class="relative menu-item-hover flex items-center p-3 text-gray-700 rounded-xl hover:bg-gradient-to-r from-blue-500/10 to-blue-600/10 group transition-all duration-300">
+                <div class="icon-container flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg shadow-blue-500/20 flex-shrink-0">
+                    <i class="fas fa-gift"></i>
+                </div>
+                <div class="ml-3 flex-1 min-w-0">
+                    <div class="text-sm font-medium text-truncate">Referral Program</div>
+                    <div class="text-xs text-gray-500 text-truncate">Earn rewards</div>
+                </div>
+                <i class="fas fa-chevron-right ml-auto text-gray-400 group-hover:text-gray-600 flex-shrink-0"></i>
+            </a>
+        </div>
+
+        <!-- Bottom Section - Now using flex layout for proper positioning -->
+        <div class="mt-auto pt-4">
+            <div class="p-4 bg-gradient-to-r from-blue-500/5 to-blue-600/5 rounded-xl backdrop-blur-sm border border-white/10">
+                <a href="{% url 'accounts:contact' %}" class="menu-item-hover flex items-center p-3 text-gray-700 rounded-xl hover:bg-gradient-to-r from-blue-500/10 to-blue-600/10 group transition-all duration-300">
+                    <div class="icon-container flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg shadow-blue-500/20 flex-shrink-0">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <div class="ml-3 flex-1 min-w-0">
+                        <div class="text-sm font-medium text-truncate">Contact Us</div>
+                        <div class="text-xs text-gray-500 text-truncate">Get support</div>
+                    </div>
+                    <i class="fas fa-chevron-right ml-auto text-gray-400 group-hover:text-gray-600 flex-shrink-0"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</aside>
+
+    <!-- Main Content -->
+    <div class="py-2  sm:ml-64">
+        <div class="p-2 mt-14">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/dataTables.tailwindcss.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    
+    <!-- Fix for mobile toggle button outline -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Remove focus outline from sidebar toggle button
+            const sidebarToggle = document.querySelector('[data-drawer-toggle="logo-sidebar"]');
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    this.blur();
+                });
+            }
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

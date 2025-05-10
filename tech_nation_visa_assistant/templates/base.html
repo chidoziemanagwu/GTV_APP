@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}Tech Nation Visa Assistant{% endblock %}</title>
+    <!-- Cloudflare Turnstile -->
+    <script src="https://www.google.com/recaptcha/api.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Flowbite CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.css" rel="stylesheet" />
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.10.5/dist/cdn.min.js"></script>
+    
+    <!-- AOS (Animate On Scroll) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"}
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'fade-out': 'fadeOut 0.5s ease-in-out'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(-10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        fadeOut: {
+                            '0%': { opacity: '1', transform: 'translateY(0)' },
+                            '100%': { opacity: '0', transform: 'translateY(-10px)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col" x-data="{ mobileMenuOpen: false }">
+    <!-- Toast Messages -->
+<!-- Toast Messages - Start -->
+{% if messages %}
+<div class="fixed top-4 right-4 z-[9999] space-y-4 w-80" id="toast-container">
+    {% for message in messages %}
+    <div class="bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden"
+         x-data="{ show: true }" 
+         x-show="show" 
+         x-init="setTimeout(() => { show = false }, 7000)"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 transform translate-x-8"
+         x-transition:enter-end="opacity-100 transform translate-x-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 transform translate-x-0"
+         x-transition:leave-end="opacity-0 transform translate-x-8">
+        <div class="p-4">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    {% if message.tags == 'error' %}
+                        <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
+                    {% elif message.tags == 'success' %}
+                        <i class="fas fa-check-circle text-green-500 text-xl"></i>
+                    {% elif message.tags == 'warning' %}
+                        <i class="fas fa-exclamation-triangle text-yellow-500 text-xl"></i>
+                    {% else %}
+                        <i class="fas fa-info-circle text-blue-500 text-xl"></i>
+                    {% endif %}
+                </div>
+                <div class="ml-3 flex-1 pt-0.5">
+                    <p class="text-sm font-medium text-gray-900">
+                        {{ message }}
+                    </p>
+                </div>
+                <div class="ml-4 flex-shrink-0 flex">
+                    <button @click="show = false" class="rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none">
+                        <span class="sr-only">Close</span>
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+<!-- Toast Messages - End -->
+
+<!-- Navigation -->
+<nav class="bg-white border-b border-gray-200 fixed w-full z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <!-- Logo -->
+            <div class="flex-shrink-0 flex items-center">
+                <a href="{% url 'home' %}" class="text-xl font-semibold">
+                    Tech Nation Visa Assistant
+                </a>
+            </div>
+
+<!-- Center Navigation -->
+<div class="hidden md:flex items-center justify-center flex-1">
+    <div class="flex space-x-8">
+        <a href="{% url 'home' %}#how-it-works" 
+           class="border-transparent text-gray-500 hover:border-primary-500 hover:text-primary-600 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+            How It Works
+        </a>
+        <a href="{% url 'home' %}#features" 
+           class="border-transparent text-gray-500 hover:border-primary-500 hover:text-primary-600 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+            Features
+        </a>
+        <a href="{% url 'home' %}#testimonials" 
+           class="border-transparent text-gray-500 hover:border-primary-500 hover:text-primary-600 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+            Testimonials
+        </a>
+        {% if user.is_authenticated %}
+            <a href="{% url 'accounts:dashboard' %}" 
+               class="border-transparent text-gray-500 hover:border-primary-500 hover:text-primary-600 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                Dashboard
+            </a>
+        {% else %}
+            <a href="{% url 'account_signup' %}" 
+               class="border-transparent text-gray-500 hover:border-primary-500 hover:text-primary-600 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                Get Started
+            </a>
+        {% endif %}
+        <a href="{% url 'accounts:contact' %}" 
+           class="border-transparent text-gray-500 hover:border-primary-500 hover:text-primary-600 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+            Contact
+        </a>
+    </div>
+</div>
+
+<!-- Right side - Auth Buttons -->
+<div class="flex items-center">
+    {% if user.is_authenticated %}
+        <div class="ml-3 relative" x-data="{ open: false }">
+            <!-- User menu button -->
+            <button @click="open = !open" 
+                class="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                <div class="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
+                    <span class="text-primary-800 font-medium">{{ user.email|slice:":1"|upper }}</span>
+                </div>
+            </button>
+            <!-- Dropdown menu -->
+            <div x-show="open" 
+                 @click.away="open = false"
+                 x-transition:enter="transition ease-out duration-100"
+                 x-transition:enter-start="transform opacity-0 scale-95"
+                 x-transition:enter-end="transform opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-75"
+                 x-transition:leave-start="transform opacity-100 scale-100"
+                 x-transition:leave-end="transform opacity-0 scale-95"
+                 class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 z-50">
+                <div class="py-1">
+                    <a href="{% url 'accounts:dashboard' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Dashboard</a>
+                    <a href="{% url 'accounts:profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>
+                    <a href="{% url 'referrals:share' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Referrals</a>
+                </div>
+                <div class="py-1">
+                    <a href="{% url 'account_logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</a>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- Desktop auth buttons - hidden on mobile -->
+        <div class="hidden md:flex items-center space-x-4">
+            <a href="{% url 'account_login' %}" 
+               class="text-gray-800 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                Log in
+            </a>
+            <a href="{% url 'account_signup' %}" 
+               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                Sign up
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- Mobile menu button -->
+    <button @click="mobileMenuOpen = !mobileMenuOpen" 
+            class="md:hidden ml-4 inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
+        <span class="sr-only">Open main menu</span>
+        <i class="fas fa-bars" x-show="!mobileMenuOpen"></i>
+        <i class="fas fa-times" x-show="mobileMenuOpen"></i>
+    </button>
+</div>
+        </div>
+    </div>
+
+<!-- Mobile menu -->
+<div x-show="mobileMenuOpen" 
+     class="md:hidden"
+     x-transition:enter="transition ease-out duration-100"
+     x-transition:enter-start="transform opacity-0 scale-95"
+     x-transition:enter-end="transform opacity-100 scale-100"
+     x-transition:leave="transition ease-in duration-75"
+     x-transition:leave-start="transform opacity-100 scale-100"
+     x-transition:leave-end="transform opacity-0 scale-95">
+    <div class="pt-2 pb-3 space-y-1">
+        <a href="{% url 'home' %}#how-it-works" 
+           class="text-gray-600 hover:bg-gray-50 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium">
+            How It Works
+        </a>
+        <a href="{% url 'home' %}#features" 
+           class="text-gray-600 hover:bg-gray-50 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium">
+            Features
+        </a>
+        <a href="{% url 'home' %}#testimonials" 
+           class="text-gray-600 hover:bg-gray-50 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium">
+            Testimonials
+        </a>
+        {% if user.is_authenticated %}
+            <a href="{% url 'accounts:dashboard' %}" 
+               class="text-gray-600 hover:bg-gray-50 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium">
+                Dashboard
+            </a>
+        {% else %}
+            <a href="{% url 'account_signup' %}" 
+               class="text-gray-600 hover:bg-gray-50 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium">
+                Get Started
+            </a>
+            <!-- Add login/signup buttons for mobile -->
+            <div class="border-t border-gray-200 mt-3 pt-3">
+                <a href="{% url 'account_login' %}" 
+                   class="text-gray-600 hover:bg-gray-50 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium">
+                    Log in
+                </a>
+                <a href="{% url 'account_signup' %}" 
+                   class="bg-primary-600 text-white hover:bg-primary-700 block px-3 py-2 mt-1 rounded-md text-base font-medium">
+                    Sign up
+                </a>
+            </div>
+        {% endif %}
+        <a href="{% url 'accounts:contact' %}" 
+           class="text-gray-600 hover:bg-gray-50 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium">
+            Contact
+        </a>
+    </div>
+</div>
+
+
+</nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow pt-16">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200">
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="col-span-1 md:col-span-2">
+                    <h3 class="text-lg font-semibold text-gray-900">Tech Nation Visa Assistant</h3>
+                    <p class="mt-2 text-gray-600">Simplifying your Global Talent Visa journey with AI-powered assistance and expert guidance.</p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">Quick Links</h4>
+                    <ul class="mt-4 space-y-2">
+                        <li>
+                            <a href="{% url 'home' %}#features" class="text-gray-600 hover:text-primary-600">Features</a>
+                        </li>
+                        <li>
+                            <a href="{% url 'home' %}#testimonials" class="text-gray-600 hover:text-primary-600">Success Stories</a>
+                        </li>
+                        <li>
+                            <a href="{% url 'accounts:contact' %}" class="text-gray-600 hover:text-primary-600">Contact Us</a>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">Legal</h4>
+                    <ul class="mt-4 space-y-2">
+                        <li>
+                            <a href="{% url 'accounts:terms_privacy' %}" class="text-gray-600 hover:text-primary-600">Privacy Policy</a>
+                        </li>
+                        <li>
+                            <a href="{% url 'accounts:terms_privacy' %}" class="text-gray-600 hover:text-primary-600">Terms of Service</a>
+                        </li>
+                        <li>
+                            <a href="{% url 'accounts:contact' %}"  class="text-gray-600 hover:text-primary-600">Contact Us</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-8 pt-8 border-t border-gray-200">
+                <p class="text-sm text-gray-500">&copy; {% now "Y" %} Tech Nation Visa Assistant. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+    <script>
+        // Initialize AOS
+        AOS.init({
+            duration: 1000,
+            easing: 'ease-out-cubic',
+            once: true,
+            offset: 50
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    const navHeight = document.querySelector('nav').offsetHeight;
+                    const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - navHeight;
+                    window.scrollTo({
+                        top: targetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

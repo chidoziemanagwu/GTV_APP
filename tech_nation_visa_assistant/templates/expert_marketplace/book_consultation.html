@@ -1,0 +1,89 @@
+<!-- templates/expert_marketplace/book_consultation.html -->
+{% extends 'dashboard_base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto">
+        <!-- Step 1: Pricing Info -->
+        <div class="mb-8 bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold mb-4">Book a Consultation</h2>
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <p class="text-lg mb-2">
+                    <span class="font-semibold">Duration:</span> {{ consultation_duration }} minutes
+                </p>
+                <p class="text-lg mb-2">
+                    <span class="font-semibold">Fee:</span> £{{ consultation_fee }}
+                </p>
+                <p class="text-gray-600">
+                    Get expert guidance on your Tech Nation Global Talent Visa application from our experienced consultants.
+                </p>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-8">
+            {% csrf_token %}
+            {% if form.errors %}
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                Please correct the errors below.
+            </div>
+            {% endif %}
+
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                        {{ form.scheduled_date }}
+                        {% if form.scheduled_date.errors %}
+                        <p class="text-red-600 text-sm mt-1">{{ form.scheduled_date.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                        {{ form.scheduled_time }}
+                        {% if form.scheduled_time.errors %}
+                        <p class="text-red-600 text-sm mt-1">{{ form.scheduled_time.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <p class="text-red-600 text-sm mt-1">{{ form.name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                        <p class="text-red-600 text-sm mt-1">{{ form.email.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                        {{ form.phone }}
+                        {% if form.phone.errors %}
+                        <p class="text-red-600 text-sm mt-1">{{ form.phone.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <p class="text-red-600 text-sm mt-1">{{ form.description.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end">
+                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    Book Consultation
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

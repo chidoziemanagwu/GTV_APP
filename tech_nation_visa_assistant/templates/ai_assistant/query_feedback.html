@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Provide Feedback - Tech Nation Visa Assistant{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="mb-6">
+            <a href="{% url 'ai_assistant' %}" class="text-primary-600 hover:text-primary-800">
+                &larr; Back to AI Assistant
+            </a>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h1 class="text-2xl font-bold mb-6">Provide Feedback</h1>
+            
+            <div class="mb-6 pb-4 border-b border-gray-200">
+                <div class="mb-2">
+                    <p class="font-medium text-gray-900">Your question:</p>
+                    <p class="text-gray-700">{{ query.query_text }}</p>
+                </div>
+                
+                <div class="mt-4">
+                    <p class="font-medium text-gray-900">Response:</p>
+                    <div class="prose max-w-none text-gray-700">
+                        {{ query.response_text|linebreaks }}
+                    </div>
+                </div>
+            </div>
+            
+            <form method="post" action="{% url 'provide_feedback' %}">
+                {% csrf_token %}
+                <input type="hidden" name="query_id" value="{{ query.id }}">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">How helpful was this response?</label>
+                    <div class="flex space-x-4">
+                        {% for i in "12345" %}
+                        <label class="flex items-center">
+                            <input type="radio" name="rating" value="{{ i }}" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300">
+                            <span class="ml-2 text-gray-700">{{ i }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="comment" class="block text-sm font-medium text-gray-700 mb-2">Additional comments (optional)</label>
+                    <textarea id="comment" name="comment" rows="4" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"></textarea>
+                </div>
+                
+                <div class="flex justify-end">
+                    <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        Submit Feedback
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

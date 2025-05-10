@@ -1,0 +1,625 @@
+{% extends 'dashboard_base.html' %}
+
+{% load markdown_filter %}
+
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+   /* Base styles */
+body {
+    font-family: 'Inter', sans-serif;
+}
+.glass-effect {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.chat-gradient {
+    background-image: linear-gradient(to right bottom, #f0f9ff, #e0f2fe, #bae6fd);
+}
+.message-user {
+    background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.1), 0 2px 4px -1px rgba(99, 102, 241, 0.06);
+}
+.message-ai {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Scrollbar styles */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(243, 244, 246, 0.1);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.5);
+    border-radius: 3px;
+}
+
+/* Markdown content styles */
+.markdown-content > * {
+    margin-bottom: 1rem;
+}
+.markdown-content h2 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+.markdown-content h3 {
+    margin-top: 1.25rem;
+    margin-bottom: 0.75rem;
+}
+.markdown-content ul, .markdown-content ol {
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+.markdown-content li {
+    margin-bottom: 0.5rem;
+}
+.markdown-content p {
+    margin-bottom: 1rem;
+}
+.markdown-content blockquote {
+    margin: 1rem 0;
+}
+.markdown-content pre {
+    margin: 1rem 0;
+}
+
+/* Disclaimer styles */
+.markdown-content .disclaimer,
+.disclaimer {
+    color: #ef4444; /* Red color */
+    font-style: italic;
+    margin-top: 1.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #f3f4f6;
+}
+
+.markdown-content .disclaimer a,
+.disclaimer a {
+    color: #3b82f6 !important; /* Blue color */
+    text-decoration: underline !important;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 640px) {
+    .message-user, .message-ai {
+        max-width: 85%; /* Wider bubbles on mobile */
+    }
+
+    .px-6 {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    .py-4 {
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.75rem !important;
+    }
+
+    .min-h-screen {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+}
+
+/* Horizontal scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.5);
+    border-radius: 3px;
+}
+</style>
+{% endblock %}
+
+
+
+
+{% block content %}
+<div class="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+    <div class="mx-auto">
+        <!-- Header - Improved for mobile -->
+        <div class="glass-effect rounded-2xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
+            <div class="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                <!-- Icon with responsive sizing -->
+                <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl shadow-lg flex items-center justify-center">
+                    <i class="fas fa-book text-white text-xl sm:text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-blue-600">Tech Nation Knowledge Base ChatBot</h1>
+                    <p class="mt-1 text-sm sm:text-base text-gray-600 font-medium">Your Global Talent Visa Application Resource</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Container -->
+        <div class="glass-effect rounded-2xl shadow-lg overflow-hidden">
+            <!-- Chat Messages -->
+            <div id="chat-messages" class="h-[32rem] overflow-y-auto custom-scrollbar py-4 sm:py-6 px-3 space-y-4 sm:space-y-6">
+                {% for message in messages %}
+                <div class="flex {% if message.role == 'user' %}justify-end{% endif %} items-start space-x-2">
+                    {% if message.role == 'assistant' %}
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-robot text-white text-sm"></i>
+                    </div>
+                    {% endif %}
+                    <div class="max-w-[90%] sm:max-w-[80%] message-bubble {% if message.role == 'user' %}message-user text-white{% else %}message-ai{% endif %} rounded-2xl px-3 sm:px-4 py-3 sm:py-4">
+                        {% if message.role == 'user' %}
+                        <div class="text-white text-sm font-medium">{{ message.content }}</div>
+                        {% else %}
+                        <div class="text-gray-800 text-sm font-medium markdown-content" id="message-{{ message.id }}">{{ message.content }}</div>
+                        {% endif %}
+                        <div class="text-xs {% if message.role == 'user' %}text-blue-100{% else %}text-gray-500{% endif %} mt-2 font-medium">
+                            {{ message.created_at|date:"g:i A" }}
+                        </div>
+                    </div>
+                    {% if message.role == 'user' %}
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-user text-white text-sm"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <!-- Empty state - only show if there are no messages -->
+                <div class="flex items-center justify-center h-full flex-col" id="welcome-message">
+                    <div class="text-center mb-8">
+                        <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full mx-auto flex items-center justify-center mb-4">
+                            <i class="fas fa-comments text-white text-2xl"></i>
+                        </div>
+                        <p class="text-gray-600 font-medium mb-4">Welcome! How can I help you with your Tech Nation Visa application?</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Quick Queries - Improved for mobile -->
+            <div class="glass-effect rounded-2xl p-3 sm:p-4 mb-3 sm:mb-4">
+                <h3 class="text-xs sm:text-sm font-semibold text-gray-600 mb-2 sm:mb-3 px-2">Quick Queries:</h3>
+                <div class="overflow-x-auto pb-2 sm:pb-3 custom-scrollbar">
+                    <ul class="flex flex-nowrap gap-2 sm:gap-3 w-max min-w-full px-2">
+                        <!-- Quick query buttons with responsive sizing -->
+                        <li onclick="submitSuggestedQuestion('What are the eligibility criteria for the Tech Nation Visa?')" 
+                            class="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs sm:text-sm font-medium rounded-full cursor-pointer transition-colors duration-200 whitespace-nowrap">
+                            <i class="fas fa-clipboard-check mr-1.5 sm:mr-2 text-xs sm:text-sm"></i>
+                            Eligibility
+                        </li>
+                        <li onclick="submitSuggestedQuestion('What documents are required for the application?')" 
+                            class="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs sm:text-sm font-medium rounded-full cursor-pointer transition-colors duration-200 whitespace-nowrap">
+                            <i class="fas fa-file-alt mr-1.5 sm:mr-2 text-xs sm:text-sm"></i>
+                            Required Docs
+                        </li>
+                        <li onclick="submitSuggestedQuestion('Can you explain the application process step-by-step?')" 
+                            class="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs sm:text-sm font-medium rounded-full cursor-pointer transition-colors duration-200 whitespace-nowrap">
+                            <i class="fas fa-list-ol mr-1.5 sm:mr-2 text-xs sm:text-sm"></i>
+                            Application Steps
+                        </li>
+                        <li onclick="submitSuggestedQuestion('What is the processing time and fees involved?')" 
+                            class="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs sm:text-sm font-medium rounded-full cursor-pointer transition-colors duration-200 whitespace-nowrap">
+                            <i class="fas fa-clock mr-1.5 sm:mr-2 text-xs sm:text-sm"></i>
+                            Processing Time
+                        </li>
+                        <li onclick="submitSuggestedQuestion('What are the endorsement criteria?')" 
+                            class="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs sm:text-sm font-medium rounded-full cursor-pointer transition-colors duration-200 whitespace-nowrap">
+                            <i class="fas fa-star mr-1.5 sm:mr-2 text-xs sm:text-sm"></i>
+                            Endorsement
+                        </li>
+                        <li onclick="submitSuggestedQuestion('How to prepare for the visa interview?')" 
+                            class="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs sm:text-sm font-medium rounded-full cursor-pointer transition-colors duration-200 whitespace-nowrap">
+                            <i class="fas fa-comments mr-1.5 sm:mr-2 text-xs sm:text-sm"></i>
+                            Interview Prep
+                        </li>
+                        <li onclick="submitSuggestedQuestion('Can I include family members in my application?')" 
+                            class="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs sm:text-sm font-medium rounded-full cursor-pointer transition-colors duration-200 whitespace-nowrap">
+                            <i class="fas fa-users mr-1.5 sm:mr-2 text-xs sm:text-sm"></i>
+                            Family Members
+                        </li>
+                        <li onclick="submitSuggestedQuestion('What are the renewal requirements?')" 
+                            class="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs sm:text-sm font-medium rounded-full cursor-pointer transition-colors duration-200 whitespace-nowrap">
+                            <i class="fas fa-sync-alt mr-1.5 sm:mr-2 text-xs sm:text-sm"></i>
+                            Visa Renewal
+                        </li>
+                        <li onclick="submitSuggestedQuestion('How to appeal if rejected?')" 
+                            class="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs sm:text-sm font-medium rounded-full cursor-pointer transition-colors duration-200 whitespace-nowrap">
+                            <i class="fas fa-gavel mr-1.5 sm:mr-2 text-xs sm:text-sm"></i>
+                            Appeal Process
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        
+            <!-- Message Input - Improved for mobile -->
+            <div class="border-t border-gray-100 p-3 sm:p-4 glass-effect">
+                <form id="chat-form" method="post" class="flex space-x-2 sm:space-x-3">
+                    {% csrf_token %}
+                    <div class="relative flex-1">
+                        <input type="text" name="message" id="message-input" 
+                               class="w-full rounded-xl border-gray-200 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 pl-3 sm:pl-4 pr-8 sm:pr-10 py-2 sm:py-3 text-sm sm:text-base text-gray-800 placeholder-gray-400"
+                               placeholder="Type your message..."
+                               required>
+                        <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <i class="fas fa-keyboard text-gray-400 text-sm sm:text-base"></i>
+                        </div>
+                    </div>
+                    <button type="submit" 
+                            class="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-400 to-blue-600 text-white text-sm font-medium rounded-xl shadow-lg hover:from-blue-500 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 flex items-center space-x-1 sm:space-x-2">
+                        <span class="hidden sm:inline">Send</span>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                
+                    <!-- Typing indicator -->
+                    <div id="typing-indicator" class="hidden flex items-center space-x-1 sm:space-x-2 absolute left-4 -top-6">
+                        <div class="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-blue-600 rounded-full animate-bounce"></div>
+                        <div class="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        <div class="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Queries Counter - Improved for mobile -->
+        <div class="mt-4 sm:mt-6 glass-effect rounded-xl p-3 sm:p-4 text-center">
+            <div class="flex items-center justify-center space-x-2">
+                <i class="fas fa-chart-bar text-blue-600 text-sm sm:text-base"></i>
+                <span class="text-xs sm:text-sm font-medium text-gray-700">Queries remaining today: {{ remaining_queries }}</span>
+            </div>
+            {% if remaining_queries == 0 %}
+                <a href="{% url 'payments:subscription_plans' %}" 
+                   class="mt-2 sm:mt-3 inline-flex items-center text-xs sm:text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors duration-200">
+                    <i class="fas fa-crown mr-1.5 sm:mr-2"></i>
+                    Upgrade your plan for unlimited queries
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // First define all DOM element references
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+        const messageInput = document.getElementById('message-input');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const welcomeMessageEl = document.getElementById('welcome-message');
+      
+        // Add markdown CSS
+        document.head.insertAdjacentHTML('beforeend', `
+          <style>
+            .markdown-content {
+              line-height: 1.6;
+            }
+            .markdown-content h2 {
+              font-size: 1.5rem;
+              font-weight: 600;
+              margin-top: 1.5rem;
+              margin-bottom: 0.75rem;
+              color: #3b82f6;
+            }
+            .markdown-content h3 {
+              font-size: 1.25rem;
+              font-weight: 600;
+              margin-top: 1.5rem;
+              margin-bottom: 0.75rem;
+              color: #3b82f6;
+            }
+            .markdown-content p {
+              margin-bottom: 1rem;
+            }
+            .markdown-content ul, .markdown-content ol {
+              margin-left: 1.5rem;
+              margin-bottom: 1rem;
+            }
+            .markdown-content li {
+              margin-bottom: 0.5rem;
+            }
+            .markdown-content strong {
+              font-weight: 600;
+              color: #2563eb;
+            }
+            .markdown-content hr {
+              margin: 1.5rem 0;
+              border-color: #e5e7eb;
+            }
+            .markdown-content a {
+              color: #3b82f6;
+              text-decoration: underline;
+            }
+            .markdown-content a:hover {
+              color: #2563eb;
+            }
+            .markdown-content blockquote {
+              border-left: 4px solid #e5e7eb;
+              padding-left: 1rem;
+              margin-left: 0;
+              margin-right: 0;
+              font-style: italic;
+              color: #6b7280;
+            }
+            .markdown-content code {
+              background-color: #f3f4f6;
+              padding: 0.2rem 0.4rem;
+              border-radius: 0.25rem;
+              font-family: monospace;
+            }
+            .markdown-content pre {
+              background-color: #f3f4f6;
+              padding: 1rem;
+              border-radius: 0.5rem;
+              overflow-x: auto;
+            }
+            .markdown-content pre code {
+              background-color: transparent;
+              padding: 0;
+            }
+            .markdown-content table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 1rem;
+            }
+            .markdown-content th, .markdown-content td {
+              border: 1px solid #e5e7eb;
+              padding: 0.5rem;
+            }
+            .markdown-content th {
+              background-color: #f3f4f6;
+            }
+          </style>
+        `);
+
+        // Initialize
+        scrollToBottom();
+        initializeEventListeners();
+      
+        // Process existing messages only once - AFTER all variables are defined
+        processExistingMessages();
+
+        // Define the submitSuggestedQuestion function GLOBALLY
+        window.submitSuggestedQuestion = function(question) {
+            messageInput.value = question;
+            chatForm.dispatchEvent(new Event('submit'));
+        };
+
+        // Create a function to get the CSRF token
+        function getCSRFToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        }
+
+        // Replace your current form submit handler with this streaming version
+        function initializeEventListeners() {
+            // Form submission
+            chatForm.addEventListener('submit', handleStreamingSubmit);
+        
+            // Input focus effects
+            messageInput.addEventListener('focus', handleInputFocus);
+            messageInput.addEventListener('blur', handleInputBlur);
+        
+            // Keyboard shortcuts
+            document.addEventListener('keydown', handleKeyboardShortcuts);
+        }
+
+        // Process existing messages only once on page load
+        function processExistingMessages() {
+            // Hide welcome message if there are messages
+            const hasMessages = document.querySelectorAll('.message-user, .message-ai').length > 0;
+            if (hasMessages && welcomeMessageEl) {
+                welcomeMessageEl.style.display = 'none';
+            }
+          
+            // Process markdown in existing messages
+            document.querySelectorAll('.message-ai .markdown-content').forEach(messageEl => {
+                const content = messageEl.textContent;
+                if (content) {
+                    messageEl.innerHTML = marked.parse(content);
+                    formatDisclaimers(messageEl);
+                }
+            });
+        }
+
+        // Add this new function to handle streaming submissions
+        async function handleStreamingSubmit(e) {
+            e.preventDefault();
+        
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // Hide welcome message if it's visible
+            if (welcomeMessageEl && welcomeMessageEl.style.display !== 'none') {
+                welcomeMessageEl.style.display = 'none';
+            }
+
+            // Add user message and clear input
+            addUserMessage(message);
+            messageInput.value = '';
+        
+            // Create placeholder for AI response
+            const responseId = Date.now();
+            const aiMessageHtml = `
+                <div class="flex items-start space-x-2">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-robot text-white text-sm"></i>
+                    </div>
+                    <div class="max-w-[90%] sm:max-w-[80%] message-ai rounded-2xl px-3 sm:px-4 py-3 sm:py-4">
+                        <div class="text-gray-800 text-sm font-medium markdown-content" id="streaming-response-${responseId}"></div>
+                        <div class="text-xs text-gray-500 mt-2 font-medium">${new Date().toLocaleTimeString()}</div>
+                    </div>
+                </div>
+            `;
+            appendMessageAndScroll(aiMessageHtml);
+        
+            const responseElement = document.getElementById(`streaming-response-${responseId}`);
+            showTypingIndicator();
+        
+            try {
+                // Set up event source for streaming - use the correct URL path
+                const eventSource = new EventSource(`/ai-assistant/stream-message/?message=${encodeURIComponent(message)}`);
+                let fullResponse = '';
+                
+            
+                // Handle incoming chunks
+                eventSource.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                
+                    if (data.content) {
+                        // Append new content
+                        fullResponse += data.content;
+                        responseElement.innerHTML = marked.parse(fullResponse);
+                    
+                        // Format any disclaimers in the partial response
+                        formatDisclaimers(responseElement);
+                        scrollToBottom();
+                    }
+                
+                    if (data.done) {
+                        // Response complete, do final formatting
+                        responseElement.innerHTML = marked.parse(fullResponse);
+                        formatDisclaimers(responseElement);
+                    
+                        // Update queries counter if provided
+                        if (data.remaining_queries !== undefined) {
+                            updateQueriesCounter(data.remaining_queries);
+                        }
+                    
+                        // Clean up
+                        eventSource.close();
+                        hideTypingIndicator();
+                        scrollToBottom();
+                    }
+                };
+              
+                // Handle errors
+                eventSource.onerror = function(error) {
+                    console.error('EventSource error:', error);
+                    responseElement.innerHTML = 'Error connecting to server. Please try again.';
+                    eventSource.close();
+                    hideTypingIndicator();
+                };
+            } catch (error) {
+                console.error('Error:', error);
+                hideTypingIndicator();
+                addErrorMessage();
+            }
+        }
+
+        // Helper function to format disclaimers
+        function formatDisclaimers(element) {
+            if (!element) return;
+          
+            const allEms = element.querySelectorAll('em');
+            allEms.forEach(em => {
+                if (em.textContent.includes('Disclaimer')) {
+                    const disclaimerParent = em.parentNode;
+                    if (disclaimerParent) {
+                        const disclaimerHTML = disclaimerParent.innerHTML;
+                        disclaimerParent.outerHTML = `<div class="disclaimer">${disclaimerHTML}</div>`;
+                    }
+                }
+            });
+        }
+
+        // Message handling functions
+        function addUserMessage(message) {
+            const userMessageHtml = `
+                <div class="flex justify-end items-start space-x-2">
+                    <div class="max-w-[90%] sm:max-w-[80%] message-user rounded-2xl px-3 sm:px-4 py-3 sm:py-4">
+                        <div class="text-white text-sm font-medium">${escapeHtml(message)}</div>
+                        <div class="text-xs text-blue-100 mt-2 font-medium">${new Date().toLocaleTimeString()}</div>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-user text-white text-sm"></i>
+                    </div>
+                </div>
+            `;
+            appendMessageAndScroll(userMessageHtml);
+        }
+
+        function addErrorMessage() {
+            const errorMessageHtml = `
+                <div class="flex items-start space-x-2">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-white text-sm"></i>
+                    </div>
+                    <div class="max-w-[90%] sm:max-w-[80%] bg-red-50 text-red-900 rounded-2xl px-3 sm:px-4 py-3 sm:py-4">
+                        <div class="text-sm font-medium">Sorry, there was an error processing your message. Please try again.</div>
+                        <div class="text-xs text-red-500 mt-2 font-medium">${new Date().toLocaleTimeString()}</div>
+                    </div>
+                </div>
+            `;
+            appendMessageAndScroll(errorMessageHtml);
+        }
+
+        // Utility functions
+        function showTypingIndicator() {
+            typingIndicator.classList.remove('hidden');
+        }
+
+        function hideTypingIndicator() {
+            typingIndicator.classList.add('hidden');
+        }
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function appendMessageAndScroll(messageHtml) {
+            chatMessages.insertAdjacentHTML('beforeend', messageHtml);
+            scrollToBottom();
+        }
+
+        function updateQueriesCounter(remainingQueries) {
+            if (remainingQueries !== undefined) {
+                const counterElement = document.querySelector('.text-gray-700');
+                if (counterElement) {
+                    counterElement.textContent = `Queries remaining today: ${remainingQueries}`;
+                }
+            }
+        }
+
+        function handleInputFocus() {
+            this.parentElement.classList.add('ring-2', 'ring-blue-200', 'ring-opacity-50');
+        }
+
+        function handleInputBlur() {
+            this.parentElement.classList.remove('ring-2', 'ring-blue-200', 'ring-opacity-50');
+        }
+
+        function handleKeyboardShortcuts(e) {
+            // Ctrl/Cmd + Enter to submit
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                chatForm.dispatchEvent(new Event('submit'));
+            }
+        }
+
+        // Security: Escape HTML to prevent XSS
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Add smooth scrolling for new messages
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.addedNodes.length) {
+                    scrollToBottom();
+                }
+            });
+        });
+
+        observer.observe(chatMessages, { childList: true });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications - Tech Nation Visa Assistant{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Notifications</h1>
+        <div class="flex space-x-4">
+            <a href="{% url 'notion_monitor:dashboard' %}" class="text-primary-600 hover:text-primary-800">
+                Back to Dashboard
+            </a>
+            <a href="{% url 'notion_monitor:change_list' %}" class="text-primary-600 hover:text-primary-800">
+                View All Changes
+            </a>
+        </div>
+    </div>
+    
+    {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+                <div class="p-4 mb-4 rounded-md {% if message.tags == 'success' %}bg-green-50 text-green-800{% elif message.tags == 'error' %}bg-red-50 text-red-800{% else %}bg-blue-50 text-blue-800{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="md:col-span-2">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="flex justify-between items-center p-4 border-b border-gray-200">
+                    <h2 class="text-lg font-medium">Your Notifications</h2>
+                    {% if notifications %}
+                        <a href="{% url 'notion_monitor:mark_all_read' %}" class="text-sm text-primary-600 hover:text-primary-800">
+                            Mark All as Read
+                        </a>
+                    {% endif %}
+                </div>
+                
+                {% if notifications %}
+                    <ul class="divide-y divide-gray-200">
+                        {% for notification in notifications %}
+                            <li class="p-4 {% if not notification.read %}bg-blue-50{% endif %}">
+                                <div class="flex justify-between">
+                                    <div>
+                                        <a href="{% url 'notion_monitor:change_detail' notification.change.id %}" class="text-sm font-medium text-gray-900 hover:text-primary-600">
+                                            Change in {{ notification.change.section }}
+                                        </a>
+                                        <p class="text-xs text-gray-500">{{ notification.created_at|date:"M d, Y H:i" }}</p>
+                                        <p class="text-sm text-gray-700 mt-1">{{ notification.change.description }}</p>
+                                    </div>
+                                    <div class="flex items-start">
+                                        {% if not notification.read %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2">
+                                                New
+                                            </span>
+                                        {% endif %}
+                                        <a href="{% url 'notion_monitor:mark_notification_read' notification.id %}" class="text-xs text-gray-500 hover:text-gray-700">
+                                            {% if not notification.read %}Mark as read{% endif %}
+                                        </a>
+                                    </div>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="text-center py-8">
+                        <p class="text-gray-500">You have no notifications.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-lg font-medium mb-4">Notification Preferences</h2>
+                
+                <form method="post" action="{% url 'notion_monitor:toggle_notifications' %}">
+                    {% csrf_token %}
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <div class="flex items-center h-5">
+                                <input id="in_app_notifications" name="in_app_notifications" type="checkbox" class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 rounded" 
+                                {% if preferences.in_app_notifications %}checked{% endif %}>
+                            </div>
+                            <div class="ml-3 text-sm">
+                                <label for="in_app_notifications" class="font-medium text-gray-700">In-app Notifications</label>
+                                <p class="text-gray-500">Receive notifications within the app</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start">
+                            <div class="flex items-center h-5">
+                                <input id="email_notifications" name="email_notifications" type="checkbox" class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 rounded" 
+                                {% if preferences.email_notifications %}checked{% endif %}>
+                            </div>
+                            <div class="ml-3 text-sm">
+                                <label for="email_notifications" class="font-medium text-gray-700">Email Notifications</label>
+                                <p class="text-gray-500">Receive notifications via email</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start">
+                            <div class="flex items-center h-5">
+                                <input id="notify_major_changes_only" name="notify_major_changes_only" type="checkbox" class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 rounded" 
+                                {% if preferences.notify_major_changes_only %}checked{% endif %}>
+                            </div>
+                            <div class="ml-3 text-sm">
+                                <label for="notify_major_changes_only" class="font-medium text-gray-700">Major Changes Only</label>
+                                <p class="text-gray-500">Only notify me about major changes</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <button type="submit" class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                            Save Preferences
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

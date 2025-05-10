@@ -1,0 +1,455 @@
+{% extends 'dashboard_base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}AI Personal Statement Builder - Tech Nation Visa Assistant{% endblock %}
+
+{% block extra_css %}
+<!-- Add Toastify CSS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen p-4 sm:p-8">
+    <div class="mx-auto">
+        <!-- Disclaimer Alert -->
+        <div class="flex p-4 mb-6 text-yellow-800 bg-yellow-50 border-l-4 border-yellow-300" role="alert">
+            <i class="fa-solid fa-triangle-exclamation flex-shrink-0 w-5 h-5"></i>
+            <div class="ml-3 text-sm">
+                <span class="font-medium">Important Notice:</span> All documents generated through this platform are for sample purposes only. Please customize and adapt them according to your specific circumstances before using in your actual visa application.
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="p-6 mb-6 bg-white rounded-lg shadow-sm border border-gray-200">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2 flex items-center">
+                <i class="fas fa-robot text-blue-600 mr-3"></i>Personal Statement Builder
+            </h1>
+            <p class="text-gray-600">Generate your Tech Nation visa personal statement using our AI assistant</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Guidelines Card -->
+            <div class="p-6 bg-white rounded-lg shadow-sm border border-gray-200">
+                <h2 class="text-xl font-semibold mb-4 flex items-center text-gray-900">
+                    <i class="fas fa-clipboard-list text-blue-600 mr-2"></i>Guidelines
+                </h2>
+                <ul class="space-y-4">
+                    {% for guideline in guidelines %}
+                    <li class="flex">
+                        <i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i>
+                        <span class="text-gray-700">{{ guideline }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Generation Form -->
+            <div class="lg:col-span-2 p-6 bg-white rounded-lg shadow-sm border border-gray-200">
+                <form id="aiGenerationForm" class="space-y-6">
+                    {% csrf_token %}
+
+                    <!-- Generation Type -->
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-900">
+                            <i class="fas fa-wand-magic-sparkles mr-2"></i>What type of personal statement do you need?
+                        </label>
+                        <select id="generationType" required class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">    <option value="technical">🔧 Technical Achievement Focus</option>
+                            <option value="leadership">👥 Leadership & Innovation Focus</option>
+                            <option value="research">🔬 Research & Academic Focus</option>
+                            <option value="entrepreneurial">💡 Entrepreneurial Focus</option>
+                        </select>
+                    </div>
+
+                    <!-- CV Upload -->
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-900">
+                            <i class="fas fa-file-upload mr-2"></i>Upload your CV
+                            <span class="text-red-500 ml-1">*</span>
+                        </label>
+                        <div class="flex items-center justify-center w-full">
+                            <label class="flex flex-col items-center justify-center w-full h-64 border-2 border-blue-300 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-all duration-300">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <div class="p-4 mb-3 rounded-full bg-blue-100">
+                                        <i class="fas fa-cloud-upload-alt text-blue-500 text-4xl"></i>
+                                    </div>
+                                    <p class="mb-2 text-lg text-blue-600"><span class="font-semibold">Select your CV file</span></p>
+                                    <p class="mb-2 text-sm text-blue-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                                    <p class="text-xs text-blue-400">PDF, DOC, or DOCX (MAX. 10MB)</p>
+                                    <!-- File Type Icons -->
+                                    <div class="flex space-x-3 mt-3">
+                                        <span class="px-3 py-1 text-xs text-blue-600 bg-blue-100 rounded-full">
+                                            <i class="fas fa-file-pdf mr-1"></i>PDF
+                                        </span>
+                                        <span class="px-3 py-1 text-xs text-blue-600 bg-blue-100 rounded-full">
+                                            <i class="fas fa-file-word mr-1"></i>DOC
+                                        </span>
+                                        <span class="px-3 py-1 text-xs text-blue-600 bg-blue-100 rounded-full">
+                                            <i class="fas fa-file-word mr-1"></i>DOCX
+                                        </span>
+                                    </div>
+                                </div>
+                                <input id="cv-upload" type="file" required class="hidden" accept=".pdf,.doc,.docx" />
+                            </label>
+                        </div>
+                        <!-- Selected File Name with better styling -->
+                        <div id="file-name" class="mt-3 text-sm hidden">
+                            <div class="flex items-center p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                                <i class="fas fa-file-alt text-blue-500 mr-2"></i>
+                                <span class="text-blue-600 font-medium file-name-text"></span>
+                                <button type="button" class="ml-auto text-blue-500 hover:text-blue-700" onclick="document.getElementById('cv-upload').value = ''; this.parentElement.parentElement.classList.add('hidden');">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Instructions -->
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-900">
+                            <i class="fas fa-comment-alt mr-2"></i>Additional Instructions (optional)
+                        </label>
+                        <textarea id="instructions" rows="4" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500" placeholder="Any specific achievements or experiences you'd like to highlight?"></textarea>
+                    </div>
+
+                    <!-- Generate Button -->
+                    <button type="button" id="generateBtn" class="w-full text-white bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-3 text-center">
+                        <i class="fas fa-magic mr-2"></i>Generate Personal Statement
+                    </button>
+                </form>
+            </div>
+        </div>
+        <!-- Preview Section -->
+        <div id="previewSection" class="hidden mt-8 p-6 bg-white rounded-lg shadow-sm border border-gray-200">
+            <!-- Add title input at the top -->
+            <div class="mb-6">
+                <label for="documentTitle" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-heading mr-2"></i>Document Title
+                </label>
+                <div class="flex">
+                    <input type="text" id="documentTitle" 
+                           class="flex-grow px-4 py-2 border border-gray-300 rounded-l-lg focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Enter a title for your personal statement"
+                           value="Personal Statement - Tech Nation Global Talent Visa">
+                    <button id="renameBtn" class="px-4 py-2 bg-blue-100 text-blue-700 rounded-r-lg hover:bg-blue-200 focus:outline-none">
+                        <i class="fas fa-save mr-1"></i>Rename
+                    </button>
+                </div>
+                <input type="hidden" id="documentId" value="">
+            </div>
+
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-file-alt text-blue-600 mr-2"></i>Generated Personal Statement
+                </h2>
+                <div class="button-container flex gap-3 w-full sm:w-auto">
+                    <button id="copyBtn" class="flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 w-full sm:w-auto">
+                        <i class="fas fa-copy mr-2"></i>Copy Text
+                    </button>
+                    <button id="viewAllBtn" class="flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 focus:ring-4 focus:ring-purple-300 w-full sm:w-auto">
+                        <i class="fas fa-list mr-2"></i>View All Documents
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Preview Content -->
+            <div id="previewContent" class="prose max-w-none">
+                <!-- Generated content will be inserted here -->
+            </div>
+            <textarea id="plainTextContent" class="hidden"></textarea>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('#aiGenerationForm');
+    const generateBtn = document.querySelector('#generateBtn');
+    const previewSection = document.querySelector('#previewSection');
+    const previewContent = document.querySelector('#previewContent');
+    const copyBtn = document.querySelector('#copyBtn');
+    const renameBtn = document.querySelector('#renameBtn');
+    const viewAllBtn = document.querySelector('#viewAllBtn');
+    const documentTitle = document.querySelector('#documentTitle');
+    const documentId = document.querySelector('#documentId');
+    const plainTextContent = document.querySelector('#plainTextContent');
+    const cvUpload = document.querySelector('#cv-upload');
+    const fileName = document.querySelector('#file-name');
+    
+    // File upload handler
+    cvUpload.addEventListener('change', function(e) {
+        const fileNameDiv = document.querySelector('#file-name');
+        const fileNameText = document.querySelector('.file-name-text');
+        if (e.target.files[0]) {
+            fileNameText.textContent = e.target.files[0].name;
+            fileNameDiv.classList.remove('hidden');
+        } else {
+            fileNameDiv.classList.add('hidden');
+        }
+    });
+
+    // Function to show toast notifications
+    function showToast(message, type = 'info') {
+        const toastConfig = {
+            text: message,
+            duration: 3000,
+            gravity: "bottom",
+            position: "right",
+            stopOnFocus: true,
+            className: `toast-${type}`,
+            style: {
+                background: type === 'success' ? '#10B981' : 
+                           type === 'error' ? '#EF4444' : 
+                           type === 'warning' ? '#F59E0B' : '#3B82F6',
+            }
+        };
+        Toastify(toastConfig).showToast();
+    }
+
+    // Function to convert HTML to plain text with better formatting
+    function htmlToPlainText(html) {
+        // Create a temporary div
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+
+        // Remove the disclaimer div if present (we'll add it back later)
+        const disclaimer = temp.querySelector('.text-yellow-800');
+        if (disclaimer) {
+            disclaimer.remove();
+        }
+
+        // Clean up the content
+        let text = '';
+
+        // Add title
+        text += "Personal Statement for Tech Nation Global Talent Visa\n";
+        text += "===============================================\n\n";
+
+        // Add disclaimer
+        text += "DISCLAIMER:\n";
+        text += "This document is auto-generated using AI for SAMPLE PURPOSES ONLY.\n";
+        text += "Please customize it according to your specific circumstances before using in your actual visa application.\n\n";
+        text += "===============================================\n\n";
+
+        // Process sections
+        const sections = temp.querySelectorAll('.text-gray-700');
+        let currentSection = '';
+
+        sections.forEach(section => {
+            let content = section.textContent.trim();
+            
+            // Handle section headers
+            if (content.includes('**')) {
+                content = content.replace(/\*\*/g, '');
+                if (content.includes(':')) {
+                    currentSection = content;
+                    text += `\n${content}\n`;
+                    text += "-------------------\n";
+                }
+            } else {
+                // Handle bullet points
+                if (section.closest('li')) {
+                    text += `• ${content}\n`;
+                } else {
+                    text += `${content}\n\n`;
+                }
+            }
+        });
+
+        // Add generation date at the bottom
+        text += "\n===============================================\n";
+        text += `Generated on: ${new Date().toLocaleDateString('en-GB', { 
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric' 
+        })}\n`;
+        text += "Important: This is a template only - must be customized for actual visa application\n";
+
+        // Final cleanup
+        text = text
+            .replace(/\n\s*\n\s*\n/g, '\n\n')  // Replace triple+ newlines with double
+            .replace(/\n\s+/g, '\n')           // Remove leading spaces after newlines
+            .trim();                           // Remove extra whitespace
+
+        return text;
+    }
+
+    // Copy button handler
+    copyBtn.addEventListener('click', async function() {
+        try {
+            // Get the HTML content
+            const htmlContent = previewContent.innerHTML;
+            
+            // Convert to plain text
+            const plainText = htmlToPlainText(htmlContent);
+            
+            // Copy to clipboard
+            await navigator.clipboard.writeText(plainText);
+            showToast('Text copied to clipboard', 'success');
+            
+            // Show success feedback
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Copied!';
+            copyBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            copyBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                copyBtn.innerHTML = originalText;
+                copyBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                copyBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            }, 2000);
+
+        } catch (error) {
+            console.error('Error copying text:', error);
+            showToast('Failed to copy text. Please try again.', 'error');
+        }
+    });
+
+// Generate button handler
+generateBtn.addEventListener('click', async function() {
+    // Check if CV is uploaded
+    if (!cvUpload.files[0]) {
+        showToast('Please upload your CV', 'error');
+        return;
+    }
+
+    // Check if type is selected
+    const selectedType = document.querySelector('#generationType').value;
+    if (!selectedType) {
+        showToast('Please select a personal statement type', 'error');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('type', selectedType);
+    formData.append('cv', cvUpload.files[0]);
+    formData.append('instructions', document.querySelector('#instructions').value || '');
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    try {
+        // Show loading state
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+
+        const response = await fetch('{% url "document_manager:generate_personal_statement" %}', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Generation failed');
+        }
+        
+        if (data.success && data.generated_content) {
+            showToast('Personal statement generated and saved successfully', 'success')
+            // Add disclaimer to preview
+            const disclaimerHtml = `
+                <div class="p-4 mb-6 text-yellow-800 bg-yellow-50 border-l-4 border-yellow-300">
+                    <p><strong>Disclaimer:</strong> This is a sample document generated for reference purposes only. Please customize it according to your specific circumstances before using in your actual visa application.</p>
+                </div>
+            `;
+            
+            previewContent.innerHTML = disclaimerHtml + data.generated_content;
+            previewSection.classList.remove('hidden');
+            
+            // Store document ID
+            documentId.value = data.document_id;
+            
+            // Store plain text version
+            plainTextContent.value = htmlToPlainText(data.generated_content);
+            
+            // Set title based on type
+            const titleMap = {
+                'technical': 'Technical Achievement Personal Statement',
+                'leadership': 'Leadership & Innovation Personal Statement',
+                'research': 'Research & Academic Personal Statement',
+                'entrepreneurial': 'Entrepreneurial Personal Statement'
+            };
+            
+            documentTitle.value = titleMap[selectedType] || 'Tech Nation Personal Statement';
+            
+            // Smooth scroll to preview
+            previewSection.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            throw new Error(data.error || 'Failed to generate content');
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error: ' + error.message, 'error');
+    } finally {
+        // Reset button state
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = '<i class="fas fa-magic mr-2"></i>Generate Personal Statement';
+    }
+});
+
+// Rename button handler
+// Rename button handler
+renameBtn.addEventListener('click', async function() {
+    const title = documentTitle.value.trim();
+    const id = documentId.value;
+    
+    if (!title) {
+        showToast('Please enter a title for your document', 'error');
+        return;
+    }
+    
+    if (!id) {
+        showToast('No document to rename', 'error');
+        return;
+    }
+
+    try {
+        // Show loading state
+        renameBtn.disabled = true;
+        const originalText = renameBtn.innerHTML;
+        renameBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Saving...';
+
+        const response = await fetch('{% url "document_manager:save_personal_statement" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                document_id: id,
+                title: title
+            })
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to rename document');
+        }
+
+        if (data.success) {
+            showToast('Document renamed successfully', 'success');
+        } else {
+            throw new Error(data.error || 'Failed to rename document');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error: ' + error.message, 'error');
+    } finally {
+        // Reset button state
+        renameBtn.disabled = false;
+        renameBtn.innerHTML = '<i class="fas fa-save mr-1"></i>Rename';
+    }
+});
+
+
+
+// View All Documents button
+    viewAllBtn.addEventListener('click', function() {
+        window.location.href = '{% url "document_manager:document_list" %}';
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,41 @@
+<!-- templates/expert_marketplace/emails/admin_booking_notification.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f8f9fa; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .details { background-color: #f8f9fa; padding: 15px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>New Consultation Booking</h2>
+        </div>
+        <div class="content">
+            <p>A new consultation has been booked.</p>
+            
+            <div class="details">
+                <h3>Booking Details:</h3>
+                <ul>
+                    <li>Name: {{ booking.name }}</li>
+                    <li>Email: {{ booking.email }}</li>
+                    <li>Phone: {{ booking.phone }}</li>
+                    <li>Date: {{ booking.scheduled_date }}</li>
+                    <li>Time: {{ booking.scheduled_time }}</li>
+                    <li>Duration: {{ consultation_duration }} minutes</li>
+                    <li>Fee: £{{ consultation_fee }}</li>
+                </ul>
+
+                <h3>Client's Description:</h3>
+                <p>{{ booking.description }}</p>
+            </div>
+
+            <p>Please review this booking and take appropriate action.</p>
+        </div>
+    </div>
+</body>
+</html>

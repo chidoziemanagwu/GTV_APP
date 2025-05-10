@@ -1,0 +1,331 @@
+{% extends 'dashboard_base.html' %}
+
+{% block title %}Evidence Documents - Tech Nation Visa Assistant{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Main Content -->
+        <div class="space-y-6">
+            <!-- Introduction Card -->
+            <div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                <h1 class="text-xl sm:text-2xl font-bold mb-4">Evidence Documents</h1>
+                <div class="prose max-w-none">
+                    <p class="text-gray-600 mb-4">
+                        You need to provide evidence documents to support your application. The requirements are:
+                    </p>
+                    <ul class="list-disc pl-5 space-y-2 text-gray-600 mb-6">
+                        <li>Meet 1 mandatory criterion and 2 optional criteria</li>
+                        <li>Provide at least 2 unique documents for each criterion</li>
+                        <li>Maximum 10 documents in total</li>
+                        <li>Each document limited to 3 A4 pages</li>
+                        <li>All evidence must be from the last 5 years</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Required Documents Section -->
+            <div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                <h2 class="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Required Documents</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                    <!-- CV Upload -->
+                    <div class="border rounded-lg p-4 bg-gray-50">
+                        <div class="flex flex-col sm:flex-row sm:items-start">
+                            <div class="flex-shrink-0 mb-3 sm:mb-0">
+                                <i class="fas fa-file-alt text-primary-600 text-xl"></i>
+                            </div>
+                            <div class="sm:ml-4">
+                                <h3 class="text-lg font-medium">CV</h3>
+                                <p class="mt-1 text-sm text-gray-600">Upload and improve your existing CV.</p>
+                                <div class="mt-3">
+                                    <a href="{% url 'document_manager:create_document' doc_type='cv' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                                        <i class="fas fa-upload mr-2"></i>Upload CV
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Letters of Recommendation -->
+                    <div class="border rounded-lg p-4 bg-gray-50">
+                        <div class="flex flex-col sm:flex-row sm:items-start">
+                            <div class="flex-shrink-0 mb-3 sm:mb-0">
+                                <i class="fas fa-envelope text-primary-600 text-xl"></i>
+                            </div>
+                            <div class="sm:ml-4">
+                                <h3 class="text-lg font-medium">Letters of Recommendation</h3>
+                                <p class="mt-1 text-sm text-gray-600">Three letters from established experts who have known your work for 12+ months.</p>
+                                <div class="mt-3">
+                                    <a href="{% url 'document_manager:recommendation_guide' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                                        <i class="fas fa-upload mr-2"></i>View Guide
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Criteria Categories -->
+            <div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                <h2 class="text-lg sm:text-xl font-semibold mb-4">Criteria Categories</h2>
+                
+                <!-- Mandatory Criteria -->
+                <div class="mb-8">
+                    <h3 class="text-base sm:text-lg font-medium mb-4">Mandatory Criterion</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                        <!-- Exceptional Talent -->
+                        <div class="border rounded-lg p-4 sm:p-6 bg-gradient-to-br from-purple-50 to-white">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-star text-purple-600 mr-3"></i>
+                                <h4 class="text-base sm:text-lg font-medium text-purple-900">Exceptional Talent</h4>
+                            </div>
+                            <p class="text-gray-700 mb-4">Recognition as a leading talent in the digital technology sector in the last 5 years.</p>
+                            
+                            <div class="bg-white rounded p-4 shadow-sm">
+                                <h5 class="font-medium text-gray-900 mb-2">Required Evidence:</h5>
+                                <ul class="space-y-2 text-gray-600">
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-green-500 mt-1 mr-2 flex-shrink-0"></i>
+                                        <span>Employment contracts showing senior technical/leadership roles with significant impact metrics</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-green-500 mt-1 mr-2 flex-shrink-0"></i>
+                                        <span>Press coverage of your contributions to major digital products/services</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-green-500 mt-1 mr-2 flex-shrink-0"></i>
+                                        <span>GitHub profile showing significant code contributions to major projects</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-green-500 mt-1 mr-2 flex-shrink-0"></i>
+                                        <span>Conference presentations/keynotes at major tech events (100+ attendees)</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Exceptional Promise -->
+                        <div class="border rounded-lg p-4 sm:p-6 bg-gradient-to-br from-indigo-50 to-white">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-rocket text-indigo-600 mr-3"></i>
+                                <h4 class="text-base sm:text-lg font-medium text-indigo-900">Exceptional Promise</h4>
+                            </div>
+                            <p class="text-gray-700 mb-4">Recognition as having the potential to be a leading talent in the digital technology sector.</p>
+                            
+                            <div class="bg-white rounded p-4 shadow-sm">
+                                <h5 class="font-medium text-gray-900 mb-2">Required Evidence:</h5>
+                                <ul class="space-y-2 text-gray-600">
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-green-500 mt-1 mr-2 flex-shrink-0"></i>
+                                        <span>Documentation of technical project leadership roles (even if not senior)</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-green-500 mt-1 mr-2 flex-shrink-0"></i>
+                                        <span>Evidence of rapid career progression in tech roles</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-green-500 mt-1 mr-2 flex-shrink-0"></i>
+                                        <span>Recognition through awards or competitions</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check-circle text-green-500 mt-1 mr-2 flex-shrink-0"></i>
+                                        <span>Contributions to innovative projects with measurable impact</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Optional Criteria -->
+                <div>
+                    <h3 class="text-base sm:text-lg font-medium mb-4">Optional Criteria (Select 2)</h3>
+                    <div class="space-y-4 sm:space-y-6">
+                        <!-- Innovation Track Record -->
+                        <div class="border rounded-lg p-4 sm:p-6 hover:bg-gray-50 transition-colors">
+                            <div class="flex flex-col sm:flex-row sm:items-start">
+                                <div class="flex-shrink-0 mb-3 sm:mb-0">
+                                    <i class="fas fa-lightbulb text-yellow-500 text-2xl"></i>
+                                </div>
+                                <div class="sm:ml-4 flex-grow">
+                                    <h4 class="text-base sm:text-lg font-medium text-gray-900 mb-2">1. Innovation Track Record</h4>
+                                    <p class="text-gray-600 mb-4">Proven track record of innovation as a founder/senior executive or innovative employee</p>
+                                    
+                                    <div class="bg-gray-50 rounded p-4">
+                                        <h5 class="font-medium text-gray-900 mb-2">Example Documents:</h5>
+                                        <ul class="space-y-2 text-gray-600">
+                                            <li class="flex items-start">
+                                                <i class="fas fa-file-alt text-blue-500 mt-1 mr-2 flex-shrink-0"></i>
+                                                <span>Audited company accounts showing revenue growth and market traction</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <i class="fas fa-chart-line text-blue-500 mt-1 mr-2 flex-shrink-0"></i>
+                                                <span>Detailed metrics of product success (user growth, revenue, market share)</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <i class="fas fa-award text-blue-500 mt-1 mr-2 flex-shrink-0"></i>
+                                                <span>Granted patents with verifiable ID on Google Patents</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <i class="fas fa-code text-blue-500 mt-1 mr-2 flex-shrink-0"></i>
+                                                <span>Technical documentation showing innovative product architecture</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recognition Beyond Occupation -->
+                        <div class="border rounded-lg p-4 sm:p-6 hover:bg-gray-50 transition-colors">
+                            <div class="flex flex-col sm:flex-row sm:items-start">
+                                <div class="flex-shrink-0 mb-3 sm:mb-0">
+                                    <i class="fas fa-trophy text-orange-500 text-2xl"></i>
+                                </div>
+                                <div class="sm:ml-4 flex-grow">
+                                    <h4 class="text-base sm:text-lg font-medium text-gray-900 mb-2">2. Recognition Beyond Occupation</h4>
+                                    <p class="text-gray-600 mb-4">Recognition for work outside your immediate occupation that contributes to the advancement of the sector</p>
+                                    
+                                    <div class="bg-gray-50 rounded p-4">
+                                        <h5 class="font-medium text-gray-900 mb-2">Example Documents:</h5>
+                                        <ul class="space-y-2 text-gray-600">
+                                            <li class="flex items-start">
+                                                <i class="fab fa-github text-blue-500 mt-1 mr-2 flex-shrink-0"></i>
+                                                <span>Open source contributions with metrics (stars, commits, pull requests)</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <i class="fas fa-users text-blue-500 mt-1 mr-2 flex-shrink-0"></i>
+                                                <span>Evidence of structured mentoring program participation (12+ months)</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <i class="fas fa-microphone-alt text-blue-500 mt-1 mr-2 flex-shrink-0"></i>
+                                                <span>Main stage speaker at major tech conferences (with attendance proof)</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <i class="fas fa-newspaper text-blue-500 mt-1 mr-2 flex-shrink-0"></i>
+                                                <span>Published thought leadership articles in major tech publications</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Significant Contributions -->
+                        <div class="border rounded-lg p-4 sm:p-6 hover:bg-gray-50 transition-colors">
+                            <div class="flex flex-col sm:flex-row sm:items-start">
+                                <div class="flex-shrink-0 mb-3 sm:mb-0">
+                                    <i class="fas fa-chart-bar text-green-500 text-2xl"></i>
+                                </div>
+                                <div class="sm:ml-4 flex-grow">
+                                    <h4 class="text-base sm:text-lg font-medium text-gray-900 mb-2">3. Significant Contributions</h4>
+                                    <p class="text-gray-600 mb-4">Technical, commercial or entrepreneurial contributions as a founder, senior executive or employee</p>
+                                    
+                                    <div class="bg-gray-50 rounded p-4">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <h5 class="font-medium text-gray-800 mb-2">Technical Evidence:</h5>
+                                                <ul class="space-y-2 text-gray-600">
+                                                    <li class="flex items-start">
+                                                        <i class="fas fa-code text-blue-500 mt-1 mr-2 flex-shrink-0"></i>
+                                                        <span>Core product architecture documentation with impact metrics</span>
+                                                    </li>
+                                                    <li class="flex items-start">
+                                                        <i class="fas fa-project-diagram text-blue-500 mt-1 mr-2 flex-shrink-0"></i>
+                                                        <span>GitHub contributions showing significant technical impact</span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                            <div>
+                                                <h5 class="font-medium text-gray-800 mb-2">Business Evidence:</h5>
+                                                <ul class="space-y-2 text-gray-600">
+                                                    <li class="flex items-start">
+                                                        <i class="fas fa-building text-blue-500 mt-1 mr-2 flex-shrink-0"></i>
+                                                        <span>Growth metrics (revenue, users, market share)</span>
+                                                    </li>
+                                                    <li class="flex items-start">
+                                                        <i class="fas fa-handshake text-blue-500 mt-1 mr-2 flex-shrink-0"></i>
+                                                        <span>Investment documents showing raised capital (£25m+)</span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Academic Contributions -->
+                        <div class="border rounded-lg p-4 sm:p-6 hover:bg-gray-50 transition-colors">
+                            <div class="flex flex-col sm:flex-row sm:items-start">
+                                <div class="flex-shrink-0 mb-3 sm:mb-0">
+                                    <i class="fas fa-graduation-cap text-purple-500 text-2xl"></i>
+                                </div>
+                                <div class="sm:ml-4 flex-grow">
+                                    <h4 class="text-base sm:text-lg font-medium text-gray-900 mb-2">4. Academic Contributions</h4>
+                                    <p class="text-gray-600 mb-4">Exceptional ability demonstrated through academic research contributions</p>
+                                    
+                                    <div class="bg-gray-50 rounded p-4">
+                                        <h5 class="font-medium text-gray-900 mb-2">Example Documents:</h5>
+                                        <ul class="space-y-2 text-gray-600">
+                                            <li class="flex items-start">
+                                                <i class="fas fa-book text-blue-500 mt-1 mr-2 flex-shrink-0"></i>
+                                                <span>Published papers in peer-reviewed journals (excluding MSc/undergrad)</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <i class="fas fa-chalkboard-teacher text-blue-500 mt-1 mr-2 flex-shrink-0"></i>
+                                                <span>Evidence of competitive peer-reviewed research grants</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <i class="fas fa-award text-blue-500 mt-1 mr-2 flex-shrink-0"></i>
+                                                <span>Merit-based awards from recognized institutions</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <i class="fas fa-user-graduate text-blue-500 mt-1 mr-2 flex-shrink-0"></i>
+                                                <span>Research supervisor endorsement letters with expert validation</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="mt-8 flex flex-col sm:flex-row justify-between gap-4">
+                <a href="{% url 'accounts:dashboard' %}" 
+                   class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Back to Dashboard
+                </a>
+                <a href="{% url 'accounts:document_checklist' %}" 
+                   class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    Continue to Document List
+                    <i class="fas fa-arrow-right ml-2"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-primary-600 {
+        background-color: #2563eb;
+    }
+    .hover\:bg-primary-700:hover {
+        background-color: #1d4ed8;
+    }
+    .text-primary-600 {
+        color: #2563eb;
+    }
+    .focus\:ring-primary-500:focus {
+        --tw-ring-color: #3b82f6;
+    }
+    .border-primary-600 {
+        border-color: #2563eb;
+    }
+</style>
+{% endblock %}

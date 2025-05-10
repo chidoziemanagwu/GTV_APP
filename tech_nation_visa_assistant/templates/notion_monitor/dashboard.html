@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block title %}Tech Nation Guide Monitor - Tech Nation Visa Assistant{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">Tech Nation Guide Monitor</h1>
+    
+    {% if error %}
+        <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-red-700">{{ error }}</p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    
+    {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+                <div class="p-4 mb-4 rounded-md {% if message.tags == 'success' %}bg-green-50 text-green-800{% elif message.tags == 'error' %}bg-red-50 text-red-800{% else %}bg-blue-50 text-blue-800{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Monitored Pages</h2>
+                <a href="{% url 'notion_monitor:add_monitored_page' %}" class="text-sm text-primary-600 hover:text-primary-800 font-medium">
+                    Add Page
+                </a>
+            </div>
+            
+            {% if monitored_pages %}
+                <ul class="divide-y divide-gray-200">
+                    {% for page in monitored_pages %}
+                        <li class="py-3">
+                            <div class="flex justify-between">
+                                <div>
+                                    <h3 class="text-sm font-medium">{{ page.title }}</h3>
+                                    <p class="text-xs text-gray-500">Last checked: {{ page.last_checked|date:"M d, Y H:i" }}</p>
+                                </div>
+                                <div>
+                                    <button class="text-red-600 hover:text-red-800 text-sm" 
+                                            onclick="removePage({{ page.id }}, '{{ page.title }}')">
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-gray-500 text-sm">No pages are being monitored. Add a page to start monitoring.</p>
+            {% endif %}
+            
+            <div class="mt-4 text-center">
+                <a href="{% url 'notion_monitor:manual_check' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                    Check for Changes Now
+                </a>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold mb-4">Recent Changes</h2>
+            
+            {% if recent_changes %}
+                <ul class="divide-y divide-gray-200">
+                    {% for change in recent_changes %}
+                        <li class="py-3">
+                            <a href="{% url 'notion_monitor:change_detail' change.id %}" class="block hover:bg-gray-50">
+                                <div class="flex justify-between">
+                                    <div>
+                                        <h3 class="text-sm font-medium">{{ change.section }}</h3>
+                                        <p class="text-xs text-gray-500">{{ change.detected_at|date:"M d, Y H:i" }}</p>
+                                    </div>
+                                    <div>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if change.change_type == 'major' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                            {{ change.get_change_type_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <div class="mt-4 text-center">
+                    <a href="{% url 'notion_monitor:change_list' %}" class="text-sm text-primary-600 hover:text-primary-800 font-medium">
+                        View All Changes
+                    </a>
+                </div>
+            {% else %}
+                <p class="text-gray-500 text-sm">No changes have been detected yet.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-bold mb-4">Notifications</h2>
+        
+        {% if unread_notifications %}
+            <ul class="divide-y divide-gray-200">
+                {% for notification in unread_notifications %}
+                    <li class="py-3">
+                        <a href="{% url 'notion_monitor:change_detail' notification.change.id %}" class="block hover:bg-gray-50">
+                            <div class="flex justify-between">
+                                <div>
+                                    <h3 class="text-sm font-medium">{{ notification.change.section }}</h3>
+                                    <p class="text-xs text-gray-500">{{ notification.created_at|date:"M d, Y H:i" }}</p>
+                                </div>
+                                <div>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        New
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+            <div class="mt-4 text-center">
+                <a href="{% url 'notion_monitor:notification_list' %}" class="text-sm text-primary-600 hover:text-primary-800 font-medium">
+                    View All Notifications
+                </a>
+            </div>
+        {% else %}
+            <p class="text-gray-500 text-sm">You have no unread notifications.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function removePage(pageId, pageTitle) {
+        if (confirm(`Are you sure you want to stop monitoring "${pageTitle}"?`)) {
+            // Create a form to submit the CSRF token
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/monitor/pages/remove/${pageId}/`;
+            
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = '{{ csrf_token }}';
+            
+            form.appendChild(csrfInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,176 @@
+{# templates/account/login.html #}
+{% extends "account/base_account.html" %}
+{% load i18n %}
+{% load socialaccount %}
+
+{% block account_header %}{% trans "Sign In" %}{% endblock %}
+{% block extra_css %}
+<style>
+    /* Ensure toast container is always on top */
+    #toast-container {
+        z-index: 9999;
+    }
+    @media (max-width: 480px) {
+        .cf-turnstile iframe {
+            transform: scale(0.9);
+            transform-origin: 0 0;
+            margin: 0 auto;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block account_subheader %}
+    {% blocktrans %}If you have not created an account yet, then please
+    <a href="{{ signup_url }}" class="font-medium text-primary-600 hover:text-primary-700">sign up</a> first.{% endblocktrans %}
+{% endblock %}
+
+{% block account_content %}
+<!-- Fallback Message Display -->
+{% if messages %}
+<div class="container mx-auto mt-4">
+    {% for message in messages %}
+    <div class="p-4 mb-4 rounded-lg {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% elif message.tags == 'success' %}bg-green-50 border-green-200 text-green-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+    <!-- Google Sign In Button -->
+    <div class="mb-6">
+        <a href="{% provider_login_url 'google' %}" 
+           class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            {% trans "Continue with Google" %}
+        </a>
+    </div>
+
+    <div class="relative my-6">
+        <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300"></div>
+        </div>
+        <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white text-gray-500">{% trans "Or continue with" %}</span>
+        </div>
+    </div>
+
+    <form method="post" action="{% url 'account_login' %}" id="login-form">
+        <!-- Form Errors -->
+{% if form.errors %}
+<div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+    {% if form.non_field_errors %}
+        {% for error in form.non_field_errors %}
+            <p class="text-sm text-red-600">{{ error }}</p>
+        {% endfor %}
+    {% else %}
+        <p class="text-sm text-red-600">Please correct the errors below.</p>
+    {% endif %}
+</div>
+{% endif %}
+        {% csrf_token %}
+      
+        <div>
+            <label for="id_login" class="block text-sm font-medium text-gray-700">
+                {% trans "Email" %}
+            </label>
+            <div class="mt-1">
+                <input type="email" name="login" id="id_login" autocomplete="email" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            {% if form.login.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ form.login.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <div class="mt-4">
+            <label for="id_password" class="block text-sm font-medium text-gray-700">
+                {% trans "Password" %}
+            </label>
+            <div class="mt-1 relative">
+                <input type="password" name="password" id="id_password" autocomplete="current-password" required
+                    class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                <button type="button" 
+                        onclick="togglePassword('id_password', 'passwordToggleIcon')"
+                        class="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <svg id="passwordToggleIcon" class="h-5 w-5 text-gray-400" 
+                         xmlns="http://www.w3.org/2000/svg" 
+                         viewBox="0 0 20 20" 
+                         fill="currentColor">
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                        <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+            {% if form.password.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ form.password.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <div class="flex items-center justify-between mt-4">
+            <div class="flex items-center">
+                <input type="checkbox" name="remember" id="id_remember" 
+                    class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                <label for="id_remember" class="ml-2 block text-sm text-gray-900">
+                    {% trans "Remember Me" %}
+                </label>
+            </div>
+
+            <div class="text-sm">
+                <a href="{% url 'account_reset_password' %}" class="font-medium text-primary-600 hover:text-primary-700">
+                    {% trans "Forgot Password?" %}
+                </a>
+            </div>
+        </div>
+
+        {% if redirect_field_value %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+        {% endif %}
+
+        <!-- Add hidden reCAPTCHA input -->
+    <input type="hidden" name="g-recaptcha-response" id="recaptchaResponse">
+    
+    <!-- Update submit button -->
+    <button type="submit" 
+            class="g-recaptcha w-full flex justify-center py-2 mt-4 px-4 border border-transparent rounded-lg text-white bg-primary-700 hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            data-sitekey="{{ recaptcha_site_key }}"
+            data-callback="onSubmit"
+            data-action="login">
+        {% trans "Sign In" %}
+    </button>
+    </form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+function onSubmit(token) {
+        document.getElementById("recaptchaResponse").value = token;
+        document.getElementById("login-form").submit();
+    }
+
+
+    function togglePassword(inputId, iconId) {
+        const passwordInput = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+      
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.innerHTML = `
+                <path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd" />
+                <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
+            `;
+        } else {
+            passwordInput.type = 'password';
+            icon.innerHTML = `
+                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+            `;
+        }
+    }
+</script>
+{% endblock %}

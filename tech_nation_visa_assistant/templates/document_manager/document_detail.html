@@ -1,0 +1,124 @@
+{% extends 'dashboard_base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Back Button -->
+    <div class=" mx-auto mb-6">
+        <a href="{% url 'document_manager:document_list' %}" 
+           class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors duration-200">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Back to Documents
+        </a>
+    </div>
+
+    <!-- Main Content Card -->
+    <div class="af mx-auto">
+        <div class="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+            <!-- Header -->
+            <div class="px-6 py-5 border-b border-gray-100 bg-white/80">
+                <div class="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">{{ document.title }}</h1>
+                        <p class="mt-1 text-sm text-gray-600 flex items-center">
+                            <svg class="w-4 h-4 mr-1.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Last updated {{ document.updated_at|date:"F j, Y, g:i a" }}
+                        </p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                            {% if document.status == 'completed' %}bg-green-100 text-green-800
+                            {% elif document.status == 'in_progress' %}bg-yellow-100 text-yellow-800
+                            {% elif document.status == 'review' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            <span class="w-2 h-2 mr-1.5 rounded-full
+                                {% if document.status == 'completed' %}bg-green-400
+                                {% elif document.status == 'in_progress' %}bg-yellow-400
+                                {% elif document.status == 'review' %}bg-blue-400
+                                {% else %}bg-gray-400{% endif %}">
+                            </span>
+                            {{ document.get_status_display }}
+                        </span>
+                        <!-- Copy Button -->
+                        <button onclick="copyContent()" 
+                                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 
+                                       rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 
+                                       focus:ring-blue-500 transition-colors duration-200">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            Copy Content
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="p-6 lg:p-8">
+                <div class="prose prose-blue max-w-none">
+                    {{ document.content|safe|linebreaks }}
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-4 bg-gray-50/80 border-t border-gray-100">
+                <div class="flex items-center justify-between text-sm text-gray-600">
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 mr-1.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                        </svg>
+                        {% if document.word_count %}
+                            {{ document.word_count }} words
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 mr-1.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Document ID: {{ document.id }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="fixed bottom-5 right-5 transform translate-y-full opacity-0 transition-all duration-300">
+    <div class="flex items-center p-4 bg-green-500 text-white rounded-lg shadow-lg">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                d="M5 13l4 4L19 7"/>
+        </svg>
+        <span>Content copied to clipboard!</span>
+    </div>
+</div>
+
+<script>
+function copyContent() {
+    // Get the content
+    const content = document.querySelector('.prose').innerText;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(content).then(() => {
+        // Show toast
+        const toast = document.getElementById('toast');
+        toast.classList.remove('translate-y-full', 'opacity-0');
+        
+        // Hide toast after 3 seconds
+        setTimeout(() => {
+            toast.classList.add('translate-y-full', 'opacity-0');
+        }, 3000);
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+    });
+}
+</script>
+{% endblock %}

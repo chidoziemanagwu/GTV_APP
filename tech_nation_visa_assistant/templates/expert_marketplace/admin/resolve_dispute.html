@@ -1,0 +1,70 @@
+{% extends 'admin/base_site.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-2xl font-bold mb-6">Resolve Dispute #{{ booking.id }}</h1>
+  
+  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div class="mb-6">
+      <h2 class="text-xl font-bold mb-2">Dispute Details</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <p><strong>User:</strong> {{ booking.user.email }}</p>
+          <p><strong>Expert:</strong> {{ booking.service.expert.user.email }}</p>
+          <p><strong>Service:</strong> {{ booking.service.name }}</p>
+          <p><strong>Date:</strong> {{ booking.scheduled_time|date:"F j, Y" }}</p>
+        </div>
+        <div>
+          <p><strong>Total Amount:</strong> £{{ booking.payment_amount }}</p>
+          <p><strong>Deposit Paid:</strong> £{{ booking.deposit_amount }}</p>
+          <p><strong>Remaining:</strong> £{{ booking.remaining_amount }}</p>
+          <p><strong>Status:</strong> {{ booking.get_status_display }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mb-6">
+      <h3 class="font-bold mb-2">Dispute Description</h3>
+      <div class="p-4 bg-gray-100 rounded">
+        {{ booking.dispute_description }}
+      </div>
+    </div>
+    
+    <div class="border-t border-gray-200 pt-4 mb-6">
+      <h3 class="font-bold mb-4">Resolve Dispute</h3>
+      
+      <form method="post" action="{% url 'expert_marketplace:admin_resolve_dispute' booking.id %}">
+        {% csrf_token %}
+        
+        <div class="mb-4">
+          <p class="mb-2"><strong>Select Resolution:</strong></p>
+          
+          <div class="flex flex-col space-y-2">
+            <label class="flex items-start">
+              <input type="radio" name="resolution" value="user" class="mt-1 mr-2" required>
+              <div>
+                <p class="font-medium">Resolve in favor of User</p>
+                <p class="text-sm text-gray-600">User will receive a 90% refund of their payment. 10% will be retained as an escrow fee.</p>
+              </div>
+            </label>
+            
+            <label class="flex items-start">
+              <input type="radio" name="resolution" value="expert" class="mt-1 mr-2" required>
+              <div>
+                <p class="font-medium">Resolve in favor of Expert</p>
+                <p class="text-sm text-gray-600">Expert will receive payment for their services. Platform will retain the standard 20% service fee.</p>
+              </div>
+            </label>
+          </div>
+        </div>
+        
+        <div class="flex justify-end">
+          <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded">
+            Submit Resolution
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

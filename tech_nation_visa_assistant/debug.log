@@ -1,0 +1,731 @@
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Watching for file changes with StatReloader
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Watching for file changes with StatReloader
+Scheduler started successfully
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\tech_nation_visa_assistant\__init__.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\tech_nation_visa_assistant\__init__.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\tech_nation_visa_assistant\settings.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\tech_nation_visa_assistant\settings.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+"GET /experts/expert-bookings/9/ HTTP/1.1" 200 23058
+"GET /experts/expert-bookings/ HTTP/1.1" 200 34082
+"GET /experts/expert-bookings/8/ HTTP/1.1" 200 21953
+"POST /experts/expert-bookings/8/ HTTP/1.1" 302 0
+"GET /experts/expert-bookings/8/ HTTP/1.1" 200 25102
+Internal Server Error: /experts/bookings/
+Traceback (most recent call last):
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\contrib\auth\decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py", line 251, in booking_list
+    return render(request, 'expert_marketplace/booking_list.html', context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\backends\django.py", line 107, in render
+    return self.template.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 171, in render
+    return self._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 163, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 977, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\loader_tags.py", line 159, in render
+    return compiled_parent._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 163, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 977, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\defaulttags.py", line 480, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\urls\base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\urls\resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'user_bookings' not found. 'user_bookings' is not a valid view function or pattern name.
+"GET /experts/bookings/ HTTP/1.1" 500 180638
+"GET /experts/bookings/ HTTP/1.1" 200 56069
+"GET /experts/bookings/12/ HTTP/1.1" 200 22079
+"GET /experts/bookings/ HTTP/1.1" 200 56069
+"POST /experts/expert-bookings/8/ HTTP/1.1" 302 0
+"GET /experts/expert-bookings/8/ HTTP/1.1" 200 24399
+"GET /experts/expert-bookings/ HTTP/1.1" 200 34076
+"GET /experts/bookings/ HTTP/1.1" 200 56069
+"GET /experts/bookings/6/ HTTP/1.1" 200 22090
+"GET /experts/bookings/ HTTP/1.1" 200 56069
+"GET /experts/ HTTP/1.1" 200 24848
+"GET /experts/experts/1/ HTTP/1.1" 200 22914
+"GET /experts/services/1/ HTTP/1.1" 200 24412
+"GET /experts/ HTTP/1.1" 200 24848
+"GET /experts/experts/1/ HTTP/1.1" 200 22914
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\models.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\urls.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+"GET /experts/expert-bookings/ HTTP/1.1" 200 34076
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\models.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\urls.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\models.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\models.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Watching for file changes with StatReloader
+"GET /experts/services/1/ HTTP/1.1" 200 24398
+"GET /experts/services/1/ HTTP/1.1" 200 24398
+"GET /experts/services/1/ HTTP/1.1" 200 24398
+"GET /experts/services/1/ HTTP/1.1" 200 24143
+"POST /experts/services/1/book/ HTTP/1.1" 302 0
+"GET /experts/services/1/ HTTP/1.1" 200 25345
+"POST /experts/services/1/book/ HTTP/1.1" 302 0
+"GET /experts/services/1/ HTTP/1.1" 200 25345
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+"GET /experts/services/1/ HTTP/1.1" 200 24143
+"POST /experts/services/1/book/ HTTP/1.1" 302 0
+"GET /experts/services/1/ HTTP/1.1" 200 25345
+"POST /experts/services/1/book/ HTTP/1.1" 302 0
+"GET /experts/services/1/ HTTP/1.1" 200 25345
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\urls.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+"GET /experts/services/1/ HTTP/1.1" 200 24146
+"POST /experts/services/1/payment/ HTTP/1.1" 302 0
+Internal Server Error: /experts/payment/success/
+Traceback (most recent call last):
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\contrib\auth\decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py", line 185, in payment_success
+    return redirect('expert_marketplace:my_bookings')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\shortcuts.py", line 51, in redirect
+    resolve_url(to, *args, **kwargs),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\shortcuts.py", line 184, in resolve_url
+    return reverse(to, args=args, kwargs=kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\urls\base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\urls\resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'my_bookings' not found. 'my_bookings' is not a valid view function or pattern name.
+"GET /experts/payment/success/?booking_id=17 HTTP/1.1" 500 107599
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+"GET /experts/payment/success/?booking_id=17 HTTP/1.1" 302 0
+"GET /experts/bookings/ HTTP/1.1" 200 60459
+"GET /experts/bookings/17/ HTTP/1.1" 200 20863
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33787
+"GET /experts/expert-bookings/17/ HTTP/1.1" 200 18668
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33787
+"GET /experts/expert-bookings/?status=pending HTTP/1.1" 200 21897
+"GET /experts/expert-bookings/?status=all HTTP/1.1" 200 33787
+"GET /experts/expert-bookings/17/ HTTP/1.1" 200 18668
+Internal Server Error: /experts/bookings/17/
+Traceback (most recent call last):
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\contrib\auth\decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py", line 229, in booking_detail
+    return render(request, 'expert_marketplace/booking_detail.html', context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\backends\django.py", line 107, in render
+    return self.template.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 171, in render
+    return self._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 163, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 977, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\loader_tags.py", line 159, in render
+    return compiled_parent._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 163, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 977, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\loader_tags.py", line 65, in render
+    result = block.nodelist.render(context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 977, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\defaulttags.py", line 327, in render
+    return nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 977, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\defaulttags.py", line 480, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\urls\base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\urls\resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'mark_session_complete' not found. 'mark_session_complete' is not a valid view function or pattern name.
+"GET /experts/bookings/17/ HTTP/1.1" 500 197113
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\urls.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+"GET /experts/bookings/17/ HTTP/1.1" 200 20518
+"GET /experts/bookings/17/ HTTP/1.1" 200 20518
+"GET /experts/expert-bookings/17/ HTTP/1.1" 200 18029
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33787
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33787
+"GET /experts/expert-bookings/17/ HTTP/1.1" 200 18029
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33787
+"GET /experts/bookings/ HTTP/1.1" 200 59362
+"GET /experts/bookings/17/ HTTP/1.1" 200 20518
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33787
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33787
+"GET /experts/expert-bookings/17/ HTTP/1.1" 200 18029
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33787
+"GET /experts/expert-bookings/17/ HTTP/1.1" 200 18029
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\urls.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33318
+"GET /experts/expert-bookings/17/ HTTP/1.1" 200 18029
+"GET /experts/expert-bookings/17/ HTTP/1.1" 200 18140
+"GET /experts/expert-bookings/17/ HTTP/1.1" 200 18140
+"GET /experts/bookings/ HTTP/1.1" 200 59362
+"GET /experts/ HTTP/1.1" 200 24848
+"GET /experts/experts/1/ HTTP/1.1" 200 23675
+"GET /experts/ HTTP/1.1" 200 24846
+"GET /experts/ HTTP/1.1" 200 24844
+"GET /experts/ HTTP/1.1" 200 24844
+"GET /experts/ HTTP/1.1" 200 24828
+"GET /experts/experts/1/ HTTP/1.1" 200 23675
+"GET /experts/services/1/ HTTP/1.1" 200 24146
+"POST /experts/services/1/payment/ HTTP/1.1" 302 0
+"GET /experts/payment/success/?booking_id=18 HTTP/1.1" 302 0
+"GET /experts/bookings/ HTTP/1.1" 200 63696
+"GET /experts/bookings/18/ HTTP/1.1" 200 20622
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33326
+"GET /experts/expert-bookings/18/ HTTP/1.1" 200 18476
+"GET /experts/expert-reviews/ HTTP/1.1" 200 16965
+"GET /experts/expert-dashboard/ HTTP/1.1" 200 23807
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33326
+"GET /experts/expert-bookings/18/ HTTP/1.1" 200 18476
+"GET /experts/bookings/ HTTP/1.1" 200 62599
+"GET /experts/bookings/18/ HTTP/1.1" 200 20622
+"GET /experts/expert-bookings/18/ HTTP/1.1" 200 18510
+"GET /experts/expert-bookings/18/ HTTP/1.1" 200 18510
+"GET /experts/expert-bookings/18/ HTTP/1.1" 200 18510
+"GET /experts/expert-bookings/18/ HTTP/1.1" 200 18359
+"GET /experts/expert-bookings/18/ HTTP/1.1" 200 18359
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33326
+"GET /experts/expert-bookings/18/ HTTP/1.1" 200 18359
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Watching for file changes with StatReloader
+"GET /experts/expert-bookings/17/ HTTP/1.1" 200 18023
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33326
+"GET /experts/expert-bookings/18/ HTTP/1.1" 200 18359
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33326
+"GET /experts/bookings/ HTTP/1.1" 200 62599
+"GET /experts/bookings/ HTTP/1.1" 200 62599
+"GET /experts/ HTTP/1.1" 200 24828
+"GET /experts/experts/1/ HTTP/1.1" 200 23675
+"GET /experts/services/1/ HTTP/1.1" 200 24146
+"POST /experts/services/1/payment/ HTTP/1.1" 302 0
+"GET /experts/payment/success/?booking_id=19 HTTP/1.1" 302 0
+"GET /experts/bookings/ HTTP/1.1" 200 66934
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22494
+"POST /experts/expert-bookings/12/ HTTP/1.1" 302 0
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22494
+"POST /experts/expert-bookings/12/ HTTP/1.1" 302 0
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22494
+"POST /experts/expert-bookings/12/ HTTP/1.1" 302 0
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22494
+"POST /experts/expert-bookings/12/ HTTP/1.1" 302 0
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22494
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22494
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22494
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22494
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22494
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22506
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22506
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22512
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22512
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22491
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22491
+"POST /experts/expert-bookings/12/ HTTP/1.1" 302 0
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22491
+"POST /experts/expert-bookings/12/ HTTP/1.1" 302 0
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22491
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+Internal Server Error: /experts/expert-bookings/12/
+Traceback (most recent call last):
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\contrib\auth\decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py", line 700, in expert_booking_detail
+    email_html = render_to_string(
+                 ^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\loader.py", line 19, in get_template
+    raise TemplateDoesNotExist(template_name, chain=chain)
+django.template.exceptions.TemplateDoesNotExist: expert_marketplace/emails/meeting_link_updated.html
+"POST /experts/expert-bookings/12/ HTTP/1.1" 500 100555
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22182
+Internal Server Error: /experts/expert-bookings/12/
+Traceback (most recent call last):
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\contrib\auth\decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py", line 700, in expert_booking_detail
+    email_html = render_to_string(
+                 ^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\loader.py", line 19, in get_template
+    raise TemplateDoesNotExist(template_name, chain=chain)
+django.template.exceptions.TemplateDoesNotExist: expert_marketplace/emails/expert/meeting_link_updated.html
+"POST /experts/expert-bookings/12/ HTTP/1.1" 500 100667
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22182
+"GET /experts/expert-services/ HTTP/1.1" 200 28394
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33335
+"GET /experts/expert-bookings/19/ HTTP/1.1" 200 17669
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33335
+"GET /experts/expert-bookings/18/ HTTP/1.1" 200 18004
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22182
+"POST /experts/expert-bookings/12/ HTTP/1.1" 302 0
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 23518
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33335
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22182
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33335
+"GET /experts/expert-bookings/11/ HTTP/1.1" 200 22181
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+"GET /experts/expert-bookings/11/ HTTP/1.1" 200 22181
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33335
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22182
+"GET /experts/expert-dashboard/ HTTP/1.1" 200 23807
+"GET /experts/expert-bookings/2/ HTTP/1.1" 200 18093
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33335
+"GET /experts/expert-bookings/8/ HTTP/1.1" 200 22181
+"GET /experts/expert-dashboard/ HTTP/1.1" 200 23807
+"GET /experts/expert-dashboard/ HTTP/1.1" 200 23807
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33335
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 22207
+"POST /experts/expert-bookings/12/ HTTP/1.1" 302 0
+"GET /experts/expert-bookings/12/ HTTP/1.1" 200 19870
+"GET /experts/bookings/ HTTP/1.1" 200 65838
+"GET /experts/bookings/12/ HTTP/1.1" 200 21710
+Internal Server Error: /experts/bookings/12/mark-complete/user/
+Traceback (most recent call last):
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\contrib\auth\decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py", line 1465, in mark_session_complete
+    html_content = render_to_string('emails/expert/session_completed_by_user.html', {
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\loader.py", line 19, in get_template
+    raise TemplateDoesNotExist(template_name, chain=chain)
+django.template.exceptions.TemplateDoesNotExist: emails/expert/session_completed_by_user.html
+"POST /experts/bookings/12/mark-complete/user/ HTTP/1.1" 500 99534
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+"POST /experts/bookings/12/mark-complete/user/ HTTP/1.1" 302 0
+"GET /experts/bookings/12/ HTTP/1.1" 200 22051
+"GET /experts/bookings/ HTTP/1.1" 200 65832
+"GET /experts/bookings/11/ HTTP/1.1" 200 20668
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33339
+"GET /experts/expert-bookings/8/ HTTP/1.1" 200 22206
+"POST /experts/expert-bookings/8/ HTTP/1.1" 302 0
+"GET /experts/expert-bookings/8/ HTTP/1.1" 200 19869
+"GET /experts/ HTTP/1.1" 200 24828
+"GET /experts/experts/1/ HTTP/1.1" 200 23675
+"GET /experts/services/1/ HTTP/1.1" 200 24146
+"POST /experts/services/1/payment/ HTTP/1.1" 302 0
+"GET /experts/payment/success/?booking_id=20 HTTP/1.1" 302 0
+"GET /experts/bookings/ HTTP/1.1" 200 70168
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33368
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33368
+"GET /experts/expert-bookings/20/ HTTP/1.1" 200 17694
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33368
+"GET /experts/expert-bookings/20/ HTTP/1.1" 200 17694
+"GET /experts/expert-bookings/ HTTP/1.1" 200 33368
+"GET /experts/expert-bookings/19/ HTTP/1.1" 200 17694
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\forms.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\models.py changed, reloading.
+Scheduler started successfully
+Watching for file changes with StatReloader
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Scheduler started successfully
+Watching for file changes with StatReloader
+Not Found: /experts/bookings/
+"GET /experts/bookings/ HTTP/1.1" 404 4733
+Internal Server Error: /accounts/dashboard/
+Traceback (most recent call last):
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\contrib\auth\decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\accounts\views.py", line 364, in dashboard
+    return render(request, 'accounts/dashboard.html', context)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\backends\django.py", line 107, in render
+    return self.template.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 171, in render
+    return self._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 163, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 977, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\loader_tags.py", line 159, in render
+    return compiled_parent._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 163, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\base.py", line 977, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\defaulttags.py", line 480, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\urls\base.py", line 98, in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\urls\resolvers.py", line 831, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'book_consultation' not found. 'book_consultation' is not a valid view function or pattern name.
+"GET /accounts/dashboard/ HTTP/1.1" 500 179763
+"GET /accounts/dashboard/ HTTP/1.1" 200 30566
+"GET /consultation/ HTTP/1.1" 200 20231
+"POST /consultation/ HTTP/1.1" 302 0
+Internal Server Error: /consultation/confirmation/
+Traceback (most recent call last):
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\expert_marketplace\views.py", line 63, in consultation_confirmation
+    return render(request, 'expert_marketplace/consultation_confirmation.html')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\venv\Lib\site-packages\django\template\loader.py", line 19, in get_template
+    raise TemplateDoesNotExist(template_name, chain=chain)
+django.template.exceptions.TemplateDoesNotExist: expert_marketplace/consultation_confirmation.html
+"GET /consultation/confirmation/ HTTP/1.1" 500 97288
+"GET /consultation/confirmation/ HTTP/1.1" 200 19792
+"GET /documents/ HTTP/1.1" 200 38249
+"GET /documents/personal-statement/ HTTP/1.1" 200 39888
+"GET /consultation/ HTTP/1.1" 200 20231
+"GET /admin HTTP/1.1" 301 0
+"GET /admin/ HTTP/1.1" 302 0
+"GET /admin/login/?next=/admin/ HTTP/1.1" 200 3700
+"GET /static/admin/js/theme.js HTTP/1.1" 304 0
+"GET /static/admin/css/dark_mode.css HTTP/1.1" 304 0
+"GET /static/admin/css/base.css HTTP/1.1" 304 0
+"GET /static/admin/css/login.css HTTP/1.1" 304 0
+"GET /static/admin/css/nav_sidebar.css HTTP/1.1" 304 0
+"GET /static/admin/css/responsive.css HTTP/1.1" 304 0
+"GET /static/admin/js/nav_sidebar.js HTTP/1.1" 304 0
+"POST /admin/login/?next=/admin/ HTTP/1.1" 302 0
+"GET /admin/ HTTP/1.1" 200 28043
+"GET /static/admin/css/dashboard.css HTTP/1.1" 304 0
+"GET /static/admin/img/icon-addlink.svg HTTP/1.1" 304 0
+"GET /static/admin/img/icon-changelink.svg HTTP/1.1" 304 0
+"GET /static/admin/img/icon-deletelink.svg HTTP/1.1" 304 0
+"GET /admin/expert_marketplace/booking/ HTTP/1.1" 200 34695
+"GET /static/admin/css/changelists.css HTTP/1.1" 304 0
+"GET /static/admin/js/jquery.init.js HTTP/1.1" 304 0
+"GET /static/admin/js/urlify.js HTTP/1.1" 304 0
+"GET /static/admin/js/vendor/jquery/jquery.js HTTP/1.1" 304 0
+"GET /static/admin/js/core.js HTTP/1.1" 304 0
+"GET /static/admin/js/admin/RelatedObjectLookups.js HTTP/1.1" 304 0
+"GET /static/admin/js/prepopulate.js HTTP/1.1" 304 0
+"GET /static/admin/js/vendor/xregexp/xregexp.js HTTP/1.1" 304 0
+"GET /static/admin/js/actions.js HTTP/1.1" 304 0
+"GET /static/admin/img/search.svg HTTP/1.1" 304 0
+"GET /static/admin/js/filters.js HTTP/1.1" 304 0
+"GET /admin/jsi18n/ HTTP/1.1" 200 3342
+"GET /static/admin/img/tooltag-add.svg HTTP/1.1" 304 0
+"GET /static/admin/img/sorting-icons.svg HTTP/1.1" 304 0
+"GET /static/admin/img/icon-viewlink.svg HTTP/1.1" 304 0
+Forbidden (CSRF token from POST incorrect.): /consultation/
+"POST /consultation/ HTTP/1.1" 403 2503
+Forbidden (CSRF token from POST incorrect.): /consultation/
+"POST /consultation/ HTTP/1.1" 403 2503
+"GET /consultation/ HTTP/1.1" 200 20198
+"POST /consultation/ HTTP/1.1" 302 0
+"GET /consultation/confirmation/ HTTP/1.1" 200 19759
+"GET /admin/expert_marketplace/booking/ HTTP/1.1" 200 35275
+"GET /admin/jsi18n/ HTTP/1.1" 200 3342
+"GET /admin/expert_marketplace/booking/22/change/ HTTP/1.1" 200 29167
+"GET /static/admin/js/prepopulate_init.js HTTP/1.1" 304 0
+"GET /admin/jsi18n/ HTTP/1.1" 200 3342
+"GET /static/admin/css/forms.css HTTP/1.1" 304 0
+"GET /static/admin/css/widgets.css HTTP/1.1" 304 0
+"GET /static/admin/js/calendar.js HTTP/1.1" 200 9141
+"GET /static/admin/js/admin/DateTimeShortcuts.js HTTP/1.1" 200 19319
+"GET /static/admin/js/change_form.js HTTP/1.1" 304 0
+"GET /static/admin/img/icon-clock.svg HTTP/1.1" 200 677
+"GET /static/admin/img/icon-calendar.svg HTTP/1.1" 200 1086
+"GET /accounts/profile/ HTTP/1.1" 200 47852
+"POST /accounts/profile/ HTTP/1.1" 200 48077
+"POST /accounts/profile/ HTTP/1.1" 302 0
+"GET /accounts/profile/ HTTP/1.1" 200 49901
+"GET /accounts/dashboard/ HTTP/1.1" 200 30498
+"GET /accounts/logout/ HTTP/1.1" 200 12591
+"POST /accounts/logout/ HTTP/1.1" 302 0
+"GET / HTTP/1.1" 200 43957
+"GET /accounts/signup/ HTTP/1.1" 200 22949
+"GET /accounts/contact/ HTTP/1.1" 200 20500
+"POST /accounts/contact/ HTTP/1.1" 302 0
+"GET /accounts/contact/ HTTP/1.1" 200 22141
+"GET / HTTP/1.1" 200 42353
+"GET /accounts/login/ HTTP/1.1" 200 17766
+"GET /accounts/google/login/ HTTP/1.1" 200 15518
+"POST /accounts/google/login/ HTTP/1.1" 302 0
+"GET /accounts/google/login/callback/?state=9wJCmorJDbH8VtuM&code=4%2F0AUJR-x5k7KuStt2OmHUyp4lHmDS2sfVgVUvqdrXqPwOLXjvpPvwHDNecMrYmr_TG4EL9bg&scope=email+profile+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&authuser=0&prompt=none HTTP/1.1" 302 0
+"GET /accounts/dashboard/ HTTP/1.1" 200 31629
+"GET /ai-assistant/ HTTP/1.1" 200 42104
+"GET /ai-assistant/stream-message/?message=What%20is%20the%20processing%20time%20and%20fees%20involved%3F HTTP/1.1" 200 8076
+"GET /documents/ HTTP/1.1" 200 69253
+"GET /referrals/share/ HTTP/1.1" 200 23105
+"GET / HTTP/1.1" 200 42672
+code 400, message Bad request version ('2[fR®\x00')
+You're accessing the development server over HTTPS, but it only supports HTTP.
+code 400, message Bad request version ('\x00\x02\x01\x00\x00\x05\x00\x05\x01\x00\x00\x00\x00\x00')
+You're accessing the development server over HTTPS, but it only supports HTTP.
+Scheduler started successfully
+Scheduler started successfully
+Watching for file changes with StatReloader
+"GET / HTTP/1.1" 200 42353
+"GET / HTTP/1.1" 200 42353
+"GET /accounts/login/ HTTP/1.1" 200 17766
+"GET /accounts/google/login/ HTTP/1.1" 200 15518
+"POST /accounts/google/login/ HTTP/1.1" 302 0
+"GET /accounts/google/login/callback/?state=Sa9isT7iNMeGuvWG&code=4%2F0AUJR-x5RK4lMgGRYtFPuWWjQoQ0UE2KlQ6IcryVtl-jVjp29AZwWde6y0WsUbWORBukZIw&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+openid&authuser=0&prompt=none HTTP/1.1" 302 0
+"GET /accounts/dashboard/ HTTP/1.1" 200 31629
+"GET /documents/ HTTP/1.1" 200 68143
+"GET /documents/personal-statement/ HTTP/1.1" 200 39892
+"POST /documents/personal-statement/generate/ HTTP/1.1" 200 6298
+"GET /ai-assistant/ HTTP/1.1" 200 42104
+"GET /ai-assistant/stream-message/?message=What%20are%20the%20eligibility%20criteria%20for%20the%20Tech%20Nation%20Visa%3F HTTP/1.1" 200 10259
+"GET /ai-assistant/stream-message/?message=What%20are%20the%20endorsement%20criteria%3F HTTP/1.1" 200 11423
+"GET /accounts/logout/ HTTP/1.1" 200 14264
+"POST /accounts/logout/ HTTP/1.1" 302 0
+"GET / HTTP/1.1" 200 43957

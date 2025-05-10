@@ -1,0 +1,249 @@
+{% extends 'dashboard_base.html' %}
+
+{% block title %}Dashboard - Tech Nation Visa Assistant{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col lg:flex-row gap-8">
+        <!-- Stats Overview -->
+        <div class="w-full lg:w-3/4 order-2 lg:order-1">
+            <!-- Welcome Banner -->
+            <div class="mb-6 p-6 rounded-xl bg-gradient-to-r from-primary-600 to-primary-800 text-white relative overflow-hidden">
+                <div class="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
+                <div class="relative z-10">
+                    <h1 class="text-2xl font-bold mb-2">Welcome back, {{ user.get_full_name|default:"there" }}!</h1>
+                    <p class="text-primary-100">Your visa application journey is {{ progress_percentage|default:"30" }}% complete. 
+                        {% if has_chosen_personal_statement %}
+                            You're ready to submit your application!
+                        {% else %}
+                            Keep going!
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="absolute -right-10 -bottom-10 opacity-10">
+                    <i class="fas fa-paper-plane text-9xl transform rotate-45"></i>
+                </div>
+            </div>
+
+            <!-- Evidence Documents Card -->
+            <div class="mb-6 p-6 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-600 text-white relative overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <a href="{% url 'document_manager:evidence_documents' %}" class="block relative z-10">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold mb-2">Evidence Documents</h2>
+                            <p class="text-yellow-100">Organize and manage your supporting evidence documents for your visa application</p>
+                        </div>
+                        <div class="text-4xl">
+                            <i class="fas fa-folder-open"></i>
+                        </div>
+                    </div>
+                </a>
+                <div class="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
+            </div>
+
+            <!-- Application Progress - Revised to better reflect actual progress -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-6 backdrop-blur-xl bg-white/80 border border-gray-100">
+                <div class="flex items-center justify-between mb-6 flex-wrap gap-2">
+                    <h2 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-chart-line text-primary-500 mr-2"></i>
+                        Application Progress
+                    </h2>
+                    <span class="px-4 py-2 bg-primary-50 text-primary-700 rounded-full text-sm font-medium">
+                        {{ progress_percentage|default:"30" }}% Complete
+                    </span>
+                </div>
+                
+                <div class="mb-8">
+                    <div class="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full" style="width: {{ progress_percentage|default:"30" }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="space-y-6">
+                    <!-- Completed Step -->
+                    <div class="flex items-center p-4 bg-green-50 rounded-lg border border-green-100">
+                        <div class="w-10 h-10 bg-gradient-to-br from-green-400 to-green-500 text-white rounded-full flex items-center justify-center mr-4 shadow-sm flex-shrink-0">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-semibold text-green-800 text-truncate">Initial Assessment</h3>
+                            <p class="text-sm text-green-600 text-truncate">Completed on {{ user.updated_at|date:"M d, Y" }}</p>
+                        </div>
+                        <a href="{% url 'accounts:assessment' %}" class="text-green-400 hover:text-green-600 flex-shrink-0">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+
+                    <!-- Document Preparation - Updated to reflect chosen personal statement -->
+                    <div class="flex items-center p-4 {% if has_chosen_personal_statement %}bg-green-50 border-green-100{% else %}bg-primary-50 border-primary-100{% endif %} rounded-lg border">
+                        <div class="w-10 h-10 {% if has_chosen_personal_statement %}bg-gradient-to-br from-green-400 to-green-500{% else %}bg-gradient-to-br from-primary-400 to-primary-500{% endif %} text-white rounded-full flex items-center justify-center mr-4 shadow-sm flex-shrink-0">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-semibold {% if has_chosen_personal_statement %}text-green-800{% else %}text-primary-800{% endif %} text-truncate">Document Preparation</h3>
+                            <p class="text-sm {% if has_chosen_personal_statement %}text-green-600{% else %}text-primary-600{% endif %} text-truncate">
+                                {% if has_chosen_personal_statement %}
+                                    Completed - Personal statement chosen
+                                {% elif document_progress > 0 %}
+                                    In progress - {{ document_progress }}% completed
+                                {% else %}
+                                    {% if ai_assistant_used %}
+                                        In progress - Using AI assistance
+                                    {% else %}
+                                        Not started - No documents prepared yet
+                                    {% endif %}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <a href="{% url 'document_manager:document_list' %}" class="{% if has_chosen_personal_statement %}text-green-400 hover:text-green-600{% else %}text-primary-400 hover:text-primary-600{% endif %} flex-shrink-0">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+
+                    <!-- Expert Review - Changed to OPTIONAL -->
+                    <div class="flex items-center p-4 bg-yellow-50 rounded-lg border border-yellow-100">
+                        <div class="w-10 h-10 bg-yellow-200 text-yellow-500 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-semibold text-yellow-800 text-truncate">Expert Review (Optional)</h3>
+                            <p class="text-sm text-yellow-600 text-truncate">
+                                Get professional feedback before submitting your application
+                            </p>
+                        </div>
+                        <a href="{% url 'expert_marketplace:expert_marketplace' %}" class="text-yellow-400 hover:text-yellow-600 flex-shrink-0">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+
+                    <!-- Final Step - Active when personal statement is chosen -->
+                    <div class="flex items-center p-4 {% if has_chosen_personal_statement %}bg-blue-50 border-blue-100{% else %}bg-gray-50 border-gray-100{% endif %} rounded-lg border">
+                        <div class="w-10 h-10 {% if has_chosen_personal_statement %}bg-gradient-to-br from-blue-400 to-blue-500 text-white{% else %}bg-gray-200 text-gray-500{% endif %} rounded-full flex items-center justify-center mr-4 {% if has_chosen_personal_statement %}shadow-sm{% endif %} flex-shrink-0">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-semibold {% if has_chosen_personal_statement %}text-blue-800{% else %}text-gray-400{% endif %} text-truncate">Submission</h3>
+                            <p class="text-sm {% if has_chosen_personal_statement %}text-blue-600{% else %}text-gray-400{% endif %} text-truncate">
+                                {% if has_chosen_personal_statement %}
+                                    Ready to apply on the UK government website
+                                {% else %}
+                                    Apply directly on the UK government website
+                                {% endif %}
+                            </p>
+                        </div>
+                        <a href="https://www.gov.uk/global-talent" class="{% if has_chosen_personal_statement %}text-blue-400 hover:text-blue-600{% else %}text-gray-300 hover:text-gray-500{% endif %} flex-shrink-0">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar - Now appears below on mobile -->
+        <div class="w-full lg:w-1/4 order-1 lg:order-2 space-y-6">
+            <!-- Profile Card -->
+            <div class="bg-white rounded-xl shadow-sm p-6 backdrop-blur-xl bg-white/80 border border-gray-100">
+                <div class="flex items-center mb-6">
+                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-xl font-bold mr-4 shadow-sm flex-shrink-0">
+                        {{ user.email|slice:":1"|upper }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h2 class="text-xl font-bold text-gray-800 text-truncate">{{ user.get_full_name|default:user.email }}</h2>
+                        <p class="text-sm text-gray-500 text-truncate">{{ user.email }}</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span class="text-sm text-gray-600">Account Type</span>
+                        <span class="font-medium text-gray-800 text-truncate ml-2">{{ user.account_type|title }}</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span class="text-sm text-gray-600">Visa Path</span>
+                        <span class="font-medium text-gray-800 text-truncate ml-2">{{ user.visa_path|title|default:"Not Selected" }}</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span class="text-sm text-gray-600">Current Stage</span>
+                        <span class="font-medium text-gray-800 text-truncate ml-2">{{ user.application_stage|title|default:"Assessment" }}</span>
+                    </div>
+                </div>
+
+                <!-- Add this after the existing profile card info -->
+                <div class="mt-4 p-3 bg-pink-50 rounded-lg">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-gray-600">Referral Points</span>
+                        <span class="font-medium text-gray-800">{{ user.profile.ai_points|default:"0" }}</span>
+                    </div>
+                    <a href="{% url 'referrals:share' %}" class="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center justify-center">
+                        <i class="fas fa-share-alt mr-1"></i> Share & Earn Points
+                    </a>
+                </div>
+
+                <a href="{% url 'accounts:profile' %}" class="mt-6 w-full inline-flex items-center justify-center px-4 py-2 border border-primary-500 text-primary-600 rounded-lg hover:bg-primary-50 transition duration-150">
+                    <i class="fas fa-user-edit mr-2"></i>
+                    Edit Profile
+                </a>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-sm p-6 backdrop-blur-xl bg-white/80 border border-gray-100">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-bolt text-primary-500 mr-2"></i>
+                    Quick Actions
+                </h2>
+                <div class="space-y-3">
+                    <!-- Evidence Documents Link (New) -->
+                    <a href="{% url 'document_manager:evidence_documents' %}" class="flex items-center p-3 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition duration-150">
+                        <div class="w-10 h-10 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="fas fa-folder-open"></i>
+                        </div>
+                        <span class="font-medium text-gray-700 flex-1 min-w-0 text-truncate">Evidence Documents</span>
+                        <i class="fas fa-chevron-right ml-auto text-gray-400 flex-shrink-0"></i>
+                    </a>
+
+                    <a href="{% url 'document_manager:document_list' %}" class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition duration-150">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <span class="font-medium text-gray-700 flex-1 min-w-0 text-truncate">My Documents</span>
+                        <i class="fas fa-chevron-right ml-auto text-gray-400 flex-shrink-0"></i>
+                    </a>
+
+                    <a href="{% url 'ai_assistant:chat' %}" class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition duration-150">
+                        <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-500 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <span class="font-medium text-gray-700 flex-1 min-w-0 text-truncate">AI Assistant</span>
+                        <i class="fas fa-chevron-right ml-auto text-gray-400 flex-shrink-0"></i>
+                    </a>
+
+                    <a href="{% url 'expert_marketplace:expert_marketplace' %}" class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition duration-150">
+                        <div class="w-10 h-10 rounded-full bg-green-100 text-green-500 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <span class="font-medium text-gray-700 flex-1 min-w-0 text-truncate">Expert Help</span>
+                        <i class="fas fa-chevron-right ml-auto text-gray-400 flex-shrink-0"></i>
+                    </a>
+
+                    <a href="{% url 'notion_monitor:change_list' %}" class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition duration-150">
+                        <div class="w-10 h-10 rounded-full bg-yellow-100 text-yellow-500 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <span class="font-medium text-gray-700 flex-1 min-w-0 text-truncate">Guide Updates</span>
+                        <i class="fas fa-chevron-right ml-auto text-gray-400 flex-shrink-0"></i>
+                    </a>
+
+                    <!-- Quick Actions Section - Add this item -->
+                    <a href="{% url 'referrals:share' %}" class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition duration-150">
+                        <div class="w-10 h-10 rounded-full bg-pink-100 text-pink-500 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="fas fa-share-alt"></i>
+                        </div>
+                        <span class="font-medium text-gray-700 flex-1 min-w-0 text-truncate">Refer & Earn</span>
+                        <i class="fas fa-chevron-right ml-auto text-gray-400 flex-shrink-0"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Conversation History - Tech Nation Visa{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Your Conversations</h1>
+        <a href="{% url 'assistant' %}" class="text-blue-600 hover:text-blue-800">New Conversation</a>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md p-6">
+        {% if conversations %}
+            <ul class="divide-y divide-gray-200">
+                {% for conversation in conversations %}
+                <li class="py-4">
+                    <a href="{% url 'conversation_detail' conversation.id %}" class="block hover:bg-gray-50 p-2 rounded">
+                        <div class="flex justify-between">
+                            <h3 class="text-lg font-medium text-gray-900">{{ conversation.title }}</h3>
+                            <p class="text-sm text-gray-500">{{ conversation.updated_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                        <p class="mt-1 text-sm text-gray-500">
+                            {% with last_message=conversation.messages.last %}
+                                {% if last_message %}
+                                    {{ last_message.content|truncatechars:100 }}
+                                {% else %}
+                                    No messages
+                                {% endif %}
+                            {% endwith %}
+                        </p>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="text-center py-8">
+                <p class="text-gray-500">You don't have any conversations yet.</p>
+                <a href="{% url 'assistant' %}" class="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Start a Conversation</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

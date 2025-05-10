@@ -1,0 +1,120 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Tech Nation Visa Assistant</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f9fafb;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(to right, #1e40af, #3b82f6, #1e40af);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .footer {
+            background-color: #f3f4f6;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(to right, #1e40af, #3b82f6);
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-weight: 500;
+            margin: 20px 0;
+        }
+        .info-box {
+            background-color: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .divider {
+            height: 1px;
+            background-color: #e5e7eb;
+            margin: 20px 0;
+        }
+        .social-links {
+            margin-top: 15px;
+        }
+        .social-links a {
+            display: inline-block;
+            margin: 0 8px;
+            color: #3b82f6;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to Tech Nation Visa Assistant</h1>
+        </div>
+        <div class="content">
+            <p>Hello {{ user.first_name|default:"there" }},</p>
+            
+            <p>Thank you for creating an account with Tech Nation Visa Assistant. We're excited to help you on your journey to obtaining a UK Global Talent Visa.</p>
+            
+            <div class="info-box">
+                <p><strong>Your account has been successfully created.</strong></p>
+                <p>Email: {{ user.email }}</p>
+            </div>
+            
+            <p>Here's what you can do next:</p>
+            <ul>
+                <li>Complete your eligibility assessment</li>
+                <li>Explore our document preparation tools</li>
+                <li>Connect with visa experts</li>
+                <li>Use our AI assistant for personalized guidance</li>
+            </ul>
+            
+            <center>
+                <a href="{{ login_url }}" class="button">Go to Dashboard</a>
+            </center>
+            
+            <div class="divider"></div>
+            
+            <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+            
+            <p>Best regards,<br>The Tech Nation Visa Assistant Team</p>
+        </div>
+        <div class="footer">
+            <p>&copy; {% now "Y" %} Tech Nation Visa Assistant. All rights reserved.</p>
+            <p>123 Innovation Street, London, EC1V 9NR, United Kingdom</p>
+            <div class="social-links">
+                <a href="#">Twitter</a> | <a href="#">LinkedIn</a> | <a href="#">Facebook</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

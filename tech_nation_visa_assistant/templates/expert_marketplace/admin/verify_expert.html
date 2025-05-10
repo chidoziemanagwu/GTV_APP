@@ -1,0 +1,95 @@
+{% extends 'dashboard_base.html' %}
+
+{% block title %}Verify Expert - Admin{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="mb-6">
+        <a href="{% url 'expert_marketplace:admin_expert_verification' %}" class="text-indigo-600 hover:text-indigo-800">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Expert Verification
+        </a>
+    </div>
+
+    <div class="backdrop-blur-md bg-white/90 rounded-xl shadow-lg p-6 border border-gray-100">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800">Review Expert Application</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+                <h2 class="text-lg font-semibold mb-4 text-gray-800">Personal Information</h2>
+                <p class="mb-2"><span class="font-medium text-gray-700">Email:</span> {{ expert.user.email }}</p>
+                <p class="mb-2"><span class="font-medium text-gray-700">Name:</span> {{ expert.user.get_full_name }}</p>
+                <p class="mb-2"><span class="font-medium text-gray-700">Applied On:</span> {{ expert.created_at|date:"M d, Y" }}</p>
+            </div>
+            
+            <div>
+                <h2 class="text-lg font-semibold mb-4 text-gray-800">Professional Information</h2>
+                <p class="mb-2"><span class="font-medium text-gray-700">Specialization:</span> {{ expert.get_specialization_display }}</p>
+                <p class="mb-2"><span class="font-medium text-gray-700">Experience:</span> {{ expert.years_experience }} years</p>
+                <p class="mb-2"><span class="font-medium text-gray-700">Hourly Rate:</span> £{{ expert.hourly_rate }}</p>
+                <p class="mb-2"><span class="font-medium text-gray-700">Availability:</span> {{ expert.get_availability_display }}</p>
+            </div>
+        </div>
+        
+        <div class="mb-8">
+            <h2 class="text-lg font-semibold mb-4 text-gray-800">Bio</h2>
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <p class="text-gray-700">{{ expert.bio }}</p>
+            </div>
+        </div>
+        
+        {% if expert.qualifications or expert.certifications %}
+        <div class="mb-8">
+            <h2 class="text-lg font-semibold mb-4 text-gray-800">Qualifications & Certifications</h2>
+            {% if expert.qualifications %}
+            <div class="mb-4">
+                <h3 class="font-medium text-gray-700 mb-2">Qualifications:</h3>
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <p class="text-gray-700">{{ expert.qualifications }}</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if expert.certifications %}
+            <div>
+                <h3 class="font-medium text-gray-700 mb-2">Certifications:</h3>
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <p class="text-gray-700">{{ expert.certifications }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <div class="mb-8">
+            <h2 class="text-lg font-semibold mb-4 text-gray-800">Additional Information</h2>
+            {% if expert.website %}
+            <p class="mb-2"><span class="font-medium text-gray-700">Website:</span> 
+                <a href="{{ expert.website }}" target="_blank" class="text-indigo-600 hover:text-indigo-800">{{ expert.website }}</a>
+            </p>
+            {% endif %}
+            {% if expert.linkedin_profile %}
+            <p class="mb-2"><span class="font-medium text-gray-700">LinkedIn:</span> 
+                <a href="{{ expert.linkedin_profile }}" target="_blank" class="text-indigo-600 hover:text-indigo-800">{{ expert.linkedin_profile }}</a>
+            </p>
+            {% endif %}
+            {% if expert.verification_documents %}
+            <p class="mb-2"><span class="font-medium text-gray-700">Verification Documents:</span> 
+                <a href="{{ expert.verification_documents.url }}" target="_blank" class="text-indigo-600 hover:text-indigo-800">View Documents</a>
+            </p>
+            {% endif %}
+        </div>
+        
+        <form method="post" class="mt-8">
+            {% csrf_token %}
+            <div class="flex justify-between">
+                <a href="{% url 'expert_marketplace:admin_expert_verification' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-sm">
+                    Cancel
+                </a>
+                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-md hover:shadow-lg">
+                    Verify Expert & Send Password Setup Email
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

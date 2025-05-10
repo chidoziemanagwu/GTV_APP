@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}AI Assistant - Tech Nation Visa Assistant{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row gap-8">
+        <!-- Sidebar -->
+        <div class="w-full md:w-1/4">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-bold mb-4">AI Assistant</h2>
+                <p class="text-gray-600 mb-4">Ask questions about the Tech Nation Global Talent Visa application process.</p>
+                <div class="border-t border-gray-200 pt-4">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">Queries Used:</span>
+                        <span class="font-medium">{{ queries_used }} / {{ queries_limit }}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                        <div class="bg-primary-600 h-2.5 rounded-full" style="width: {% widthratio queries_used queries_limit 100 %}%"></div>
+                    </div>
+                    {% if user.account_type == 'free' %}
+                        <a href="#" class="text-sm text-primary-600 hover:text-primary-800 font-medium">Upgrade for unlimited queries</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold mb-4">Recent Queries</h2>
+                {% if recent_queries %}
+                    <ul class="space-y-3">
+                        {% for query in recent_queries %}
+                            <li>
+                                <a href="#" class="text-gray-700 hover:text-primary-600 text-sm">
+                                    {{ query.query_text|truncatechars:50 }}
+                                </a>
+                                <p class="text-xs text-gray-500">{{ query.created_at|date:"M d, Y" }}</p>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <div class="mt-4 text-center">
+                        <a href="{% url 'query_history' %}" class="text-sm text-primary-600 hover:text-primary-800 font-medium">View All Queries</a>
+                    </div>
+                {% else %}
+                    <p class="text-gray-600 text-sm">No recent queries. Start asking questions!</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="w-full md:w-3/4">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-bold mb-4">Ask a Question</h2>
+                <form id="query-form" method="post" action="{% url 'ai_assistant_query' %}">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <textarea name="query_text" id="query_text" rows="4" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md" placeholder="What would you like to know about the Tech Nation Global Talent Visa?"></textarea>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div id="loading-indicator" class="hidden flex items-center text-gray-500 text-sm">
+                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Processing your question...
+                        </div>
+                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                            Ask Question
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="response-container" class="bg-white rounded-lg shadow-md p-6">
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No questions asked yet</h3>
+                    <p class="mt-1 text-sm text-gray-500">Ask a question about the Tech Nation Global Talent Visa application process.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const queryForm = document.getElementById('query-form');
+        const responseContainer = document.getElementById('response-container');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        
+        queryForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading indicator
+            loadingIndicator.classList.remove('hidden');
+            
+            // Get form data
+            const formData = new FormData(queryForm);
+            
+            // Send AJAX request
+            fetch(queryForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                // Hide loading indicator
+                loadingIndicator.classList.add('hidden');
+                
+                // Update response container
+                responseContainer.innerHTML = html;
+            })
+            .catch(error => {
+                // Hide loading indicator
+                loadingIndicator.classList.add('hidden');
+                
+                // Show error
+                responseContainer.innerHTML = `
+                    <div class="bg-red-50 p-4 rounded-md">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-red-800">Error</h3>
+                                <div class="mt-2 text-sm text-red-700">
+                                    <p>There was an error processing your request. Please try again.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                console.error('Error:', error);
+            });
+        });
+    });
+</script>
+{% endblock %}

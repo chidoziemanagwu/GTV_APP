@@ -1,0 +1,278 @@
+{% extends 'dashboard_base.html' %}
+
+{% block title %}Eligibility Assessment - Tech Nation Visa Assistant{% endblock %}
+
+{% block content %}
+<div class="min-h-screen px-4 py-12">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header Section -->
+        <div class="mb-8 text-center">
+            <div class="inline-block p-2 rounded-2xl bg-gradient-to-r from-primary-500 to-primary-600 text-white mb-4">
+                <i class="fas fa-clipboard-check text-3xl"></i>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-3">Eligibility Assessment</h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                Let's determine your eligibility for the Tech Nation Global Talent Visa
+            </p>
+        </div>
+
+        <!-- Main Content Card -->
+        <div class="backdrop-blur-xl bg-white/80 rounded-2xl shadow-xl border border-white/50 overflow-hidden">
+            <!-- Progress Bar -->
+            <div class="w-full h-2 bg-gray-100">
+                <div class="h-full w-1/3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-r-full transition-all duration-500"></div>
+            </div>
+
+            <div class="p-8">
+                <!-- Info Box -->
+                <div class="mb-8 p-6 rounded-xl bg-gradient-to-r from-blue-50 to-primary-50 border border-blue-100/50">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-info-circle text-primary-500 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-1">Important Information</h3>
+                            <p class="text-gray-600">
+                                This assessment will help determine whether you qualify for the Exceptional Talent (5+ years experience) or Exceptional Promise (less than 5 years) visa path.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {% if messages %}
+                    <div class="mb-8 space-y-4">
+                        {% for message in messages %}
+                            <div class="{% if message.tags == 'success' %}bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-400{% else %}bg-gradient-to-r from-blue-50 to-primary-50 border-l-4 border-primary-400{% endif %} p-4 rounded-r-xl shadow-sm">
+                                <div class="flex items-center">
+                                    <i class="{% if message.tags == 'success' %}fas fa-check-circle text-green-500{% else %}fas fa-info-circle text-primary-500{% endif %} text-lg"></i>
+                                    <p class="ml-3 text-sm {% if message.tags == 'success' %}text-green-700{% else %}text-primary-700{% endif %}">{{ message }}</p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <form method="post" class="space-y-8">
+                    {% csrf_token %}
+                
+                    <!-- Error Display Section -->
+                    {% if form.errors %}
+                    <div class="mb-8 rounded-xl bg-red-50 border-l-4 border-red-400 p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-exclamation-circle text-red-400 text-lg"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-red-800">Please correct the following errors:</h3>
+                                <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li>{% if field != '__all__' %}{{ field|title }}: {% endif %}{{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                
+                    <!-- Background Type Section -->
+                    <div class="transform transition-all duration-300 hover:scale-[1.02]">
+                        <div class="p-6 rounded-xl bg-gradient-to-r from-gray-50 to-primary-50/30 border border-gray-100 shadow-sm">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
+                                        <i class="fas fa-user-tie text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4 flex-1">
+                                    <label class="block text-lg font-medium text-gray-800 mb-3">
+                                        Background Type
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <div class="space-y-3">
+                                        {% for radio in form.background_type %}
+                                        <div class="flex items-center">
+                                            {{ radio.tag }}
+                                            <label for="{{ radio.id_for_label }}" 
+                                                   class="ml-3 block text-sm font-medium text-gray-700">
+                                                {{ radio.choice_label }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% if form.background_type.errors %}
+                                    <div class="mt-2 text-sm text-red-600">
+                                        {% for error in form.background_type.errors %}
+                                            <p>{{ error }}</p>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                
+                    <!-- Years Experience Field -->
+                    <div class="transform transition-all duration-300 hover:scale-[1.02]">
+                        <div class="p-6 rounded-xl bg-gradient-to-r from-gray-50 to-primary-50/30 border border-gray-100 shadow-sm">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
+                                        <i class="fas fa-clock text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4 flex-1">
+                                    <label class="block text-lg font-medium text-gray-800 mb-3">
+                                        Years of Experience
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <div class="space-y-3">
+                                        {% for radio in form.years_experience %}
+                                        <div class="flex items-center">
+                                            {{ radio.tag }}
+                                            <label for="{{ radio.id_for_label }}" 
+                                                   class="ml-3 block text-sm font-medium text-gray-700">
+                                                {{ radio.choice_label }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% if form.years_experience.errors %}
+                                    <div class="mt-2 text-sm text-red-600">
+                                        {% for error in form.years_experience.errors %}
+                                            <p>{{ error }}</p>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Specializations Section -->
+                    <div class="transform transition-all duration-300 hover:scale-[1.02]">
+                        <div class="p-6 rounded-xl bg-gradient-to-r from-gray-50 to-primary-50/30 border border-gray-100 shadow-sm">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
+                                        <i class="fas fa-code-branch text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4 flex-1">
+                                    <label class="block text-lg font-medium text-gray-800 mb-3">
+                                        Areas of Expertise
+                                    </label>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {% for checkbox in form.tech_specializations %}
+                                        <div class="flex items-center">
+                                            <input type="checkbox" 
+                                                   name="{{ checkbox.name }}"
+                                                   value="{{ checkbox.choice_value }}"
+                                                   id="{{ checkbox.id_for_label }}"
+                                                   {% if checkbox.is_checked %}checked{% endif %}
+                                                   class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                                            <label for="{{ checkbox.id_for_label }}" 
+                                                   class="ml-3 block text-sm font-medium text-gray-700">
+                                                {{ checkbox.choice_label }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recognition Section -->
+                    <div class="transform transition-all duration-300 hover:scale-[1.02]">
+                        <div class="p-6 rounded-xl bg-gradient-to-r from-gray-50 to-primary-50/30 border border-gray-100 shadow-sm">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
+                                        <i class="fas fa-award text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4 flex-1">
+                                    <label class="block text-lg font-medium text-gray-800 mb-2">
+                                        Recognition
+                                    </label>
+                                    <div class="flex items-center">
+                                        {{ form.has_recognition }}
+                                        <label for="{{ form.has_recognition.id_for_label }}" class="ml-3 text-sm text-gray-600">
+                                            {{ form.has_recognition.help_text }}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Innovation Section -->
+                    <div class="transform transition-all duration-300 hover:scale-[1.02]">
+                        <div class="p-6 rounded-xl bg-gradient-to-r from-gray-50 to-primary-50/30 border border-gray-100 shadow-sm">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
+                                        <i class="fas fa-lightbulb text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4 flex-1">
+                                    <label for="{{ form.has_innovation.id_for_label }}" class="block text-lg font-medium text-gray-800 mb-2">
+                                        Innovation
+                                    </label>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" 
+                                               name="{{ form.has_innovation.name }}" 
+                                               id="{{ form.has_innovation.id_for_label }}"
+                                               class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                                        <label for="{{ form.has_innovation.id_for_label }}" class="ml-3 text-sm text-gray-600">
+                                            {{ form.has_innovation.help_text }}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contribution Section -->
+                    <div class="transform transition-all duration-300 hover:scale-[1.02]">
+                        <div class="p-6 rounded-xl bg-gradient-to-r from-gray-50 to-primary-50/30 border border-gray-100 shadow-sm">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
+                                        <i class="fas fa-hands-helping text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4 flex-1">
+                                    <label for="{{ form.has_contribution.id_for_label }}" class="block text-lg font-medium text-gray-800 mb-2">
+                                        Contributions
+                                    </label>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" 
+                                               name="{{ form.has_contribution.name }}" 
+                                               id="{{ form.has_contribution.id_for_label }}"
+                                               class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                                        <label for="{{ form.has_contribution.id_for_label }}" class="ml-3 text-sm text-gray-600">
+                                            {{ form.has_contribution.help_text }}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-6">
+                        <button type="submit" 
+                                class="w-full inline-flex justify-center items-center px-6 py-3 border border-transparent rounded-xl shadow-sm text-lg font-medium text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transform transition-all duration-300 hover:scale-[1.02]">
+                            <i class="fas fa-paper-plane mr-2"></i>
+                            Submit Assessment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

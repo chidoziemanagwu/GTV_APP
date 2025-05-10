@@ -1,0 +1,308 @@
+{% extends "account/base_account.html" %}
+{% load i18n %}
+{% load socialaccount %}
+
+{% block extra_head %}
+<script src="https://www.google.com/recaptcha/api.js"></script>
+<style>
+    .password-requirements {
+        margin-top: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    .requirement {
+        display: flex;
+        align-items: center;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+    }
+    .requirement-icon {
+        margin-right: 0.5rem;
+        height: 1rem;
+        width: 1rem;
+        flex-shrink: 0;
+    }
+    .requirement-met {
+        color: #16a34a; /* text-green-600 */
+    }
+    .requirement-unmet {
+        color: #9ca3af; /* text-gray-400 */
+    }
+    @media (max-width: 480px) {
+        .cf-turnstile iframe {
+            transform: scale(0.9);
+            transform-origin: 0 0;
+            margin: 0 auto;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block account_header %}{% trans "Sign Up" %}{% endblock %}
+
+{% block account_subheader %}
+    {% blocktrans %}Already have an account? Then please
+    <a href="{{ login_url }}" class="font-medium text-primary-600 hover:text-primary-700">sign in</a>.{% endblocktrans %}
+{% endblock %}
+
+{% block account_content %}
+    <!-- Google Sign Up Button -->
+    <div class="mb-6">
+        <a href="{% provider_login_url 'google' %}" 
+           class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+           <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+            {% trans "Continue with Google" %}
+        </a>
+    </div>
+
+    <div class="relative my-6">
+        <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300"></div>
+        </div>
+        <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white text-gray-500">{% trans "Or continue with" %}</span>
+        </div>
+    </div>
+
+    <form class="space-y-6" method="post" action="{% url 'account_signup' %}" id="signup-form">
+        {% csrf_token %}
+
+        <div>
+            <label for="id_email" class="block text-sm font-medium text-gray-700">
+                {% trans "Email" %}
+            </label>
+            <div class="mt-1">
+                <input type="email" name="email" id="id_email" autocomplete="email" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            {% if form.email.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <div>
+            <label for="id_password1" class="block text-sm font-medium text-gray-700">
+                {% trans "Password" %}
+            </label>
+            <div class="mt-1 relative">
+                <input type="password" name="password1" id="id_password1" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 pr-10">
+                    <button type="button" onclick="togglePasswordVisibility('id_password1')" 
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <i class="fa-regular fa-eye text-gray-400 cursor-pointer"></i>
+            </button>
+            </div>
+            {% if form.password1.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ form.password1.errors.0 }}</p>
+            {% endif %}
+            
+            <!-- Password Requirements -->
+            <div class="password-requirements grid grid-cols-2 gap-4 mt-3">
+                <div class="requirement flex items-center space-x-2" id="length-requirement">
+                    <i class="fa-solid fa-check text-xs w-4 requirement-icon"></i>
+                    <span class="text-sm">8+ characters</span>
+                </div>
+                <div class="requirement flex items-center space-x-2" id="number-requirement">
+                    <i class="fa-solid fa-check text-xs w-4 requirement-icon"></i>
+                    <span class="text-sm">One number</span>
+                </div>
+                <div class="requirement flex items-center space-x-2" id="lowercase-requirement">
+                    <i class="fa-solid fa-check text-xs w-4 requirement-icon"></i>
+                    <span class="text-sm">Lowercase letter</span>
+                </div>
+                <div class="requirement flex items-center space-x-2" id="uppercase-requirement">
+                    <i class="fa-solid fa-check text-xs w-4 requirement-icon"></i>
+                    <span class="text-sm">Uppercase letter</span>
+                </div>
+                <div class="requirement flex items-center space-x-2" id="special-requirement">
+                    <i class="fa-solid fa-check text-xs w-4 requirement-icon"></i>
+                    <span class="text-sm">Special character</span>
+                </div>
+                <div class="requirement flex items-center space-x-2" id="space-requirement">
+                    <i class="fa-solid fa-check text-xs w-4 requirement-icon"></i>
+                    <span class="text-sm">No spaces</span>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <label for="id_password2" class="block text-sm font-medium text-gray-700">
+                {% trans "Password (again)" %}
+            </label>
+            <div class="mt-1 relative">
+                <input type="password" name="password2" id="id_password2" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 pr-10">
+                <button type="button" onclick="togglePasswordVisibility('id_password2')" 
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                        <i class="fa-regular fa-eye text-gray-400 cursor-pointer"></i>
+                </button>
+            </div>
+            {% if form.password2.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ form.password2.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+<!-- Replace your existing referral code input with this -->
+<div>
+    <label for="id_referral_code" class="block text-sm font-medium text-gray-700">
+        {% trans "Referral Code" %} <span class="text-gray-500">(optional)</span>
+    </label>
+    <div class="mt-1">
+        <input type="text" name="referral_code" id="id_referral_code"
+               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+               placeholder="Enter referral code if you have one"
+               value="{{ form.referral_code.value|default:'' }}"
+               {% if form.referral_code.value %}readonly{% endif %}>
+        {% if form.referral_code.value %}
+        <p class="mt-1 text-sm text-green-600">
+            <i class="fas fa-check-circle mr-1"></i> Referral code applied
+        </p>
+        {% endif %}
+    </div>
+</div>
+        {% if redirect_field_value %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+        {% endif %}
+
+        <!-- Add this before the submit button in signup.html -->
+        <input type="hidden" name="g-recaptcha-response" id="recaptchaResponse">
+
+        <button type="submit" 
+        class="g-recaptcha w-full flex justify-center py-2 px-4 border border-transparent rounded-lg text-white bg-primary-700 hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+        data-sitekey="{{ recaptcha_site_key }}"
+        data-callback="onSubmit"
+        data-action="submit">
+    {% trans "Sign Up" %}
+</button>
+    </form>
+
+<!-- Replace your existing JavaScript at the end of the template with this -->
+    <script>
+        function onSubmit(token) {
+        document.getElementById("recaptchaResponse").value = token;
+        document.getElementById("signup-form").submit();
+    }
+    
+    function togglePasswordVisibility(inputId) {
+        const input = document.getElementById(inputId);
+        const button = input.nextElementSibling;
+        const icon = button.querySelector('i');
+    
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fa-regular fa-eye-slash text-gray-400 cursor-pointer';
+        } else {
+            input.type = 'password';
+            icon.className = 'fa-regular fa-eye text-gray-400 cursor-pointer';
+        }
+    }
+    
+    // Password requirements checker
+    document.getElementById('id_password1').addEventListener('input', function(e) {
+        const password = e.target.value;
+        
+        // Function to update requirement status
+        function updateRequirement(elementId, isValid) {
+            const element = document.getElementById(elementId);
+            const icon = element.querySelector('i');
+            const text = element.querySelector('span');
+            
+            if (isValid) {
+                icon.className = 'fa-solid fa-check text-xs w-4 requirement-icon text-green-600';
+                text.className = 'text-sm text-green-600';
+            } else {
+                icon.className = 'fa-solid fa-xmark text-xs w-4 requirement-icon text-gray-400';
+                text.className = 'text-sm text-gray-400';
+            }
+        }
+    
+        // Check minimum length (8 characters)
+        updateRequirement('length-requirement', password.length >= 8);
+    
+        // Check for at least one number
+        updateRequirement('number-requirement', /[0-9]/.test(password));
+    
+        // Check for at least one lowercase letter
+        updateRequirement('lowercase-requirement', /[a-z]/.test(password));
+    
+        // Check for at least one uppercase letter
+        updateRequirement('uppercase-requirement', /[A-Z]/.test(password));
+    
+        // Check for at least one special character
+        updateRequirement('special-requirement', /[!@#$%^&*(),.?":{}|<>]/.test(password));
+    
+        // Check for no spaces
+        updateRequirement('space-requirement', !/\s/.test(password));
+    
+        // Optional: Enable/disable submit button based on all requirements being met
+        const allRequirementsMet = [
+            password.length >= 8,
+            /[0-9]/.test(password),
+            /[a-z]/.test(password),
+            /[A-Z]/.test(password),
+            /[!@#$%^&*(),.?":{}|<>]/.test(password),
+            !/\s/.test(password)
+        ].every(Boolean);
+    
+        // If you want to control the submit button
+        const submitButton = document.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.disabled = !allRequirementsMet;
+            if (allRequirementsMet) {
+                submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+    });
+    
+    // Function to get URL parameters
+    function getUrlParameter(name) {
+        name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+        var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+        var results = regex.exec(location.search);
+        return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    }
+    
+    // Set referral code from URL parameter
+    document.addEventListener('DOMContentLoaded', function() {
+        const referralInput = document.getElementById('id_referral_code');
+        const referralCode = getUrlParameter('ref');
+        
+        if (referralCode && referralInput) {
+            // Set the value
+            referralInput.value = referralCode;
+            
+            // Make it readonly
+            referralInput.setAttribute('readonly', true);
+            
+            // Add visual indication that referral is applied
+            const container = referralInput.parentElement;
+            if (!container.querySelector('.referral-applied-message')) {
+                const message = document.createElement('p');
+                message.className = 'mt-1 text-sm text-green-600 referral-applied-message';
+                message.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Referral code applied';
+                container.appendChild(message);
+            }
+            
+            // Style the input to show it's pre-filled
+            referralInput.classList.add('bg-green-50', 'border-green-300');
+        }
+
+        // Add this to your existing script
+document.querySelector('form').addEventListener('submit', function(e) {
+    const turnstileResponse = document.querySelector('[name="cf-turnstile-response"]');
+    if (!turnstileResponse || !turnstileResponse.value) {
+        e.preventDefault();
+        alert('Please complete the CAPTCHA verification.');
+    }
+});
+    });
+    </script>
+{% endblock %}

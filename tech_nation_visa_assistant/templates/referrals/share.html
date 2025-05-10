@@ -1,0 +1,192 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="mx-auto px-4 py-8">
+    {% if error %}
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
+        <span class="block sm:inline">{{ error }}</span>
+    </div>
+    {% else %}
+    <!-- Header Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+        <div class="p-6">
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Referral Program</h1>
+            <p class="text-gray-600">Share Tech Nation Visa Assistant with your friends and earn AI points!</p>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <!-- Total Referrals -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Total Referrals</p>
+                    <h3 class="text-2xl font-bold text-gray-900">{{ total_referrals }}</h3>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <i class="fas fa-users text-blue-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paying Customers -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Paying Customers</p>
+                    <h3 class="text-2xl font-bold text-gray-900">{{ paying_customers_count }}</h3>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <i class="fas fa-crown text-green-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Points Earned -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <p class="text-sm font-medium text-gray-500">AI Points Earned</p>
+                        <!-- Info Tooltip -->
+                        <div class="relative group">
+                            <i class="fas fa-info-circle text-gray-400 cursor-help"></i>
+                            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                                You earn 3 AI points for each referral that becomes a paying customer. Points are awarded once per referred customer.
+                            </div>
+                        </div>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900">{{ total_points }}</h3>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                    <i class="fas fa-robot text-purple-600"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+        <div class="p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Share Your Link</h2>
+            
+            <!-- Referral Link - Mobile Responsive -->
+            <div class="flex flex-col sm:flex-row items-center gap-3 p-3 bg-gray-50 rounded-lg mb-4">
+                <input type="text" 
+                       value="{{ share_url }}" 
+                       class="w-full flex-1 bg-transparent border-0 focus:ring-0 text-gray-600 mb-2 sm:mb-0 text-sm sm:text-base overflow-x-auto"
+                       readonly>
+                <button onclick="copyToClipboard('{{ share_url }}')"
+                        class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap">
+                    <i class="fas fa-copy mr-2"></i>Copy
+                </button>
+            </div>
+
+            <!-- Share Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3">
+                <a href="{{ whatsapp_share_url }}"
+                   target="_blank"
+                   class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                    <i class="fab fa-whatsapp"></i>
+                    <span class="whitespace-nowrap">Share on WhatsApp</span>
+                </a>
+                <a href="{{ twitter_share_url }}"
+                   target="_blank"
+                   class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-400 text-white rounded-lg hover:bg-blue-500 transition-colors">
+                    <i class="fab fa-twitter"></i>
+                    <span class="whitespace-nowrap">Share on Twitter</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Referrals Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Your Referrals</h2>
+            
+            {% if referral_code.signups.exists %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for signup in referral_code.signups.all %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ signup.referred_user.email }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-500">{{ signup.timestamp|date:"M d, Y" }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if signup.points_awarded %}
+                                <span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">
+                                    Paying Customer
+                                </span>
+                                {% else %}
+                                <span class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 rounded-full">
+                                    Free User
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {% if signup.points_awarded %}
+                                3 points
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-users text-gray-400 text-xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No referrals yet</h3>
+                <p class="text-gray-500">Share your referral link to start earning points!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="fixed top-4 right-4 z-[9999] hidden">
+    <div class="flex items-center w-full max-w-xs p-4 text-gray-500 glass-effect rounded-xl custom-shadow">
+        <div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-green-500 bg-green-100 rounded-lg">
+            <i class="fas fa-check"></i>
+        </div>
+        <div class="ml-3 text-sm font-medium">Referral link copied!</div>
+    </div>
+</div>
+
+<!-- Copy to Clipboard Script -->
+<script>
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        // Show toast notification
+        const toast = document.getElementById('toast');
+        toast.classList.remove('hidden');
+        setTimeout(function() {
+            toast.classList.add('hidden');
+        }, 3000);
+    }).catch(function(err) {
+        console.error('Failed to copy text: ', err);
+    });
+}
+</script>
+{% endblock %}

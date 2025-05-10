@@ -1,0 +1,48 @@
+<!-- templates/expert_marketplace/consultation_confirmation.html -->
+{% extends 'dashboard_base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
+        <div class="text-center">
+            <!-- Success Icon -->
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+
+            <!-- Confirmation Message -->
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Consultation Request Received!</h2>
+            
+            <div class="text-gray-600 mb-6">
+                <p class="mb-3">Thank you for booking a consultation with us. We have received your request and will review it shortly.</p>
+                <p class="mb-3">You will receive a confirmation email with further details about your consultation.</p>
+                <p>If you have any questions in the meantime, please don't hesitate to contact us.</p>
+            </div>
+
+            <!-- Next Steps -->
+            <div class="bg-blue-50 rounded-lg p-4 mb-6">
+                <h3 class="font-semibold text-blue-900 mb-2">Next Steps:</h3>
+                <ul class="text-blue-800 text-left list-disc list-inside">
+                    <li class="mb-2">Check your email for booking confirmation</li>
+                    <li class="mb-2">Our team will review your request</li>
+                    <li>We'll contact you with consultation details</li>
+                </ul>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="{% url 'accounts:dashboard' %}" 
+                   class="inline-flex items-center justify-center px-6 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Return to Dashboard
+                </a>
+                <a href="{% url 'document_manager:document_list' %}" 
+                   class="inline-flex items-center justify-center px-6 py-2 border border-gray-300 text-base font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Manage Documents
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

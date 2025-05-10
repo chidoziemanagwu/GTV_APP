@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="mb-6">
+        <a href="{% url 'expert_marketplace:admin_expert_list' %}" class="text-indigo-600 hover:text-indigo-800">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Expert List
+        </a>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold mb-6">Review Expert Application</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+                <h2 class="text-lg font-semibold mb-4">Personal Information</h2>
+                <p><strong>Email:</strong> {{ expert.user.email }}</p>
+                <p><strong>Name:</strong> {{ expert.user.get_full_name }}</p>
+                <p><strong>Applied On:</strong> {{ expert.created_at|date:"M d, Y" }}</p>
+            </div>
+            
+            <div>
+                <h2 class="text-lg font-semibold mb-4">Professional Information</h2>
+                <p><strong>Expertise:</strong> {{ expert.expertise }}</p>
+                <p><strong>Experience:</strong> {{ expert.years_of_experience }} years</p>
+                {% if expert.bio %}
+                <p><strong>Bio:</strong> {{ expert.bio }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="mb-8">
+            <h2 class="text-lg font-semibold mb-4">Additional Information</h2>
+            {% if expert.website %}
+            <p><strong>Website:</strong> <a href="{{ expert.website }}" target="_blank" class="text-indigo-600 hover:text-indigo-800">{{ expert.website }}</a></p>
+            {% endif %}
+            {% if expert.linkedin_profile %}
+            <p><strong>LinkedIn:</strong> <a href="{{ expert.linkedin_profile }}" target="_blank" class="text-indigo-600 hover:text-indigo-800">{{ expert.linkedin_profile }}</a></p>
+            {% endif %}
+        </div>
+        
+        <form method="post" class="mt-8">
+            {% csrf_token %}
+            <div class="flex justify-between">
+                <a href="{% url 'expert_marketplace:admin_expert_list' %}" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded">
+                    Cancel
+                </a>
+                <button type="submit" class="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded">
+                    Approve Expert & Send Password Setup Email
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

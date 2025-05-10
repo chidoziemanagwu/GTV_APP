@@ -1,0 +1,229 @@
+{% extends "account/base_account.html" %}
+{% load i18n %}
+
+{% block account_header %}{% trans "Digital Technology Path" %}{% endblock %}
+
+{% block account_content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold text-gray-900">Digital Technology Visa Path</h2>
+        <p class="mt-2 text-gray-600">Complete the following steps to prepare your Global Talent Visa application</p>
+    </div>
+
+    <!-- Progress Steps -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex-1">
+                <div class="relative">
+                    <div class="h-2 bg-gray-200 rounded-full">
+                        <div class="h-2 bg-blue-600 rounded-full" style="width: {{ progress }}%"></div>
+                    </div>
+                    <div class="absolute top-0 flex justify-between w-full -mt-6">
+                        <div class="flex flex-col items-center">
+                            <div class="w-6 h-6 {% if user.profile.assessment_completed %}bg-blue-600{% else %}bg-gray-300{% endif %} rounded-full flex items-center justify-center">
+                                {% if user.profile.assessment_completed %}
+                                <i class="fas fa-check text-white text-xs"></i>
+                                {% else %}
+                                <span class="text-white text-xs">1</span>
+                                {% endif %}
+                            </div>
+                            <span class="text-xs mt-2">Assessment</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-6 h-6 {% if user.profile.documents_completed %}bg-blue-600{% else %}bg-gray-300{% endif %} rounded-full flex items-center justify-center">
+                                {% if user.profile.documents_completed %}
+                                <i class="fas fa-check text-white text-xs"></i>
+                                {% else %}
+                                <span class="text-white text-xs">2</span>
+                                {% endif %}
+                            </div>
+                            <span class="text-xs mt-2">Documents</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-6 h-6 {% if user.profile.expert_review_completed %}bg-blue-600{% else %}bg-gray-300{% endif %} rounded-full flex items-center justify-center">
+                                {% if user.profile.expert_review_completed %}
+                                <i class="fas fa-check text-white text-xs"></i>
+                                {% else %}
+                                <span class="text-white text-xs">3</span>
+                                {% endif %}
+                            </div>
+                            <span class="text-xs mt-2">Review</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-6 h-6 {% if user.profile.application_submitted %}bg-blue-600{% else %}bg-gray-300{% endif %} rounded-full flex items-center justify-center">
+                                {% if user.profile.application_submitted %}
+                                <i class="fas fa-check text-white text-xs"></i>
+                                {% else %}
+                                <span class="text-white text-xs">4</span>
+                                {% endif %}
+                            </div>
+                            <span class="text-xs mt-2">Submit</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="mb-6">
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">Next Steps</h3>
+            <div class="space-y-4">
+                <!-- Eligibility Assessment -->
+                <div class="flex items-start p-4 border rounded-lg {% if not user.profile.assessment_completed %}border-blue-200 bg-blue-50{% else %}border-green-200 bg-green-50{% endif %}">
+                    <div class="flex-shrink-0">
+                        {% if not user.profile.assessment_completed %}
+                        <i class="fas fa-clipboard-list text-blue-500 text-xl"></i>
+                        {% else %}
+                        <i class="fas fa-check-circle text-green-500 text-xl"></i>
+                        {% endif %}
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <h4 class="text-lg font-medium {% if not user.profile.assessment_completed %}text-blue-900{% else %}text-green-900{% endif %}">
+                            Eligibility Assessment
+                        </h4>
+                        <p class="text-sm {% if not user.profile.assessment_completed %}text-blue-700{% else %}text-green-700{% endif %} mb-3">
+                            Complete a quick assessment to verify your eligibility for the Digital Technology path
+                        </p>
+                        {% if not user.profile.assessment_completed %}
+                        <a href="{% url 'accounts:assessment' %}" 
+                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                            Start Assessment
+                            <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                        {% else %}
+                        <span class="inline-flex items-center text-sm text-green-700">
+                            <i class="fas fa-check mr-2"></i>
+                            Assessment Completed
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Document Preparation -->
+                <div class="flex items-start p-4 border rounded-lg {% if not user.profile.documents_completed %}border-gray-200{% else %}border-green-200 bg-green-50{% endif %}">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-file-alt {% if not user.profile.documents_completed %}text-gray-400{% else %}text-green-500{% endif %} text-xl"></i>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <h4 class="text-lg font-medium {% if not user.profile.documents_completed %}text-gray-900{% else %}text-green-900{% endif %}">
+                            Document Preparation
+                        </h4>
+                        <p class="text-sm {% if not user.profile.documents_completed %}text-gray-600{% else %}text-green-700{% endif %} mb-3">
+                            Prepare and upload required documents for your application
+                        </p>
+                        {% if user.profile.assessment_completed and not user.profile.documents_completed %}
+                        <a href="{% url 'document_manager:document_list' %}" 
+                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                            Start Documents
+                            <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                        {% elif not user.profile.assessment_completed %}
+                        <span class="text-sm text-gray-500">Complete assessment first</span>
+                        {% else %}
+                        <span class="inline-flex items-center text-sm text-green-700">
+                            <i class="fas fa-check mr-2"></i>
+                            Documents Completed
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Expert Review -->
+<div class="flex items-start p-4 border rounded-lg {% if not user.profile.expert_review_completed %}{% if user.profile.documents_completed %}border-blue-200 bg-blue-50{% else %}border-gray-200{% endif %}{% else %}border-green-200 bg-green-50{% endif %}">
+    <div class="flex-shrink-0">
+        {% if user.profile.expert_review_completed %}
+            <i class="fas fa-check-circle text-green-500 text-xl"></i>
+        {% elif user.profile.documents_completed %}
+            <i class="fas fa-user-check text-blue-500 text-xl"></i>
+        {% else %}
+            <i class="fas fa-user-check text-gray-400 text-xl"></i>
+        {% endif %}
+    </div>
+    <div class="ml-4 flex-1">
+        <h4 class="text-lg font-medium {% if user.profile.expert_review_completed %}text-green-900{% elif user.profile.documents_completed %}text-blue-900{% else %}text-gray-900{% endif %}">
+            Expert Review
+        </h4>
+        <p class="text-sm {% if user.profile.expert_review_completed %}text-green-700{% elif user.profile.documents_completed %}text-blue-700{% else %}text-gray-600{% endif %} mb-3">
+            Get your application reviewed by immigration experts
+        </p>
+        {% if user.profile.documents_completed and not user.profile.expert_review_completed %}
+            <a href="{% url 'expert_marketplace:expert_marketplace' %}" 
+               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                Find Experts
+                <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+        {% elif user.profile.expert_review_completed %}
+            <span class="inline-flex items-center text-sm text-green-700">
+                <i class="fas fa-check mr-2"></i>
+                Expert Review Completed
+            </span>
+        {% else %}
+            <span class="text-sm text-gray-500">Complete documents first</span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Final Submission -->
+<div class="flex items-start p-4 border rounded-lg {% if not user.profile.application_submitted %}{% if user.profile.expert_review_completed %}border-blue-200 bg-blue-50{% else %}border-gray-200{% endif %}{% else %}border-green-200 bg-green-50{% endif %}">
+    <div class="flex-shrink-0">
+        {% if user.profile.application_submitted %}
+            <i class="fas fa-check-circle text-green-500 text-xl"></i>
+        {% elif user.profile.expert_review_completed %}
+            <i class="fas fa-paper-plane text-blue-500 text-xl"></i>
+        {% else %}
+            <i class="fas fa-paper-plane text-gray-400 text-xl"></i>
+        {% endif %}
+    </div>
+    <div class="ml-4 flex-1">
+        <h4 class="text-lg font-medium {% if user.profile.application_submitted %}text-green-900{% elif user.profile.expert_review_completed %}text-blue-900{% else %}text-gray-900{% endif %}">
+            Final Submission
+        </h4>
+        <p class="text-sm {% if user.profile.application_submitted %}text-green-700{% elif user.profile.expert_review_completed %}text-blue-700{% else %}text-gray-600{% endif %} mb-3">
+            Submit your application to Tech Nation
+        </p>
+        {% if user.profile.expert_review_completed and not user.profile.application_submitted %}
+            <a href="{% url 'accounts:final_submission' %}" 
+               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                Submit Application
+                <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+        {% elif user.profile.application_submitted %}
+            <span class="inline-flex items-center text-sm text-green-700">
+                <i class="fas fa-check mr-2"></i>
+                Application Submitted
+            </span>
+        {% else %}
+            <span class="text-sm text-gray-500">Complete expert review first</span>
+        {% endif %}
+    </div>
+</div>
+            </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="mt-8 p-4 bg-gray-50 rounded-lg">
+            <h3 class="text-lg font-medium text-gray-900 mb-3">Need Help?</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <a href="{% url 'ai_assistant:chat' %}" 
+                   class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-robot text-blue-500 text-xl mr-3"></i>
+                    <div>
+                        <h4 class="font-medium text-gray-900">AI Assistant</h4>
+                        <p class="text-sm text-gray-600">Get instant answers to your questions</p>
+                    </div>
+                </a>
+                <a href="{% url 'expert_marketplace:expert_marketplace' %}" 
+                   class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-user-tie text-blue-500 text-xl mr-3"></i>
+                    <div>
+                        <h4 class="font-medium text-gray-900">Expert Help</h4>
+                        <p class="text-sm text-gray-600">Connect with immigration experts</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

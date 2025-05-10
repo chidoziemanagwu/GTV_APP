@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Conversation - Tech Nation Visa{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">{{ conversation.title }}</h1>
+        <a href="{% url 'conversation_history' %}" class="text-blue-600 hover:text-blue-800">Back to Conversations</a>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="mb-2 text-sm text-gray-500">
+            Started: {{ conversation.created_at|date:"F d, Y H:i" }}
+        </div>
+        
+        <div class="border-t border-gray-200 pt-4 mt-2">
+            {% for message in messages %}
+                <div class="message mb-6">
+                    <div class="flex items-center mb-2">
+                        <span class="font-semibold">{{ message.get_role_display }}</span>
+                        <span class="text-xs text-gray-500 ml-2">{{ message.created_at|date:"H:i" }}</span>
+                    </div>
+                    <div class="{% if message.role == 'user' %}bg-gray-100{% else %}bg-blue-100{% endif %} p-4 rounded-lg">
+                        {{ message.content|linebreaks }}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

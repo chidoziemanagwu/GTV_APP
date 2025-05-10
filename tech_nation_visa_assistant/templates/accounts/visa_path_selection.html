@@ -1,0 +1,82 @@
+{% extends "account/base_account.html" %}
+{% load i18n %}
+
+{% block account_header %}{% trans "Select Your Visa Path" %}{% endblock %}
+
+{% block account_content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-8 text-center">
+        <h2 class="text-2xl font-bold text-gray-900">Choose Your Global Talent Visa Path</h2>
+        <p class="mt-2 text-gray-600">Select the path that best matches your expertise and experience</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Digital Technology Path -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+            <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-4">
+                    <i class="fas fa-laptop-code text-blue-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Digital Technology</h3>
+                <p class="text-gray-600 mb-4">For tech professionals, developers, and digital innovators</p>
+                <ul class="space-y-2 mb-6">
+                    <li class="flex items-center text-gray-600">
+                        <i class="fas fa-check text-green-500 mr-2"></i>
+                        Software Development
+                    </li>
+                    <li class="flex items-center text-gray-600">
+                        <i class="fas fa-check text-green-500 mr-2"></i>
+                        DevOps & Cloud
+                    </li>
+                    <li class="flex items-center text-gray-600">
+                        <i class="fas fa-check text-green-500 mr-2"></i>
+                        Data Science & AI
+                    </li>
+                </ul>
+                <a href="{% url 'digital_tech_path' %}" 
+                   class="block w-full text-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Choose Digital Technology
+                </a>
+            </div>
+        </div>
+
+        <!-- Other Paths (Disabled/Coming Soon) -->
+        <div class="bg-gray-50 rounded-lg shadow-md overflow-hidden opacity-75">
+            <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 bg-gray-200 rounded-lg mb-4">
+                    <i class="fas fa-flask text-gray-400 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">Other Paths</h3>
+                <p class="text-gray-500 mb-4">Science, Engineering, Arts, Culture, and more</p>
+                <ul class="space-y-2 mb-6">
+                    <li class="flex items-center text-gray-500">
+                        <i class="fas fa-clock text-gray-400 mr-2"></i>
+                        Science & Research
+                    </li>
+                    <li class="flex items-center text-gray-500">
+                        <i class="fas fa-clock text-gray-400 mr-2"></i>
+                        Engineering
+                    </li>
+                    <li class="flex items-center text-gray-500">
+                        <i class="fas fa-clock text-gray-400 mr-2"></i>
+                        Arts & Culture
+                    </li>
+                </ul>
+                <button disabled 
+                        class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-500 bg-gray-200 cursor-not-allowed">
+                    Coming Soon
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-8 text-center">
+        <p class="text-sm text-gray-500">
+            Not sure which path to choose? 
+            <a href="#" class="text-blue-600 hover:text-blue-700">Take our assessment</a>
+            or 
+            <a href="#" class="text-blue-600 hover:text-blue-700">contact our experts</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

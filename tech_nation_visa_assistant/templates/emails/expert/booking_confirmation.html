@@ -1,0 +1,41 @@
+<!-- templates/expert_marketplace/emails/booking_confirmation.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f8f9fa; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Consultation Booking Confirmation</h2>
+        </div>
+        <div class="content">
+            <p>Dear {{ booking.name }},</p>
+            
+            <p>Thank you for booking a consultation with us. Here are your booking details:</p>
+            
+            <ul>
+                <li>Date: {{ booking.scheduled_date }}</li>
+                <li>Time: {{ booking.scheduled_time }}</li>
+                <li>Duration: {{ consultation_duration }} minutes</li>
+                <li>Fee: £{{ consultation_fee }}</li>
+            </ul>
+
+            <p>Our team will review your booking and contact you shortly with next steps.</p>
+
+            <p>If you have any questions, please don't hesitate to contact us.</p>
+
+            <p>Best regards,<br>Tech Nation Visa Team</p>
+        </div>
+        <div class="footer">
+            <p>This is an automated message, please do not reply directly to this email.</p>
+        </div>
+    </div>
+</body>
+</html>
