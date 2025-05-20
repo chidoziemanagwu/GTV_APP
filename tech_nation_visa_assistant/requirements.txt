@@ -117,6 +117,7 @@ urllib3==2.4.0
 vine==5.1.0
 wcwidth==0.2.13
 webencodings==0.5.1
+whitenoise==6.5.0  # Use the latest stable version
 websockets==15.0.1
 yarl==1.20.0
 zstandard==0.23.0
