@@ -281,100 +281,100 @@
     </div>
 
     {% if document_groups %}
-        {% for doc_type, documents in document_groups.items %}
-            <div class="bg-white bg-opacity-70 backdrop-blur-lg rounded-xl shadow-lg p-4 sm:p-6 mb-6 border border-white border-opacity-20">
-                <div class="flex items-center mb-4 sm:mb-6">
-                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br 
-                        {% if doc_type == 'Personal Statements' %}from-blue-400 to-blue-600
-                        {% elif doc_type == 'CVs' %}from-purple-400 to-purple-600
-                        {% elif doc_type == 'Recommendation Letters' %}from-green-400 to-green-600
-                        {% else %}from-yellow-400 to-yellow-600{% endif %}
-                        shadow-lg flex items-center justify-center mr-3 sm:mr-4">
-                        <i class="fas {% if doc_type == 'Personal Statements' %}fa-file-alt
-                                    {% elif doc_type == 'CVs' %}fa-user-tie
-                                    {% elif doc_type == 'Recommendation Letters' %}fa-envelope
-                                    {% else %}fa-certificate{% endif %} text-white text-sm sm:text-xl"></i>
-                    </div>
-                    <h2 class="text-lg sm:text-xl font-bold text-gray-800">{{ doc_type }}</h2>
-                </div>
-                
-                <div class="overflow-x-auto -mx-4 sm:mx-0">
-                    <table id="documentsTable-{{ doc_type|slugify }}" class="min-w-full divide-y divide-gray-200 display responsive nowrap">
-                        <thead>
-                            <tr class="bg-gray-50 bg-opacity-50">
-                                <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                                <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Generated</th>
-                                <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            {% for document in documents %}
-                                <tr>
-                                    <td class="px-3 sm:px-6 py-3 sm:py-4">
-                                        <div class="flex items-center">
-                                            <div class="flex-shrink-0 hidden sm:block">
-                                                <i class="fas fa-file-alt text-gray-400"></i>
-                                            </div>
-                                            <div class="sm:ml-4">
-                                                <div class="text-sm font-medium text-gray-900">{{ document.title }}</div>
-                                                {% if document.related_criteria %}
-                                                    <div class="text-xs text-gray-500">{{ document.related_criteria.name }}</div>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-3 sm:px-6 py-3 sm:py-4">
-                                        <span class="px-2 sm:px-3 py-1 inline-flex items-center rounded-full text-xs font-medium
-                                            {% if document.status == 'completed' %}bg-green-100 text-green-800
-                                            {% elif document.status == 'in_progress' %}bg-yellow-100 text-yellow-800
-                                            {% elif document.status == 'review' %}bg-blue-100 text-blue-800
-                                            {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                            <span class="w-2 h-2 rounded-full mr-1 sm:mr-2
-                                                {% if document.status == 'completed' %}bg-green-400
-                                                {% elif document.status == 'in_progress' %}bg-yellow-400
-                                                {% elif document.status == 'review' %}bg-blue-400
-                                                {% else %}bg-gray-400{% endif %}"></span>
-                                            {{ document.get_status_display }}
-                                        </span>
-                                    </td>
-                                    <td class="px-3 sm:px-6 py-3 sm:py-4">
-                                        <div class="text-xs sm:text-sm text-gray-500">
-                                            <i class="far fa-clock mr-1 sm:mr-2"></i>
-                                            {{ document.updated_at|date:"M d, Y" }}
-                                        </div>
-                                    </td>
-                                    <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium">
-                                        <div class="flex flex-col sm:flex-row sm:space-x-3 space-y-2 sm:space-y-0">
-                                            <a href="{% url 'document_manager:document_detail' document.id %}" 
-                                               class="text-primary-600 hover:text-primary-900">
-                                                <i class="fas fa-eye mr-1"></i>View
-                                            </a>
-                                            <button onclick="showDeleteModal({{ document.id }}, '{{ document.title|escapejs }}')"
-                                                    class="text-red-600 hover:text-red-900 text-left">
-                                                <i class="fas fa-trash-alt mr-1"></i>Delete
-                                            </button>
-                                            {% if document.document_type == 'personal_statement' %}
-                                                {% if document.is_chosen %}
-                                                    <span class="px-2 py-1  text-green-800 rounded-full text-xs inline-block sm:inline">
-                                                        <i class="fas fa-check-circle mr-1"></i>Chosen for Submission
-                                                    </span>
-                                                {% else %}
-                                                    <button onclick="setAsChosen({{ document.id }})" 
-                                                            class="text-blue-600 hover:text-blue-900 text-left">
-                                                        <i class="fas fa-check-circle mr-1"></i>Set as Chosen
-                                                    </button>
-                                                {% endif %}
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+    {% for doc_type, documents in document_groups.items %}
+    <div class="bg-white bg-opacity-70 backdrop-blur-lg rounded-xl shadow-lg p-4 sm:p-6 mb-6 border border-white border-opacity-20">
+        <div class="flex items-center mb-4 sm:mb-6">
+            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br 
+                {% if doc_type == 'Personal Statements' %}from-blue-400 to-blue-600
+                {% elif doc_type == 'CVs' %}from-purple-400 to-purple-600
+                {% elif doc_type == 'Recommendation Letters' %}from-green-400 to-green-600
+                {% else %}from-yellow-400 to-yellow-600{% endif %}
+                shadow-lg flex items-center justify-center mr-3 sm:mr-4">
+                <i class="fas {% if doc_type == 'Personal Statements' %}fa-file-alt
+                            {% elif doc_type == 'CVs' %}fa-user-tie
+                            {% elif doc_type == 'Recommendation Letters' %}fa-envelope
+                            {% else %}fa-certificate{% endif %} text-white text-sm sm:text-xl"></i>
             </div>
-        {% endfor %}
+            <h2 class="text-lg sm:text-xl font-bold text-gray-800">{{ doc_type }}</h2>
+        </div>
+        
+        <div class="overflow-x-auto -mx-4 sm:mx-0">
+            <table id="documentsTable-{{ doc_type|slugify }}" class="min-w-full divide-y divide-gray-200 display responsive nowrap">
+                <thead>
+                    <tr class="bg-gray-50 bg-opacity-50">
+                        <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                        <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Generated</th>
+                        <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for document in documents %}
+                    <tr data-document-id="{{ document.id }}">
+                        <td class="px-3 sm:px-6 py-3 sm:py-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 hidden sm:block">
+                                    <i class="fas fa-file-alt text-gray-400"></i>
+                                </div>
+                                <div class="sm:ml-4">
+                                    <div class="text-sm font-medium text-gray-900">{{ document.title }}</div>
+                                    {% if document.related_criteria %}
+                                        <div class="text-xs text-gray-500">{{ document.related_criteria.name }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4">
+                            <span class="px-2 sm:px-3 py-1 inline-flex items-center rounded-full text-xs font-medium
+                                {% if document.status == 'completed' %}bg-green-100 text-green-800
+                                {% elif document.status == 'in_progress' %}bg-yellow-100 text-yellow-800
+                                {% elif document.status == 'review' %}bg-blue-100 text-blue-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                <span class="w-2 h-2 rounded-full mr-1 sm:mr-2
+                                    {% if document.status == 'completed' %}bg-green-400
+                                    {% elif document.status == 'in_progress' %}bg-yellow-400
+                                    {% elif document.status == 'review' %}bg-blue-400
+                                    {% else %}bg-gray-400{% endif %}"></span>
+                                {{ document.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4">
+                            <div class="text-xs sm:text-sm text-gray-500">
+                                <i class="far fa-clock mr-1 sm:mr-2"></i>
+                                {{ document.updated_at|date:"M d, Y" }}
+                            </div>
+                        </td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium">
+                            <div class="flex flex-col sm:flex-row sm:space-x-3 space-y-2 sm:space-y-0">
+                                <a href="{% url 'document_manager:document_detail' document.id %}" 
+                                   class="text-primary-600 hover:text-primary-900">
+                                    <i class="fas fa-eye mr-1"></i>View
+                                </a>
+                                <button onclick="showDeleteModal({{ document.id }}, '{{ document.title|escapejs }}')"
+                                        class="text-red-600 hover:text-red-900 text-left">
+                                    <i class="fas fa-trash-alt mr-1"></i>Delete
+                                </button>
+                                {% if document.document_type == 'personal_statement' %}
+                                    {% if document.is_chosen %}
+                                        <span class="px-2 py-1 text-green-800 rounded-full text-xs inline-block sm:inline">
+                                            <i class="fas fa-check-circle mr-1"></i>Chosen for Submission
+                                        </span>
+                                    {% else %}
+                                        <button onclick="setAsChosen({{ document.id }})" 
+                                                class="text-blue-600 hover:text-blue-900 text-left">
+                                            <i class="fas fa-check-circle mr-1"></i>Set as Chosen
+                                        </button>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endfor %}
     {% else %}
         <div class="bg-white bg-opacity-70 backdrop-blur-lg rounded-xl shadow-lg p-6 sm:p-12 text-center border border-white border-opacity-20">
             <div class="w-16 h-16 sm:w-20 sm:h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
@@ -483,52 +483,43 @@
 
 {% block extra_js %}
 <script>
-    $(document).ready(function() {
-        // Initialize DataTables for each document type
-        {% for doc_type, documents in document_groups.items %}
-            $('#documentsTable-{{ doc_type|slugify }}').DataTable({
-                responsive: {
-                    details: {
-                        display: $.fn.dataTable.Responsive.display.childRowImmediate,
-                        type: 'none',
-                        target: ''
-                    }
-                },
+// Add this to your document ready function
+$(document).ready(function() {
+    // Initialize DataTables with proper row removal support
+    $('table.dataTable').each(function() {
+        const tableId = $(this).attr('id');
+        if (tableId && !$.fn.DataTable.isDataTable('#' + tableId)) {
+            $(this).DataTable({
+                responsive: true,
                 pageLength: 5,
                 lengthMenu: [[5, 10, 25], [5, 10, 25]],
-                dom: '<"flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4"<"w-full sm:w-auto"l><"w-full sm:w-auto mt-2 sm:mt-0"f>>rt<"flex flex-col sm:flex-row sm:items-center sm:justify-between mt-4"<"w-full sm:w-auto text-center sm:text-left"i><"w-full sm:w-auto mt-2 sm:mt-0"p>>',
                 language: {
                     search: "",
                     searchPlaceholder: "Search documents...",
                     lengthMenu: "_MENU_ per page",
                     info: "Showing _START_ to _END_ of _TOTAL_ documents",
-                    infoEmpty: "No documents available",
-                    paginate: {
-                        first: '<i class="fas fa-angle-double-left"></i>',
-                        previous: '<i class="fas fa-angle-left"></i>',
-                        next: '<i class="fas fa-angle-right"></i>',
-                        last: '<i class="fas fa-angle-double-right"></i>'
-                    }
+                    infoEmpty: "No documents available"
                 },
                 columnDefs: [
                     { orderable: false, targets: 3 }, // Disable sorting on actions column
-                    { className: "dt-head-left", targets: "_all" },
                     { responsivePriority: 1, targets: 0 }, // Title is most important
-                    { responsivePriority: 2, targets: 3 }, // Actions are second most important
-                    { responsivePriority: 3, targets: 1 }, // Status is third most important
-                    { responsivePriority: 4, targets: 2 }  // Date is least important
+                    { responsivePriority: 2, targets: 3 } // Actions are second most important
                 ],
                 order: [[2, 'desc']], // Sort by last updated by default
-                drawCallback: function() {
-                    // Re-apply Tailwind classes to DataTables elements
-                    $('.dataTables_length select').addClass('rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500');
-                    $('.dataTables_filter input').addClass('rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500');
-                    $('.dataTables_paginate .paginate_button').addClass('px-2 sm:px-3 py-1 bg-white border border-gray-300 text-gray-500 hover:bg-gray-50 rounded-md mx-1');
-                    $('.dataTables_paginate .paginate_button.current').addClass('bg-primary-50 text-primary-600 border-primary-500');
-                }
+                stateSave: false, // Don't save state to avoid stale data
+                destroy: true // Allow reinitialization
             });
-        {% endfor %}
+        }
     });
+    
+    // Add event listener for page reload to clear cache
+    window.addEventListener('pageshow', function(event) {
+        // If the page was loaded from the cache, reload it
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+});
 
     let deleteDocumentId = null;
 
@@ -576,47 +567,8 @@
         }, 3000);
     }
 
-    function deleteDocument(documentId) {
-        // Show loading state
-        const confirmBtn = document.getElementById('confirmDeleteBtn');
-        const originalText = confirmBtn.innerHTML;
-        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Deleting...';
-        confirmBtn.disabled = true;
-
-        fetch(`/documents/${documentId}/delete/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                // Hide modal
-                hideDeleteModal();
-                
-                // Show success message
-                showToast('Document deleted successfully');
-                
-                // Reload after a short delay
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            } else {
-                throw new Error('Failed to delete document');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('Failed to delete document. Please try again.', 'error');
-            
-            confirmBtn.innerHTML = originalText;
-            confirmBtn.disabled = false;
-        });
-    }
-
-    // Helper function to get CSRF token
-    function getCookie(name) {
+     // Helper function to get CSRF token
+     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
             const cookies = document.cookie.split(';');
@@ -631,46 +583,116 @@
         return cookieValue;
     }
 
-    function setAsChosen(documentId) {
-        // Show a loading indicator
-        const button = event.target.closest('button');
-        const originalText = button.innerHTML;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Setting...';
-        button.disabled = true;
 
-        fetch(`/documents/${documentId}/set-as-chosen/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                showToast(data.message, 'success');
-                // Force a complete page reload to ensure all state is refreshed
-                window.location.href = window.location.href;
+
+    function deleteDocument(documentId) {
+    // Show loading state
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    const originalText = confirmBtn.innerHTML;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Deleting...';
+    confirmBtn.disabled = true;
+
+    fetch(`/documents/${documentId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        // Add cache control to prevent caching
+        cache: 'no-store'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Hide modal
+            hideDeleteModal();
+            
+            // Show success message
+            showToast('Document deleted successfully');
+            
+            // Find the DataTable instance for this row
+            const row = document.querySelector(`tr[data-document-id="${documentId}"]`);
+            if (row) {
+                const table = row.closest('table');
+                if (table && $.fn.DataTable.isDataTable(table)) {
+                    // Get DataTable instance and remove row properly
+                    const dataTable = $(table).DataTable();
+                    dataTable.row(row).remove().draw();
+                    console.log("Row removed via DataTable API");
+                    
+                    // Check if table is now empty
+                    if (dataTable.data().count() === 0) {
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    }
+                } else {
+                    // Fallback to direct DOM removal
+                    row.remove();
+                    console.log("Row removed from DOM directly");
+                }
             } else {
-                showToast(data.error || 'An error occurred', 'error');
-                // Reset button
-                button.innerHTML = originalText;
-                button.disabled = false;
+                console.log("Row not found in DOM, reloading page");
+                // If we can't find the row, reload the page with cache busting
+                setTimeout(() => {
+                    window.location.href = window.location.href + '?t=' + new Date().getTime();
+                }, 1000);
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('Failed to update document status. Please try again.', 'error');
+        } else {
+            throw new Error(data.error || 'Failed to delete document');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Failed to delete document. Please try again.', 'error');
+        
+        confirmBtn.innerHTML = originalText;
+        confirmBtn.disabled = false;
+    });
+}
+
+function setAsChosen(documentId) {
+    // Show a loading indicator
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Setting...';
+    button.disabled = true;
+
+    fetch(`/documents/${documentId}/set-as-chosen/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        // Add cache control to prevent caching
+        cache: 'no-store'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            // Force a complete page reload with cache busting
+            window.location.href = window.location.href + '?t=' + new Date().getTime();
+        } else {
+            showToast(data.error || 'An error occurred', 'error');
             // Reset button
             button.innerHTML = originalText;
             button.disabled = false;
-        });
-    }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Failed to update document status. Please try again.', 'error');
+        // Reset button
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
 
     // Copy content function (existing)
     function copyContent() {

@@ -19,6 +19,10 @@ urlpatterns = [
     path('<int:document_id>/delete/', views.delete_document, name='delete_document'),
     # urls.py
     path('cv/analyze/', views.analyze_cv, name='analyze_cv'),
+    path('document-generation-status/<str:task_id>/', views.document_generation_status, name='document_generation_status'),
+    path('batch-process-documents/', views.batch_process_documents, name='batch_process_documents'),
     path('recommendation/', views.recommendation_guide, name='recommendation_guide'),
+    # Add to urls.py
+    path('documents/verify/<int:document_id>/', views.verify_document, name='verify_document'),
     path('<int:document_id>/set-as-chosen/', views.set_document_as_chosen, name='set_document_as_chosen'),
 ]

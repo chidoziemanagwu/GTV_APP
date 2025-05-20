@@ -9,6 +9,8 @@ class AIQuery(models.Model):
     response_text = models.TextField()
     source_citations = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    tokens_used = models.IntegerField(default=0)  # Add this field
+    query_type = models.CharField(max_length=50, default='general', blank=True)  # Add this field too as it's used in your views
 
     class Meta:
         ordering = ['-created_at']
@@ -45,8 +47,6 @@ class Conversation(models.Model):
 
     class Meta:
         ordering = ['-updated_at']
-
-
 
 class Message(models.Model):
     ROLE_CHOICES = (
