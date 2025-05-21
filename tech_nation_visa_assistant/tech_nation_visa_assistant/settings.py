@@ -157,19 +157,22 @@ if DEBUG:
     }
 else:
     # Use Supabase PostgreSQL in production
-    DATABASE_URL = os.getenv('DATABASE_URL')
-    if not DATABASE_URL:
-        raise ValueError("No DATABASE_URL environment variable set for production")
-
     DATABASES = {
-        'default': dj_database_url.config(
-            default=DATABASE_URL,
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('dbname', 'postgres'),
+            'USER': os.getenv('user', 'postgres'),
+            'PASSWORD': os.getenv('password', '34UswGmsYARH9QhN'),
+            'HOST': os.getenv('host', 'db.wfkmewbgtoqmypexnlnx.supabase.co'),
+            'PORT': os.getenv('port', '5432'),
+            'OPTIONS': {
+                'sslmode': 'require',
+            }
+        }
     }
 
 
+    
 
 # Add caching configuration
 CACHES = {
