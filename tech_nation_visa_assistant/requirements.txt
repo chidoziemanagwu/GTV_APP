@@ -33,6 +33,7 @@ django-defender==0.9.8
 django-ratelimit==4.1.0
 django-widget-tweaks==1.5.0
 django-apscheduler==0.6.2
+dj-database-url==2.1.0
 faiss-cpu==1.10.0
 frozenlist==1.6.0
 google-ai-generativelanguage==0.6.15
@@ -79,7 +80,7 @@ prompt_toolkit==3.0.51
 propcache==0.3.1
 proto-plus==1.26.1
 protobuf==5.29.4
-psycopg2-binary==2.9.10
+psycopg2-binary==2.9.9
 pyasn1==0.6.1
 pyasn1_modules==0.4.2
 pycparser==2.22
