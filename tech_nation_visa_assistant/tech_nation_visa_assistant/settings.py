@@ -156,21 +156,17 @@ if DEBUG:
         }
     }
 else:
-    # Use Supabase PostgreSQL in production
+    # Use Render PostgreSQL in production
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('dbname', 'postgres'),
-            'USER': os.getenv('user', 'postgres'),
-            'PASSWORD': os.getenv('password', '34UswGmsYARH9QhN'),
-            'HOST': os.getenv('host', 'db.wfkmewbgtoqmypexnlnx.supabase.co'),
+            'NAME': os.getenv('dbname', 'gtvapp'),
+            'USER': os.getenv('user', 'gtvapp'),
+            'PASSWORD': os.getenv('password', 'Szhztqr9PpX58CARSm8gyvHdcs2Cy7us'),
+            'HOST': os.getenv('host', 'dpg-d0ndolp5pdvs738l6s70-a.oregon-postgres.render.com'),
             'PORT': os.getenv('port', '5432'),
-            'OPTIONS': {
-                'sslmode': 'require',
-            }
         }
     }
-
 
     
 
