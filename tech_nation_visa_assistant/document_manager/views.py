@@ -1691,3 +1691,286 @@ def test_ai_connection(request):
         return JsonResponse({
             'error': str(e)
         }, status=500)
+
+
+
+@login_required
+def document_list_partial(request):
+    """Partial view for HTMX document list updates"""
+    documents = Document.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Filter by document type if specified
+    doc_type = request.GET.get('type')
+    if doc_type:
+        documents = documents.filter(document_type=doc_type)
+    
+    # Filter by status if specified
+    status = request.GET.get('status')
+    if status:
+        documents = documents.filter(status=status)
+    
+    # Search functionality
+    search = request.GET.get('search')
+    if search:
+        from django.db import models
+        documents = documents.filter(
+            models.Q(title__icontains=search) | 
+            models.Q(content__icontains=search)
+        )
+    
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(documents, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'doc_type': doc_type,
+        'status': status,
+        'search': search,
+    }
+    
+    return render(request, 'documents/partials/document_list.html', context)
+
+@login_required
+def personal_statement_form(request):
+    """Personal statement form view"""
+    if request.method == 'POST':
+        form = PersonalStatementForm(request.POST)
+        if form.is_valid():
+            # Process the form data
+            cv_file = request.FILES.get('cv_file')
+            instructions = form.cleaned_data.get('instructions', '')
+            track = form.cleaned_data.get('track', 'digital_technology')
+            
+            # Redirect to generation process
+            return redirect('generate_personal_statement')
+    else:
+        form = PersonalStatementForm()
+    
+    return render(request, 'documents/personal_statement_form.html', {'form': form})
+
+@login_required
+def cv_upload_form(request):
+    """CV upload form view"""
+    if request.method == 'POST':
+        form = CVForm(request.POST, request.FILES)
+        if form.is_valid():
+            cv_document = form.save(commit=False)
+            cv_document.user = request.user
+            cv_document.document_type = 'cv'
+            cv_document.save()
+            
+            messages.success(request, 'CV uploaded successfully!')
+            return redirect('document_detail', pk=cv_document.pk)
+    else:
+        form = CVForm()
+    
+    return render(request, 'documents/cv_upload.html', {'form': form})
+
+@login_required
+def generation_history(request):
+    """View generation history"""
+    personal_statements = Document.objects.filter(
+        user=request.user,
+        document_type='personal_statement'
+    ).order_by('-created_at')
+    
+    context = {
+        'personal_statements': personal_statements,
+    }
+    
+    return render(request, 'documents/generation_history.html', context)
+
+@login_required
+def document_form_partial(request):
+    """Partial view for HTMX document form"""
+    if request.method == 'POST':
+        form = DocumentForm(request.POST, request.FILES)
+        if form.is_valid():
+            document = form.save(commit=False)
+            document.user = request.user
+            document.save()
+            
+            # Return success response for HTMX
+            return render(request, 'documents/partials/document_created.html', {
+                'document': document
+            })
+    else:
+        form = DocumentForm()
+    
+    return render(request, 'documents/partials/document_form.html', {'form': form})
+
+@login_required
+def document_stats(request):
+    """Document statistics view"""
+    documents = Document.objects.filter(user=request.user)
+    
+    stats = {
+        'total': documents.count(),
+        'personal_statements': documents.filter(document_type='personal_statement').count(),
+        'cvs': documents.filter(document_type='cv').count(),
+        'completed': documents.filter(status='completed').count(),
+        'in_progress': documents.filter(status__in=['draft', 'in_progress']).count(),
+        'generating': documents.filter(status='generating').count(),
+    }
+    
+    return JsonResponse(stats)
+
+@login_required
+def quick_actions(request):
+    """Quick actions view for dashboard"""
+    recent_documents = Document.objects.filter(user=request.user).order_by('-updated_at')[:5]
+    
+    context = {
+        'recent_documents': recent_documents,
+        'can_generate': True,  # Add logic here if needed
+    }
+    
+    return render(request, 'documents/partials/quick_actions.html', context)
+
+@login_required
+@require_http_methods(["POST"])
+def toggle_document_status(request, pk):
+    """Toggle document status between draft and completed"""
+    document = get_object_or_404(Document, pk=pk, user=request.user)
+    
+    if document.status == 'draft':
+        document.status = 'completed'
+    elif document.status == 'completed':
+        document.status = 'draft'
+    else:
+        document.status = 'draft'
+    
+    document.save()
+    
+    return JsonResponse({
+        'success': True,
+        'new_status': document.status,
+        'status_display': document.get_status_display()
+    })
+
+@login_required
+def search_documents(request):
+    """Search documents with AJAX"""
+    query = request.GET.get('q', '').strip()
+    
+    if not query:
+        return JsonResponse({'results': []})
+    
+    from django.db import models
+    documents = Document.objects.filter(
+        user=request.user
+    ).filter(
+        models.Q(title__icontains=query) |
+        models.Q(content__icontains=query) |
+        models.Q(notes__icontains=query)
+    )[:10]
+    
+    results = []
+    for doc in documents:
+        results.append({
+            'id': doc.id,
+            'title': doc.title,
+            'type': doc.get_document_type_display(),
+            'status': doc.get_status_display(),
+            'url': f'/documents/{doc.id}/',
+            'created_at': doc.created_at.strftime('%Y-%m-%d')
+        })
+    
+    return JsonResponse({'results': results})
+
+@login_required
+def document_preview(request, pk):
+    """Preview document content"""
+    document = get_object_or_404(Document, pk=pk, user=request.user)
+    
+    # Process content for preview
+    content = document.content or "No content available"
+    word_count = len(content.split()) if content else 0
+    
+    context = {
+        'document': document,
+        'content': content,
+        'word_count': word_count,
+    }
+    
+    return render(request, 'documents/partials/document_preview.html', context)
+
+@login_required
+@require_http_methods(["POST"])
+def update_document_notes(request, pk):
+    """Update document notes via AJAX"""
+    document = get_object_or_404(Document, pk=pk, user=request.user)
+    
+    try:
+        data = json.loads(request.body)
+        notes = data.get('notes', '')
+        
+        document.notes = notes
+        document.save(update_fields=['notes'])
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Notes updated successfully'
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+@login_required
+def template_library(request):
+    """Template library view"""
+    # This could be expanded to include actual templates
+    templates = [
+        {
+            'name': 'Digital Technology Track',
+            'description': 'Template for digital technology professionals',
+            'type': 'digital_technology'
+        },
+        {
+            'name': 'Data Science & AI Track',
+            'description': 'Template for data science and AI professionals',
+            'type': 'data_science_ai'
+        }
+    ]
+    
+    context = {
+        'templates': templates,
+    }
+    
+    return render(request, 'documents/template_library.html', context)
+
+@login_required
+def user_settings(request):
+    """User settings view"""
+    if request.method == 'POST':
+        # Handle settings update
+        preferences = {
+            'default_track': request.POST.get('default_track', 'digital_technology'),
+            'auto_save': request.POST.get('auto_save') == 'on',
+            'email_notifications': request.POST.get('email_notifications') == 'on',
+        }
+        
+        # Save to user profile or settings model
+        # For now, just show success message
+        messages.success(request, 'Settings updated successfully!')
+        return redirect('user_settings')
+    
+    context = {
+        'tracks': [
+            ('digital_technology', 'Digital Technology'),
+            ('data_science_ai', 'Data Science & AI'),
+        ]
+    }
+    
+    return render(request, 'documents/user_settings.html', context)

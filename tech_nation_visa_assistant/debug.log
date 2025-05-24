@@ -2480,3 +2480,11 @@ INFO 2025-05-20 15:44:57,658 basehttp "POST /documents/cv/analyze/ HTTP/1.1" 200
 INFO 2025-05-24 09:34:08,487 schedulers Scheduler started successfully
 WARNING 2025-05-24 09:34:17,648 document_generator OpenAI API key not found. Document generation will not function properly.
 WARNING 2025-05-24 09:34:17,770 document_generator OpenAI API key not found. Document generation will not function properly.
+INFO 2025-05-24 10:35:35,100 schedulers Scheduler started successfully
+INFO 2025-05-24 10:35:41,876 schedulers Scheduler started successfully
+INFO 2025-05-24 10:35:41,937 autoreload Watching for file changes with StatReloader
+INFO 2025-05-24 10:36:52,259 autoreload C:\Users\HP\Documents\GitHub\GTV_APP\tech_nation_visa_assistant\document_manager\views.py changed, reloading.
+INFO 2025-05-24 10:37:00,705 schedulers Scheduler started successfully
+INFO 2025-05-24 10:37:00,780 autoreload Watching for file changes with StatReloader
+WARNING 2025-05-24 10:37:07,343 document_generator OpenAI API key not found. Document generation will not function properly.
+WARNING 2025-05-24 10:37:07,469 document_generator OpenAI API key not found. Document generation will not function properly.
