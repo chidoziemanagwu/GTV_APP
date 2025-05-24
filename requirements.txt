@@ -17,12 +17,8 @@ django-apscheduler>=0.6.2
 aiohttp>=3.8.0
 aiofiles>=23.2.0
 
-# Google AI (MISSING PACKAGES)
-google-generativeai>=0.3.0
-google-cloud>=0.34.0
-google-auth>=2.23.0
-google-auth-oauthlib>=1.1.0
-google-auth-httplib2>=0.1.1
+# Google AI (CORRECT PACKAGE)
+google-genai>=0.3.0
 
 # WebSockets and Channels
 channels>=4.0.0
