@@ -13,9 +13,16 @@ django-allauth>=0.57.0
 # Scheduling
 django-apscheduler>=0.6.2
 
-# Async HTTP client (MISSING PACKAGE)
+# Async HTTP client
 aiohttp>=3.8.0
 aiofiles>=23.2.0
+
+# Google AI (MISSING PACKAGES)
+google-generativeai>=0.3.0
+google-cloud>=0.34.0
+google-auth>=2.23.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
 
 # WebSockets and Channels
 channels>=4.0.0
@@ -155,6 +162,6 @@ django-waffle>=4.1.0
 # Environment management
 django-environ>=0.11.2
 
-# Additional async packages that might be needed
+# Additional async packages
 asyncio-mqtt>=0.16.1
 uvloop>=0.19.0
