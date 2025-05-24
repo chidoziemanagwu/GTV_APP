@@ -443,7 +443,7 @@ generateBtn.addEventListener('click', async function() {
         generateBtn.disabled = true;
         generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
 
-        const response = await fetch('{% url "document_manager:generate_personal_statement" %}', {
+        const response = await fetch('{% url "document_manager:generate_personal_statement_optimized" %}', {
             method: 'POST',
             body: formData
         });

@@ -25,4 +25,5 @@ urlpatterns = [
     # Add to urls.py
     path('documents/verify/<int:document_id>/', views.verify_document, name='verify_document'),
     path('<int:document_id>/set-as-chosen/', views.set_document_as_chosen, name='set_document_as_chosen'),
+    path('personal-statement/generate-fast/', views.generate_personal_statement_optimized, name='generate_personal_statement_optimized'),
 ]

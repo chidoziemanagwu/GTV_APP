@@ -2477,3 +2477,6 @@ INFO 2025-05-20 15:44:18,391 basehttp "GET /documents/ HTTP/1.1" 200 10990
 INFO 2025-05-20 15:44:27,894 basehttp "GET /documents/create/cv/ HTTP/1.1" 200 7710
 INFO 2025-05-20 15:44:56,298 views OpenAI API call took 9.42 seconds for user 8
 INFO 2025-05-20 15:44:57,658 basehttp "POST /documents/cv/analyze/ HTTP/1.1" 200 1719
+INFO 2025-05-24 09:34:08,487 schedulers Scheduler started successfully
+WARNING 2025-05-24 09:34:17,648 document_generator OpenAI API key not found. Document generation will not function properly.
+WARNING 2025-05-24 09:34:17,770 document_generator OpenAI API key not found. Document generation will not function properly.

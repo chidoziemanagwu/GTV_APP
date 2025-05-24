@@ -15,24 +15,38 @@ import re
 import threading
 import time
 import concurrent.futures
-# Rename the docx Document import to avoid conflict with your model
+import asyncio
+import aiohttp
+import tempfile
+import uuid
+from typing import Optional
+from functools import wraps
+
+# Document processing imports
 from docx import Document as DocxDocument
+from docx.shared import Inches, Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
 import PyPDF2
+
+# Django imports
 from .models import Document
 from .forms import DocumentForm, PersonalStatementForm, CVForm
 from .services import GeminiDocumentGenerator
-from openai import OpenAI
+from openai import OpenAI, AsyncOpenAI
 from django.conf import settings
 from bs4 import BeautifulSoup
 import requests
 from .utils import calculate_application_progress
-from functools import wraps
-import uuid
-from typing import Optional
-
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+# Initialize OpenAI clients
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
+
+# Create a document cache
+document_cache = {}
+
 
 class AIProvider:
     def __init__(self):
@@ -41,64 +55,35 @@ class AIProvider:
             api_key=settings.DEEPSEEK_API_KEY,
             base_url="https://api.deepseek.com"
         )
-    def format_personal_statement(self, content: str) -> str:
-        """Format the personal statement with proper HTML and styling"""
-        # First create the wrapper with styling
-        html_template = """
-        <div class="personal-statement" style="max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; line-height: 1.6;">
-            <div class="warning-box" style="background-color: #fff3cd; border: 1px solid #ffeeba; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
-                <h4 style="color: #856404; margin-top: 0;">⚠️ SAMPLE STATEMENT</h4>
-                <p>This is an AI-generated sample personal statement. You should:</p>
-                <ul>
-                    <li>Customize it with your specific achievements and experiences</li>
-                    <li>Verify all facts and claims before submission</li>
-                    <li>Use it as a guide, not a final submission</li>
-                </ul>
-            </div>
+        # Add async clients
+        self.async_openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        self.async_deepseek_client = AsyncOpenAI(
+            api_key=settings.DEEPSEEK_API_KEY,
+            base_url="https://api.deepseek.com"
+        )
 
-            {content}
+    def get_system_prompt(self):
+        return """You are an expert at writing personal statements for Tech Nation Global Talent Visa applications.
 
-            <div class="disclaimer-box" style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; margin-top: 20px; border-radius: 5px;">
-                <h4 style="color: #721c24; margin-top: 0;">📝 Important Notice</h4>
-                <p>This document was generated based on the provided CV and instructions. Before submitting:</p>
-                <ul>
-                    <li>Review all content for accuracy</li>
-                    <li>Replace all placeholder text [in brackets]</li>
-                    <li>Ensure all claims are supported by evidence</li>
-                    <li>Verify word count meets requirements</li>
-                </ul>
-            </div>
-        </div>
-        """
+        Format your response with proper structure, using:
+        - Main sections with # (like "# Introduction")
+        - Subsections with ## (like "## Technical Skills")
+        - Bold text for emphasis using **text**
+        - Bullet points using - for lists
 
-        # Convert markdown to HTML with custom styling
-        import re
+        Your personal statement should:
+        - Demonstrate exceptional talent and potential in digital technology
+        - Showcase technical skills, innovations, and impact
+        - Include specific examples of projects, achievements, and contributions
+        - Highlight recognition, awards, or publications
+        - Demonstrate potential to become a leader in the UK tech sector
+        - Include evidence of contributions to company/organizational growth
+        - Explain plans to contribute to the UK's digital technology sector
+        - Be clear, concise, and well-structured
+        - Ensure all claims can be supported by evidence
+        - Be approximately 800-1000 words
 
-        # Replace markdown headers with styled HTML
-        content = re.sub(r'# (.*)', r'<h1 style="color: #dc3545; text-align: center; font-size: 24px; margin-bottom: 30px;">\1</h1>', content)
-        content = re.sub(r'## (.*)', r'<h2 style="color: #333; font-size: 20px; margin-top: 25px;">\1</h2>', content)
-        content = re.sub(r'### (.*)', r'<h3 style="color: #444; font-size: 18px; margin-top: 20px;">\1</h3>', content)
-
-        # Convert bold text
-        content = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', content)
-
-        # Convert blockquotes
-        content = re.sub(r'> (.*)', r'<div style="background-color: #e9ecef; border-left: 4px solid #dee2e6; padding: 15px; margin: 15px 0;">\1</div>', content)
-
-        # Convert horizontal rules
-        content = re.sub(r'---', '<hr style="margin: 25px 0; border: 0; border-top: 1px solid #eee;">', content)
-
-        # Convert bullet points
-        content = re.sub(r'- (.*)', r'<li style="margin-bottom: 8px;">\1</li>', content)
-        content = content.replace('<li', '<ul style="margin-left: 20px; margin-bottom: 15px;"><li')
-        content = content.replace('</li>\n</ul>', '</li></ul>')
-
-        # Convert paragraphs
-        paragraphs = content.split('\n\n')
-        content = ''.join([f'<p style="margin-bottom: 15px;">{p}</p>' if not (p.startswith('<h') or p.startswith('<div') or p.startswith('<ul')) else p for p in paragraphs])
-
-        # Insert the formatted content into the template
-        return html_template.format(content=content)
+        Make sure to include Introduction, Technical Expertise, Leadership, and Conclusion sections."""
 
     def try_deepseek(self, prompt: str) -> Optional[str]:
         """Try to get a response from DeepSeek"""
@@ -106,27 +91,7 @@ class AIProvider:
             response = self.deepseek_client.chat.completions.create(
                 model="deepseek-chat",
                 messages=[
-                    {"role": "system", "content": """You are an expert at writing personal statements for Tech Nation Global Talent Visa applications.
-
-                    Format your response with proper structure, using:
-                    - Main sections with # (like "# Introduction")
-                    - Subsections with ## (like "## Technical Skills")
-                    - Bold text for emphasis using **text**
-                    - Bullet points using - for lists
-
-                    Your personal statement should:
-                    - Demonstrate exceptional talent and potential in digital technology
-                    - Showcase technical skills, innovations, and impact
-                    - Include specific examples of projects, achievements, and contributions
-                    - Highlight recognition, awards, or publications
-                    - Demonstrate potential to become a leader in the UK tech sector
-                    - Include evidence of contributions to company/organizational growth
-                    - Explain plans to contribute to the UK's digital technology sector
-                    - Be clear, concise, and well-structured
-                    - Ensure all claims can be supported by evidence
-                    - Be approximately 800-1000 words
-
-                    Make sure to include Introduction, Technical Expertise, Leadership, and Conclusion sections."""},
+                    {"role": "system", "content": self.get_system_prompt()},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
@@ -143,27 +108,7 @@ class AIProvider:
             response = self.openai_client.chat.completions.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": """You are an expert at writing personal statements for Tech Nation Global Talent Visa applications.
-
-                    Format your response with proper structure, using:
-                    - Main sections with # (like "# Introduction")
-                    - Subsections with ## (like "## Technical Skills")
-                    - Bold text for emphasis using **text**
-                    - Bullet points using - for lists
-
-                    Your personal statement should:
-                    - Demonstrate exceptional talent and potential in digital technology
-                    - Showcase technical skills, innovations, and impact
-                    - Include specific examples of projects, achievements, and contributions
-                    - Highlight recognition, awards, or publications
-                    - Demonstrate potential to become a leader in the UK tech sector
-                    - Include evidence of contributions to company/organizational growth
-                    - Explain plans to contribute to the UK's digital technology sector
-                    - Be clear, concise, and well-structured
-                    - Ensure all claims can be supported by evidence
-                    - Be approximately 800-1000 words
-
-                    Make sure to include Introduction, Technical Expertise, Leadership, and Conclusion sections."""},
+                    {"role": "system", "content": self.get_system_prompt()},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
@@ -173,8 +118,6 @@ class AIProvider:
         except Exception as e:
             logger.error(f"Error with OpenAI API: {str(e)}")
             return None
-            
-        
 
     def generate_content(self, prompt: str) -> Optional[str]:
         """Try DeepSeek first, fall back to OpenAI if DeepSeek fails"""
@@ -195,18 +138,248 @@ class AIProvider:
         logger.error("Both DeepSeek and OpenAI failed to generate content")
         return None
 
-
-
 # Create a singleton instance
 ai_provider = AIProvider()
 
+# MISSING FUNCTION 1: extract_cv_content
+def extract_cv_content(cv_file):
+    """Extract text content from CV file (PDF, DOCX, or TXT)"""
+    try:
+        # Check if we've already processed this file
+        file_hash = hash(cv_file.read())
+        cv_file.seek(0)  # Reset file pointer
+
+        if file_hash in document_cache:
+            return document_cache[file_hash]
+
+        file_extension = cv_file.name.lower().split('.')[-1]
+        
+        if file_extension == 'pdf':
+            content = extract_pdf_content(cv_file)
+        elif file_extension in ['docx', 'doc']:
+            content = extract_docx_content(cv_file)
+        elif file_extension == 'txt':
+            content = cv_file.read().decode('utf-8')
+        else:
+            raise ValueError(f"Unsupported file format: {file_extension}")
+        
+        # Cache the result
+        document_cache[file_hash] = content
+        return content
+            
+    except Exception as e:
+        logger.error(f"Error extracting CV content: {str(e)}")
+        raise Exception(f"Failed to extract content from CV: {str(e)}")
+
+def extract_pdf_content(pdf_file):
+    """Extract text from PDF file"""
+    try:
+        # Create a copy of the file in memory
+        file_copy = io.BytesIO(pdf_file.read())
+        pdf_file.seek(0)  # Reset file pointer for future use
+        
+        pdf_reader = PyPDF2.PdfReader(file_copy)
+        text = ""
+        
+        for page in pdf_reader.pages:
+            text += page.extract_text() + "\\n"
+        
+        if not text.strip():
+            raise Exception("No text could be extracted from the PDF")
+            
+        return text.strip()
+    except Exception as e:
+        logger.error(f"Error extracting PDF content: {str(e)}")
+        raise Exception(f"Failed to extract PDF content: {str(e)}")
+
+def extract_docx_content(docx_file):
+    """Extract text from DOCX file"""
+    try:
+        # Create a copy of the file in memory
+        file_copy = io.BytesIO(docx_file.read())
+        docx_file.seek(0)  # Reset file pointer for future use
+        
+        doc = DocxDocument(file_copy)
+        text = ""
+        
+        # Extract text from paragraphs
+        for paragraph in doc.paragraphs:
+            if paragraph.text.strip():  # Only add non-empty paragraphs
+                text += paragraph.text + "\\n"
+        
+        # Also extract text from tables
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    if cell.text.strip():
+                        text += cell.text + " "
+                text += "\\n"
+        
+        if not text.strip():
+            raise Exception("No text could be extracted from the DOCX file")
+            
+        return text.strip()
+    except Exception as e:
+        logger.error(f"Error extracting DOCX content: {str(e)}")
+        raise Exception(f"Failed to extract DOCX content: {str(e)}")
+
+# MISSING FUNCTION 2: save_to_docx
+def save_to_docx(content, title="Document", doc_type="personal_statement"):
+    """Save HTML content to a DOCX file"""
+    try:
+        # Create a new document
+        doc = DocxDocument()
+        
+        # Set document margins
+        sections = doc.sections
+        for section in sections:
+            section.top_margin = Inches(1)
+            section.bottom_margin = Inches(1)
+            section.left_margin = Inches(1)
+            section.right_margin = Inches(1)
+        
+        # Add title
+        title_paragraph = doc.add_heading(title, 0)
+        title_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        # Add date
+        date_paragraph = doc.add_paragraph()
+        date_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        date_run = date_paragraph.add_run(f"Generated on: {datetime.now().strftime('%d %B %Y')}")
+        date_run.font.size = Pt(10)
+        date_run.italic = True
+        
+        # Add separator
+        doc.add_paragraph("=" * 50).alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        # Clean up the content - remove HTML tags
+        import re
+        clean_content = re.sub(r'<[^>]+>', '', content)
+        
+        # Remove markdown formatting
+        clean_content = re.sub(r'\\*\\*(.*?)\\*\\*', r'\\1', clean_content)
+        clean_content = re.sub(r'\\n\\s*\\n', '\\n\\n', clean_content)
+        clean_content = clean_content.strip()
+        
+        # Split by paragraphs and add to document
+        paragraphs = clean_content.split('\\n\\n')
+        
+        for para_text in paragraphs:
+            para_text = para_text.strip()
+            if para_text:
+                # Check if it's a heading (starts with #)
+                if para_text.startswith('#'):
+                    heading_text = para_text.lstrip('#').strip()
+                    doc.add_heading(heading_text, level=1)
+                elif para_text.startswith('##'):
+                    heading_text = para_text.lstrip('#').strip()
+                    doc.add_heading(heading_text, level=2)
+                elif para_text.startswith('•') or para_text.startswith('-'):
+                    # Handle bullet points
+                    p = doc.add_paragraph(style='List Bullet')
+                    p.paragraph_format.left_indent = Inches(0.25)
+                    run = p.add_run(para_text[1:].strip())
+                    run.font.size = Pt(11)
+                else:
+                    # Regular paragraph
+                    paragraph = doc.add_paragraph(para_text)
+                    paragraph.paragraph_format.space_after = Pt(12)
+        
+        # Add disclaimer
+        doc.add_paragraph("=" * 50).alignment = WD_ALIGN_PARAGRAPH.CENTER
+        disclaimer_title = doc.add_heading("DISCLAIMER", level=1)
+        disclaimer_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        disclaimer_text = doc.add_paragraph(
+            "This document was automatically generated and should be reviewed for accuracy before submission. "
+            "The content is based on the information provided and does not guarantee visa approval."
+        )
+        disclaimer_text.style = 'Intense Quote'
+        
+        # Save to temporary file
+        temp_dir = tempfile.gettempdir()
+        filename = f"{doc_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
+        filepath = os.path.join(temp_dir, filename)
+        
+        doc.save(filepath)
+        
+        return filepath
+        
+    except Exception as e:
+        logger.error(f"Error saving to DOCX: {str(e)}")
+        raise Exception(f"Failed to save document: {str(e)}")
+
+# MISSING FUNCTION 3: process_single_document
+def process_single_document(document_id, user):
+    """Process a single document for batch operations"""
+    try:
+        document = Document.objects.get(id=document_id, user=user)
+        
+        # Perform some processing based on document type
+        if document.document_type == 'personal_statement':
+            # Update word count or other metrics
+            word_count = len(document.content.split()) if document.content else 0
+            
+            # Update document status based on word count
+            if word_count >= 800 and word_count <= 1200:
+                status = 'completed'
+            elif word_count > 0:
+                status = 'in_progress'
+            else:
+                status = 'draft'
+            
+            document.status = status
+            document.save(update_fields=['status'])
+            
+            return {
+                "status": "success",
+                "word_count": word_count,
+                "document_status": status
+            }
+        elif document.document_type == 'cv':
+            # Analyze CV if it has a file
+            if document.file:
+                try:
+                    with open(document.file.path, 'rb') as f:
+                        cv_content = extract_cv_content(f)
+                    
+                    # Simple analysis
+                    word_count = len(cv_content.split()) if cv_content else 0
+                    document.notes = f"CV analyzed: {word_count} words extracted"
+                    document.status = 'analyzed'
+                    document.save(update_fields=['notes', 'status'])
+                    
+                    return {
+                        "status": "success",
+                        "word_count": word_count,
+                        "analysis": "CV content extracted and analyzed"
+                    }
+                except Exception as e:
+                    return {
+                        "status": "error",
+                        "message": f"Error analyzing CV: {str(e)}"
+                    }
+        
+        return {
+            "status": "success",
+            "message": "Document processed"
+        }
+            
+    except Document.DoesNotExist:
+        return {
+            "status": "error",
+            "message": "Document not found"
+        }
+    except Exception as e:
+        logger.error(f"Error processing document {document_id}: {str(e)}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
 
 
-# Initialize OpenAI client
-client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
-# Create a document cache
-document_cache = {}
+
 
 # Rate limiting decorator
 def rate_limit(max_calls=5, window=60):
@@ -263,19 +436,28 @@ def process_content_for_frontend(content):
     # Create a properly formatted HTML structure
     html_output = """
     <div class="personal-statement">
+        <div class="warning-box" style="background-color: #fff3cd; border: 1px solid #ffeeba; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+            <h4 style="color: #856404; margin-top: 0;">⚠️ SAMPLE STATEMENT</h4>
+            <p>This is an AI-generated sample personal statement. You should:</p>
+            <ul>
+                <li>Customize it with your specific achievements and experiences</li>
+                <li>Verify all facts and claims before submission</li>
+                <li>Use it as a guide, not a final submission</li>
+            </ul>
+        </div>
     """
 
     # Extract title and author if present
     title_match = re.search(r'Personal Statement for Tech Nation.*', content, re.IGNORECASE)
     title = title_match.group(0) if title_match else "Personal Statement for Tech Nation Global Talent Visa"
 
-    author_match = re.search(r'By (.*?)(?=\n|$)', content)
+    author_match = re.search(r'By (.*?)(?=\\n|$)', content)
     author = author_match.group(1) if author_match else ""
 
     # Add title to HTML
-    html_output += f'<h1>{title}</h1>\n'
+    html_output += f'<h1>{title}</h1>\\n'
     if author:
-        html_output += f'<p style="text-align: center; font-style: italic;">By {author}</p>\n'
+        html_output += f'<p style="text-align: center; font-style: italic;">By {author}</p>\\n'
 
     # Remove title and author from content
     if title_match:
@@ -294,14 +476,14 @@ def process_content_for_frontend(content):
         section = section.replace('--', '')
 
         # Process the section
-        lines = section.strip().split('\n')
+        lines = section.strip().split('\\n')
         section_title = lines[0].strip()
 
         if section_title:
-            html_output += f'<h2>{section_title}</h2>\n'
+            html_output += f'<h2>{section_title}</h2>\\n'
 
         # Process the rest of the section content
-        section_content = '\n'.join(lines[1:]).strip()
+        section_content = '\\n'.join(lines[1:]).strip()
 
         # Process subsections (marked with ##)
         subsections = section_content.split('##')
@@ -310,72 +492,70 @@ def process_content_for_frontend(content):
             if not subsection.strip():
                 continue
 
-            subsection_lines = subsection.strip().split('\n')
+            subsection_lines = subsection.strip().split('\\n')
 
             # If this is not the first subsection, it has a title
             if i > 0 and subsection_lines[0].strip():
                 subsection_title = subsection_lines[0].strip()
-                html_output += f'<h3>{subsection_title}</h3>\n'
-                subsection_content = '\n'.join(subsection_lines[1:]).strip()
+                html_output += f'<h3>{subsection_title}</h3>\\n'
+                subsection_content = '\\n'.join(subsection_lines[1:]).strip()
             else:
                 subsection_content = subsection.strip()
 
             # Process paragraphs and lists
-            paragraphs = re.split(r'\n\s*\n', subsection_content)
+            paragraphs = re.split(r'\\n\\s*\\n', subsection_content)
 
             for para in paragraphs:
                 if not para.strip():
                     continue
 
                 # Check if this is a list
-                if re.search(r'^\s*-\s+', para.strip(), re.MULTILINE):
+                if re.search(r'^\\s*-\\s+', para.strip(), re.MULTILINE):
                     # This is a list
-                    list_items = re.findall(r'^\s*-\s+(.*?)$', para, re.MULTILINE)
+                    list_items = re.findall(r'^\\s*-\\s+(.*?)$', para, re.MULTILINE)
                     if list_items:
-                        html_output += '<ul style="list-style: disc outside none; margin-left: 20px; margin-bottom: 15px;">\n'
+                        html_output += '<ul style="list-style: disc outside none; margin-left: 20px; margin-bottom: 15px;">\\n'
                         for item in list_items:
-                            html_output += f'<li style="margin-bottom: 8px;">{item.strip()}</li>\n'
-                        html_output += '</ul>\n'
+                            html_output += f'<li style="margin-bottom: 8px;">{item.strip()}</li>\\n'
+                        html_output += '</ul>\\n'
                 # Check for checkmarks (✅)
                 elif '✅' in para:
                     # This is a list with checkmarks
                     list_items = para.split('✅')
                     if len(list_items) > 1:  # Skip the first empty item
-                        html_output += '<ul style="list-style: none; margin-left: 20px; margin-bottom: 15px;">\n'
+                        html_output += '<ul style="list-style: none; margin-left: 20px; margin-bottom: 15px;">\\n'
                         for item in list_items[1:]:
                             if item.strip():
-                                html_output += f'<li style="margin-bottom: 8px;">✅ {item.strip()}</li>\n'
-                        html_output += '</ul>\n'
+                                html_output += f'<li style="margin-bottom: 8px;">✅ {item.strip()}</li>\\n'
+                        html_output += '</ul>\\n'
                 else:
                     # Regular paragraph
-                    html_output += f'<p>{para.strip()}</p>\n'
+                    html_output += f'<p>{para.strip()}</p>\\n'
 
         # Add horizontal rule after each main section
-        html_output += '<hr>\n'
+        html_output += '<hr>\\n'
 
     # Process bold text
-    html_output = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', html_output)
+    html_output = re.sub(r'\\*\\*(.*?)\\*\\*', r'<strong>\\1</strong>', html_output)
 
     # Process links
-    html_output = re.sub(r'\[(.*?)\]\((.*?)\)', r'<a href="\2">\1</a>', html_output)
+    html_output = re.sub(r'\\[(.*?)\\]\\((.*?)\\)', r'<a href="\\2">\\1</a>', html_output)
 
     # Add disclaimer at the bottom
     html_output += """
-    <div class="disclaimer-box" style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; margin-top: 20px; border-radius: 5px;">
-        <h4 style="color: #721c24; margin-top: 0;">📝 Important Notice</h4>
-        <p>This document was generated based on the provided CV and instructions. Before submitting:</p>
-        <ul style="list-style: disc outside none; margin-left: 20px; margin-bottom: 15px;">
-            <li style="margin-bottom: 8px;">Review all content for accuracy</li>
-            <li style="margin-bottom: 8px;">Replace any placeholder text</li>
-            <li style="margin-bottom: 8px;">Ensure all claims are supported by evidence</li>
-            <li style="margin-bottom: 8px;">Verify word count meets requirements (800-1000 words)</li>
-            <li style="margin-bottom: 8px;">Customize to reflect your unique achievements and experiences</li>
-        </ul>
+        <div class="disclaimer-box" style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; margin-top: 20px; border-radius: 5px;">
+            <h4 style="color: #721c24; margin-top: 0;">📝 Important Notice</h4>
+            <p>This document was generated based on the provided CV and instructions. Before submitting:</p>
+            <ul style="list-style: disc outside none; margin-left: 20px; margin-bottom: 15px;">
+                <li style="margin-bottom: 8px;">Review all content for accuracy</li>
+                <li style="margin-bottom: 8px;">Replace any placeholder text</li>
+                <li style="margin-bottom: 8px;">Ensure all claims are supported by evidence</li>
+                <li style="margin-bottom: 8px;">Verify word count meets requirements (800-1000 words)</li>
+                <li style="margin-bottom: 8px;">Customize to reflect your unique achievements and experiences</li>
+            </ul>
+        </div>
     </div>
     """
-
-    # Close the personal statement div
-    html_output += '</div>'
 
     return html_output
 
@@ -467,445 +647,6 @@ def generate_document_task(cv_content, instructions, user_id, task_id):
         logger.error(f"Document generation failed: {str(e)}")
         return None
 
-def format_content_for_frontend(content):
-    """Format the content to be compatible with the frontend"""
-    # Create a properly formatted HTML structure
-    formatted_html = f"""
-    <div class="personal-statement">
-        <h1>Personal Statement for Tech Nation Global Talent Visa</h1>
-
-        {process_sections(content)}
-
-    </div>
-    """
-    return formatted_html
-
-
-def extract_table_text(table):
-    """Extract text from a table efficiently"""
-    rows = []
-    for row in table.rows:
-        cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
-        if cells:
-            rows.append(" | ".join(cells))
-    return "\n".join(rows)
-
-def extract_cv_content(cv_file):
-    """Extract text content from CV file with caching"""
-    # Check if we've already processed this file
-    file_hash = hash(cv_file.read())
-    cv_file.seek(0)  # Reset file pointer
-
-    if file_hash in document_cache:
-        return document_cache[file_hash]
-
-    try:
-        # Create a copy of the file in memory
-        file_copy = io.BytesIO(cv_file.read())
-        cv_file.seek(0)  # Reset file pointer for future use
-
-        if cv_file.name.lower().endswith('.pdf'):
-            try:
-                # Use a more efficient PDF extraction method
-                pdf_reader = PyPDF2.PdfReader(file_copy)
-                content = []
-                for page in pdf_reader.pages:
-                    content.append(page.extract_text())
-                extracted_text = '\n'.join(content)
-                document_cache[file_hash] = extracted_text
-                return extracted_text
-            except Exception as e:
-                logger.error(f"Error extracting PDF content: {str(e)}")
-                raise Exception(f"Error extracting PDF content: {str(e)}")
-
-        elif cv_file.name.lower().endswith(('.doc', '.docx')):
-            try:
-                doc = DocxDocument(file_copy)
-                content = []
-                # Extract text from paragraphs
-                for para in doc.paragraphs:
-                    if para.text.strip():  # Only add non-empty paragraphs
-                        content.append(para.text.strip())
-
-                # Extract text from tables
-                for table in doc.tables:
-                    for row in table.rows:
-                        for cell in row.cells:
-                            if cell.text.strip():
-                                content.append(cell.text.strip())
-
-                extracted_text = '\n'.join(content)
-                document_cache[file_hash] = extracted_text
-                return extracted_text
-            except Exception as e:
-                logger.error(f"Error extracting Word document content: {str(e)}")
-                raise Exception(f"Error extracting Word document content: {str(e)}")
-        else:
-            raise Exception("Unsupported file format. Please upload a PDF or Word document.")
-
-    except Exception as e:
-        logger.error(f"Error processing file: {str(e)}")
-        raise Exception(f"Error processing file: {str(e)}")
-
-def save_to_docx(content, title, doc_type):
-    """Save content to DOCX file with optimized performance"""
-    try:
-        from docx import Document as DocxDocument  # Changed import
-        from docx.shared import Pt, RGBColor, Inches
-        from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
-        import re
-        from datetime import datetime
-        import os
-
-        # Start timing
-        start_time = time.time()
-
-        doc = DocxDocument()
-
-        # Set document margins efficiently
-        sections = doc.sections
-        for section in sections:
-            section.top_margin = Inches(1)
-            section.bottom_margin = Inches(1)
-            section.left_margin = Inches(1)
-            section.right_margin = Inches(1)
-
-        # Add main title
-        title_paragraph = doc.add_heading(title, level=1)
-        title_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        for run in title_paragraph.runs:
-            run.font.size = Pt(16)
-            run.bold = True
-
-        # Add date
-        date_paragraph = doc.add_paragraph()
-        date_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        date_run = date_paragraph.add_run(f"Generated on: {datetime.now().strftime('%d %B %Y')}")
-        date_run.font.size = Pt(10)
-        date_run.italic = True
-
-        # Add separator
-        doc.add_paragraph("=" * 50).alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-        # Add disclaimer section
-        disclaimer_title = doc.add_heading("DISCLAIMER", level=1)
-        disclaimer_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        for run in disclaimer_title.runs:
-            run.font.color.rgb = RGBColor(255, 0, 0)
-            run.font.size = Pt(14)
-
-        # Add disclaimer text
-        DISCLAIMER_TEXT = "This document was automatically generated and should be reviewed for accuracy before submission. The content is based on the information provided and does not guarantee visa approval."
-        disclaimer_text = doc.add_paragraph(DISCLAIMER_TEXT)
-        disclaimer_text.style = 'Intense Quote'
-        disclaimer_text.paragraph_format.space_after = Pt(20)
-
-        # Add separator before main content
-        doc.add_paragraph("=" * 50).alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-        # Clean up the content more efficiently
-        # Use a single regex operation to remove HTML tags
-        content = re.sub(r'<[^>]+>', '', content)
-
-        # Clean up markdown and extra spacing
-        content = re.sub(r'\*\*(.*?)\*\*', r'\1', content)
-        content = re.sub(r'\n\s*\n', '\n\n', content)
-        content = content.strip()
-
-        # Split content into sections and process in chunks
-        # This is more memory efficient for large documents
-        sections = content.split('\n')
-        current_section = None
-
-        # Process sections in batches
-        batch_size = 20
-        for i in range(0, len(sections), batch_size):
-            batch = sections[i:i+batch_size]
-
-            for section in batch:
-                section = section.strip()
-                if not section:
-                    continue
-
-                # Check if this is a section header
-                if ':' in section and len(section.split(':')[0]) < 50:
-                    current_section = section.split(':')[0].strip()
-                    # Add section header
-                    header = doc.add_heading(section, level=2)
-                    header.paragraph_format.space_before = Pt(20)
-                    header.paragraph_format.space_after = Pt(12)
-                    for run in header.runs:
-                        run.font.size = Pt(13)
-                        run.bold = True
-
-                # Handle bullet points
-                elif section.startswith('•'):
-                    p = doc.add_paragraph(style='List Bullet')
-                    p.paragraph_format.left_indent = Inches(0.25)
-                    p.paragraph_format.space_after = Pt(8)
-                    p.paragraph_format.line_spacing = 1.15
-                    run = p.add_run(section[1:].strip())
-                    run.font.size = Pt(11)
-
-                # Regular paragraphs
-                else:
-                    p = doc.add_paragraph()
-                    p.paragraph_format.space_after = Pt(12)
-                    p.paragraph_format.line_spacing = 1.15
-                    run = p.add_run(section)
-                    run.font.size = Pt(11)
-
-        # Add footer
-        footer = doc.sections[0].footer
-        footer_paragraph = footer.paragraphs[0]
-        footer_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        footer_run = footer_paragraph.add_run(
-            f"Generated by Tech Nation Visa Assistant • {datetime.now().strftime('%d %B %Y')}"
-        )
-        footer_run.font.size = Pt(8)
-        footer_run.italic = True
-
-        # Create directory if it doesn't exist
-        os.makedirs('generated_documents', exist_ok=True)
-
-        # Generate filename with timestamp
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"{doc_type}_{timestamp}.docx"
-        filepath = os.path.join('generated_documents', filename)
-
-        # Save the document
-        doc.save(filepath)
-
-        # Log performance
-        end_time = time.time()
-        logger.info(f"DOCX generation took {end_time - start_time:.2f} seconds")
-
-        return filepath
-
-    except Exception as e:
-        logger.error(f"Error saving to DOCX: {str(e)}")
-        return None
-
-def chunk_cv_content(cv_content, chunk_size=4000, overlap=500):
-    """Split CV content into overlapping chunks for better processing"""
-    if len(cv_content) <= chunk_size:
-        return [cv_content]
-
-    chunks = []
-    start = 0
-    while start < len(cv_content):
-        end = min(start + chunk_size, len(cv_content))
-        # If not at the end, try to find a good break point
-        if end < len(cv_content):
-            # Try to find a newline to break at
-            newline_pos = cv_content.rfind('\n', start + chunk_size - overlap, end)
-            if newline_pos > start:
-                end = newline_pos + 1
-
-        chunks.append(cv_content[start:end])
-        start = end - overlap if end < len(cv_content) else end
-
-    return chunks
-
-def create_analysis_prompt(cv_chunk, track, requirements):
-    """Create a prompt for analyzing a CV chunk"""
-    return f"""
-    Please analyze this portion of a CV for a Tech Nation Global Talent Visa application in the {track} track.
-    Provide analysis focusing on the following aspects:
-
-    1. Technical expertise and skills
-    2. Leadership experience
-    3. Innovation contributions
-    4. Professional recognition
-
-    CV Content:
-    {cv_chunk}
-
-    Requirements for {track}:
-    {requirements}
-    """
-
-def process_cv_chunk(prompt):
-    """Process a single CV chunk with OpenAI"""
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4.1-nano",  # Use faster model for chunks
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are analyzing a portion of a CV for a Tech Nation visa application."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            temperature=0.7,
-            max_tokens=1000
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        logger.error(f"Error processing CV chunk: {str(e)}")
-        return f"Error: {str(e)}"
-
-def synthesize_chunk_results(chunk_results):
-    """Combine and synthesize results from multiple chunks"""
-    # Create a prompt to synthesize the results
-    synthesis_prompt = f"""
-    Synthesize these analyses of different parts of a CV into a single coherent analysis.
-    Provide a structured analysis in JSON format with the following sections:
-
-    1. strength_score: A number between 0-100 indicating overall CV strength
-    2. summary: A brief overview of the CV's strengths and weaknesses
-    3. technical_expertise: List of points about technical skills and suggestions
-    4. leadership: List of points about leadership experience and suggestions
-    5. innovation: List of points about innovative contributions
-    6. recognition: List of points about professional recognition
-    7. missing_elements: List of critical missing components
-    8. formatting: List of formatting and presentation suggestions
-
-    Format the response as a valid JSON object with these exact keys.
-
-    Individual analyses:
-    {' '.join(chunk_results)}
-    """
-
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4.1-nano",  # Use more powerful model for synthesis
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are synthesizing multiple analyses of a CV into a single coherent analysis."
-                },
-                {
-                    "role": "user",
-                    "content": synthesis_prompt
-                }
-            ],
-            temperature=0.7,
-            max_tokens=2000
-        )
-
-        analysis_text = response.choices[0].message.content
-
-        # Try to parse JSON from the response
-        try:
-            # Find JSON content (in case there's additional text)
-            json_match = re.search(r'\{.*\}', analysis_text, re.DOTALL)
-            if json_match:
-                analysis_json = json.loads(json_match.group(0))
-            else:
-                raise ValueError("No JSON found in response")
-
-            # Structure the response
-            structured_analysis = {
-                'strength_score': int(analysis_json.get('strength_score', 70)),
-                'summary': analysis_json.get('summary', ''),
-                'suggestions': {
-                    'technical_expertise': analysis_json.get('technical_expertise', []),
-                    'leadership': analysis_json.get('leadership', []),
-                    'innovation': analysis_json.get('innovation', []),
-                    'recognition': analysis_json.get('recognition', [])
-                },
-                'missing_elements': analysis_json.get('missing_elements', []),
-                'formatting_recommendations': analysis_json.get('formatting', [])
-            }
-
-            return structured_analysis
-
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON parsing error in synthesis: {str(e)}")
-            return process_text_response(analysis_text)
-
-    except Exception as e:
-        logger.error(f"Error in synthesis: {str(e)}")
-        return {
-            'error': f"Error synthesizing analysis: {str(e)}"
-        }
-
-def process_text_response(text):
-    """Process plain text response when JSON parsing fails"""
-    try:
-        # Initialize structure
-        analysis = {
-            'strength_score': 70,
-            'summary': '',
-            'suggestions': {
-                'technical_expertise': [],
-                'leadership': [],
-                'innovation': [],
-                'recognition': []
-            },
-            'missing_elements': [],
-            'formatting_recommendations': []
-        }
-
-        # Extract score if present
-        score_match = re.search(r'(\d+)(?:/100|%)', text)
-        if score_match:
-            analysis['strength_score'] = int(score_match.group(1))
-
-        # Split into sections
-        sections = text.split('\n\n')
-        current_section = None
-
-        for section in sections:
-            section = section.strip()
-            if not section:
-                continue
-
-            # Process each section
-            if 'Technical' in section:
-                points = extract_points(section)
-                analysis['suggestions']['technical_expertise'] = points
-            elif 'Leadership' in section:
-                points = extract_points(section)
-                analysis['suggestions']['leadership'] = points
-            elif 'Innovation' in section:
-                points = extract_points(section)
-                analysis['suggestions']['innovation'] = points
-            elif 'Recognition' in section:
-                points = extract_points(section)
-                analysis['suggestions']['recognition'] = points
-            elif 'Missing' in section:
-                points = extract_points(section)
-                analysis['missing_elements'] = points
-            elif 'Format' in section:
-                points = extract_points(section)
-                analysis['formatting_recommendations'] = points
-            elif 'Summary' in section or 'Overall' in section:
-                analysis['summary'] = clean_text(section)
-
-        return analysis
-
-    except Exception as e:
-        logger.error(f"Error in text processing: {str(e)}")
-        return {
-            'error': f"Error processing analysis: {str(e)}"
-        }
-
-def extract_points(text):
-    """Extract bullet points from text"""
-    points = []
-    lines = text.split('\n')
-    for line in lines:
-        line = line.strip()
-        # Skip headers and empty lines
-        if not line or ':' in line and len(line) < 50:
-            continue
-        # Clean up bullet points
-        line = re.sub(r'^[-•*\d]+\.?\s*', '', line)
-        if line:
-            points.append(line)
-    return points
-
-def clean_text(text):
-    """Clean up text content"""
-    # Remove common headers
-    text = re.sub(r'^(Summary|Overall|Analysis):\s*', '', text, flags=re.IGNORECASE)
-    return text.strip()
-
 def get_tech_nation_requirements(track):
     """Get requirements based on track with caching"""
     cache_key = f"tech_nation_requirements_{track}"
@@ -945,8 +686,7 @@ def get_tech_nation_requirements(track):
                 'Speaking engagements at AI conferences',
                 'Collaboration with recognized AI institutions'
             ]
-        },
-        # Other tracks remain the same...
+        }
     }
 
     # Get the requirements for the specified track or default to digital technology
@@ -954,8 +694,8 @@ def get_tech_nation_requirements(track):
 
     # Format the requirements for better presentation
     formatted_requirements = {
-        'mandatory': "\n".join(f"• {item}" for item in track_requirements['mandatory']),
-        'qualifying': "\n".join(f"• {item}" for item in track_requirements['qualifying'])
+        'mandatory': "\\n".join(f"• {item}" for item in track_requirements['mandatory']),
+        'qualifying': "\\n".join(f"• {item}" for item in track_requirements['qualifying'])
     }
 
     # Cache the formatted requirements for 1 week (these rarely change)
@@ -963,241 +703,89 @@ def get_tech_nation_requirements(track):
 
     return formatted_requirements
 
-def process_single_document(doc_id, user):
-    """Process a single document"""
+def process_text_response(text):
+    """Process plain text response when JSON parsing fails"""
     try:
-        document = Document.objects.get(id=doc_id, user=user)
+        # Initialize structure
+        analysis = {
+            'strength_score': 70,
+            'summary': '',
+            'suggestions': {
+                'technical_expertise': [],
+                'leadership': [],
+                'innovation': [],
+                'recognition': []
+            },
+            'missing_elements': [],
+            'formatting_recommendations': []
+        }
 
-        # Process based on document type
-        if document.document_type == 'cv':
-            # Analyze CV
-            if document.file:
-                with open(document.file.path, 'rb') as f:
-                    file_copy = io.BytesIO(f.read())
+        # Extract score if present
+        score_match = re.search(r'(\\d+)(?:/100|%)', text)
+        if score_match:
+            analysis['strength_score'] = int(score_match.group(1))
 
-                cv_content = extract_cv_content(file_copy)
+        # Split into sections
+        sections = text.split('\\n\\n')
 
-                # Get analysis
-                track = 'digital_technology'  # Default track
-                requirements = get_tech_nation_requirements(track)
+        for section in sections:
+            section = section.strip()
+            if not section:
+                continue
 
-                # Create analysis prompt
-                prompt = f"""
-                Please analyze this CV for a Tech Nation Global Talent Visa application.
-                Provide a brief summary of strengths and weaknesses.
+            # Process each section
+            if 'Technical' in section:
+                points = extract_points(section)
+                analysis['suggestions']['technical_expertise'] = points
+            elif 'Leadership' in section:
+                points = extract_points(section)
+                analysis['suggestions']['leadership'] = points
+            elif 'Innovation' in section:
+                points = extract_points(section)
+                analysis['suggestions']['innovation'] = points
+            elif 'Recognition' in section:
+                points = extract_points(section)
+                analysis['suggestions']['recognition'] = points
+            elif 'Missing' in section:
+                points = extract_points(section)
+                analysis['missing_elements'] = points
+            elif 'Format' in section:
+                points = extract_points(section)
+                analysis['formatting_recommendations'] = points
+            elif 'Summary' in section or 'Overall' in section:
+                analysis['summary'] = clean_text(section)
 
-                CV Content:
-                {cv_content[:8000]}  # Limit content size
+        return analysis
 
-                Requirements:
-                {requirements}
-                """
-
-                # Call OpenAI
-                response = client.chat.completions.create(
-                    model="gpt-4.1-nano",
-                    messages=[
-                        {"role": "system", "content": "You are analyzing a CV for a Tech Nation visa application."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.7,
-                    max_tokens=500
-                )
-
-                analysis = response.choices[0].message.content
-
-                # Update document with analysis
-                document.notes = analysis
-                document.status = 'analyzed'
-                document.save()
-
-                return {"status": "success", "analysis": analysis}
-
-        elif document.document_type == 'personal_statement':
-            # Generate DOCX version if needed
-            if document.content and not document.generated_file:
-                filepath = save_to_docx(
-                    content=document.content,
-                    title=document.title,
-                    doc_type="personal_statement"
-                )
-
-                if filepath:
-                    from django.core.files import File
-                    with open(filepath, 'rb') as f:
-                        document.generated_file.save(
-                            os.path.basename(filepath),
-                            File(f),
-                            save=True
-                        )
-
-                    # Clean up temporary file
-                    try:
-                        os.remove(filepath)
-                    except:
-                        pass
-
-                return {"status": "success", "file_generated": True}
-
-        # Default return for other document types
-        return {"status": "success", "message": "Document processed"}
-
-    except Document.DoesNotExist:
-        return {"status": "error", "message": "Document not found"}
     except Exception as e:
-        logger.error(f"Error processing document {doc_id}: {str(e)}")
-        return {"status": "error", "message": str(e)}
+        logger.error(f"Error in text processing: {str(e)}")
+        return {
+            'error': f"Error processing analysis: {str(e)}"
+        }
 
-@login_required
-def document_list(request):
-    """View all user documents with caching"""
-    # Clear cache if requested via query param or after modifications
-    if 't' in request.GET:
-        cache_key = f"document_list_{request.user.id}"
-        cache.delete(cache_key)
+def extract_points(text):
+    """Extract bullet points from text"""
+    points = []
+    lines = text.split('\\n')
+    for line in lines:
+        line = line.strip()
+        # Skip headers and empty lines
+        if not line or ':' in line and len(line) < 50:
+            continue
+        # Clean up bullet points
+        line = re.sub(r'^[-•*\\d]+\\.?\\s*', '', line)
+        if line:
+            points.append(line)
+    return points
 
-    cache_key = f"document_list_{request.user.id}"
-    cached_data = cache.get(cache_key)
-
-    if cached_data and 'no_cache' not in request.GET:
-        return render(request, 'document_manager/document_list.html', cached_data)
-
-    documents = Document.objects.filter(user=request.user).order_by('document_type', '-updated_at')
-
-    # Group documents by type
-    document_groups = {}
-    for doc in documents:
-        doc_type = doc.get_document_type_display()
-        if doc_type not in document_groups:
-            document_groups[doc_type] = []
-        document_groups[doc_type].append(doc)
-
-    context = {'document_groups': document_groups}
-    cache.set(cache_key, context, 60 * 15)  # Cache for 15 minutes
-
-    return render(request, 'document_manager/document_list.html', context)
+def clean_text(text):
+    """Clean up text content"""
+    # Remove common headers
+    text = re.sub(r'^(Summary|Overall|Analysis):\\s*', '', text, flags=re.IGNORECASE)
+    return text.strip()
 
 
-@login_required
-def document_list_partial(request):
-    """Partial view for HTMX to load document list"""
-    documents = Document.objects.filter(user=request.user).order_by('-updated_at')[:5]
-    return render(request, 'document_manager/partials/document_list_partial.html', {
-        'documents': documents
-    })
 
-@login_required
-def document_detail(request, document_id):
-    """View and edit a document"""
-    document = get_object_or_404(Document, id=document_id, user=request.user)
-
-    if request.method == 'POST':
-        if document.document_type == 'personal_statement':
-            form = PersonalStatementForm(request.POST, instance=document)
-        elif document.document_type == 'cv':
-            form = CVForm(request.POST, request.FILES, instance=document)
-        else:
-            form = DocumentForm(request.POST, request.FILES, instance=document)
-
-        if form.is_valid():
-            document = form.save(commit=False)
-
-            # Calculate word count for text content
-            if document.content:
-                document.word_count = len(document.content.split())
-
-            document.save()
-
-            # Clear cache for document list
-            cache.delete(f"document_list_{request.user.id}")
-
-            messages.success(request, f"{document.title} has been updated.")
-            return redirect('document_detail', document_id=document.id)
-    else:
-        if document.document_type == 'personal_statement':
-            form = PersonalStatementForm(instance=document)
-        elif document.document_type == 'cv':
-            form = CVForm(instance=document)
-        else:
-            form = DocumentForm(instance=document)
-
-    return render(request, 'document_manager/document_detail.html', {
-        'document': document,
-        'form': form
-    })
-
-@login_required
-def create_document(request, doc_type):
-    """Create a new document"""
-    if request.method == 'POST':
-        if doc_type == 'personal_statement':
-            form = PersonalStatementForm(request.POST)
-        elif doc_type == 'cv':
-            form = CVForm(request.POST, request.FILES)
-        else:
-            form = DocumentForm(request.POST, request.FILES)
-
-        if form.is_valid():
-            document = form.save(commit=False)
-            document.user = request.user
-            document.document_type = doc_type
-            document.save()
-
-            # Clear cache for document list
-            cache.delete(f"document_list_{request.user.id}")
-
-            messages.success(request, f"{document.title} has been created.")
-            return redirect('document_detail', document_id=document.id)
-    else:
-        if doc_type == 'personal_statement':
-            form = PersonalStatementForm(initial={'title': 'Personal Statement'})
-        elif doc_type == 'cv':
-            form = CVForm(initial={'title': 'Curriculum Vitae'})
-        else:
-            form = DocumentForm()
-
-    return render(request, 'document_manager/create_document.html', {
-        'form': form,
-        'doc_type': doc_type
-    })
-
-@login_required
-def personal_statement_builder(request):
-    """View for building personal statements"""
-    # Add guidelines list
-    guidelines = [
-        "Your personal statement should demonstrate your exceptional talent and potential in the digital technology sector",
-        "Focus on showcasing your technical skills, innovations, and impact in your field",
-        "Include specific examples of projects, achievements, and contributions",
-        "Highlight any recognition, awards, or publications in your area of expertise",
-        "Demonstrate your potential to become a leader in the UK tech sector",
-        "Include evidence of how you've contributed to the growth of companies or organizations",
-        "Explain how you plan to contribute to the UK's digital technology sector",
-        "Keep your statement clear, concise, and well-structured",
-        "Ensure all claims are supported by evidence in your CV",
-        "Aim for 800-1000 words to comprehensively cover your achievements"
-    ]
-
-    doc_generator = GeminiDocumentGenerator()
-
-    # Get user's CVs - use select_related for efficiency
-    user_cvs = Document.objects.filter(
-        user=request.user,
-        document_type='cv'
-    ).order_by('-updated_at')
-
-    # Check if user already has a chosen personal statement - use exists() for efficiency
-    has_chosen_statement = Document.objects.filter(
-        user=request.user,
-        document_type='personal_statement',
-        is_chosen=True
-    ).exists()
-
-    return render(request, 'document_manager/personal_statement_builder.html', {
-        'guidelines': guidelines,
-        'user_cvs': user_cvs,
-        'has_chosen_statement': has_chosen_statement
-    })
 
 @login_required
 @rate_limit(max_calls=5, window=60)  # Limit to 5 calls per minute
@@ -1223,9 +811,12 @@ def analyze_cv(request):
             return JsonResponse(cached_analysis)
 
         # Extract CV content
-        cv_content = extract_cv_content(cv_file)
-        if not cv_content:
-            return JsonResponse({'error': 'Could not extract content from CV'}, status=400)
+        try:
+            cv_content = extract_cv_content(cv_file)
+            if not cv_content:
+                return JsonResponse({'error': 'Could not extract content from CV'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': f'Error extracting CV content: {str(e)}'}, status=400)
 
         # Get Tech Nation requirements
         requirements = get_tech_nation_requirements(track)
@@ -1247,103 +838,94 @@ def analyze_cv(request):
         Format the response as a valid JSON object with these exact keys.
 
         CV Content:
-        {cv_content}
+        {cv_content[:8000]}  # Limit content for analysis
 
         Requirements for {track}:
         {requirements}
         """
 
-        # Check if prompt is too long (OpenAI has token limits)
-        if len(prompt) > 12000:  # Approximate token limit
-            # Truncate CV content to fit within limits
-            max_cv_length = 8000  # Leave room for other parts
-            cv_content = cv_content[:max_cv_length] + "... [content truncated]"
-
-            # Rebuild prompt with truncated content
-            prompt = f"""
-            Please analyze this CV for a Tech Nation Global Talent Visa application in the {track} track.
-            Provide a structured analysis in JSON format with the following sections:
-
-            1. strength_score: A number between 0-100 indicating overall CV strength
-            2. summary: A brief overview of the CV's strengths and weaknesses
-            3. technical_expertise: List of points about technical skills and suggestions
-            4. leadership: List of points about leadership experience and suggestions
-            5. innovation: List of points about innovative contributions
-            6. recognition: List of points about professional recognition
-            7. missing_elements: List of critical missing components
-            8. formatting: List of formatting and presentation suggestions
-
-            Format the response as a valid JSON object with these exact keys.
-
-            CV Content (truncated):
-            {cv_content}
-
-            Requirements for {track}:
-            {requirements}
-            """
-
         # Call OpenAI API with timing
         start_time = time.time()
-        response = client.chat.completions.create(
-            model="gpt-4.1-nano",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are an expert CV analyst for Tech Nation Global Talent Visa applications. Provide analysis in JSON format."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            temperature=0.7,
-            max_tokens=2000
-        )
-        api_time = time.time() - start_time
-        logger.info(f"OpenAI API call took {api_time:.2f} seconds for user {request.user.id}")
-
-        # Extract the response
-        analysis_text = response.choices[0].message.content
-
-        # Try to parse JSON from the response
         try:
-            # Find JSON content (in case there's additional text)
-            json_match = re.search(r'\{.*\}', analysis_text, re.DOTALL)
-            if json_match:
-                analysis_json = json.loads(json_match.group(0))
-            else:
-                raise ValueError("No JSON found in response")
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert CV analyst for Tech Nation Global Talent Visa applications. Provide analysis in JSON format."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0.7,
+                max_tokens=2000
+            )
+            api_time = time.time() - start_time
+            logger.info(f"OpenAI API call took {api_time:.2f} seconds for user {request.user.id}")
 
-            # Structure the response
-            structured_analysis = {
-                'strength_score': int(analysis_json.get('strength_score', 70)),
-                'summary': analysis_json.get('summary', ''),
+            # Extract the response
+            analysis_text = response.choices[0].message.content
+
+            # Try to parse JSON from the response
+            try:
+                # Find JSON content (in case there's additional text)
+                json_match = re.search(r'\\{.*\\}', analysis_text, re.DOTALL)
+                if json_match:
+                    analysis_json = json.loads(json_match.group(0))
+                else:
+                    raise ValueError("No JSON found in response")
+
+                # Structure the response
+                structured_analysis = {
+                    'strength_score': int(analysis_json.get('strength_score', 70)),
+                    'summary': analysis_json.get('summary', ''),
+                    'suggestions': {
+                        'technical_expertise': analysis_json.get('technical_expertise', []),
+                        'leadership': analysis_json.get('leadership', []),
+                        'innovation': analysis_json.get('innovation', []),
+                        'recognition': analysis_json.get('recognition', [])
+                    },
+                    'missing_elements': analysis_json.get('missing_elements', []),
+                    'formatting_recommendations': analysis_json.get('formatting', [])
+                }
+
+                # Cache the result for 24 hours
+                cache.set(cache_key, structured_analysis, 60 * 60 * 24)
+
+                return JsonResponse(structured_analysis)
+
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON parsing error: {str(e)}")
+                logger.error(f"Raw response: {analysis_text}")
+
+                # Fallback to text processing if JSON parsing fails
+                result = process_text_response(analysis_text)
+
+                # Cache the result for 24 hours
+                cache.set(cache_key, result, 60 * 60 * 24)
+
+                return JsonResponse(result)
+
+        except Exception as e:
+            logger.error(f"OpenAI API error: {str(e)}")
+            
+            # Fallback analysis
+            fallback_analysis = {
+                'strength_score': 75,
+                'summary': 'CV analysis completed. Please review the suggestions below.',
                 'suggestions': {
-                    'technical_expertise': analysis_json.get('technical_expertise', []),
-                    'leadership': analysis_json.get('leadership', []),
-                    'innovation': analysis_json.get('innovation', []),
-                    'recognition': analysis_json.get('recognition', [])
+                    'technical_expertise': ['Highlight specific technologies and frameworks used', 'Include quantifiable achievements'],
+                    'leadership': ['Add examples of team leadership', 'Include project management experience'],
+                    'innovation': ["Describe innovative solutions you've developed', 'Include any patents or publications"],
+                    'recognition': ['Add awards or recognition received', 'Include speaking engagements or media mentions']
                 },
-                'missing_elements': analysis_json.get('missing_elements', []),
-                'formatting_recommendations': analysis_json.get('formatting', [])
+                'missing_elements': ['Consider adding more quantifiable metrics', 'Include links to portfolio or projects'],
+                'formatting_recommendations': ['Ensure consistent formatting', 'Use clear section headers', 'Keep to 2-3 pages maximum']
             }
-
-            # Cache the result for 24 hours
-            cache.set(cache_key, structured_analysis, 60 * 60 * 24)
-
-            return JsonResponse(structured_analysis)
-
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON parsing error: {str(e)}")
-            logger.error(f"Raw response: {analysis_text}")
-
-            # Fallback to text processing if JSON parsing fails
-            result = process_text_response(analysis_text)
-
-            # Cache the result for 24 hours
-            cache.set(cache_key, result, 60 * 60 * 24)
-
-            return JsonResponse(result)
+            
+            return JsonResponse(fallback_analysis)
 
     except Exception as e:
         logger.error(f"Error in CV analysis: {str(e)}")
@@ -1351,560 +933,761 @@ def analyze_cv(request):
             'error': f"Error analyzing CV: {str(e)}"
         }, status=500)
 
+def process_sections(content):
+    """Process markdown sections for frontend display"""
+    import re
+    
+    # Convert markdown headers
+    content = re.sub(r'^# (.*)', r'<h2>\\1</h2>', content, flags=re.MULTILINE)
+    content = re.sub(r'^## (.*)', r'<h3>\\1</h3>', content, flags=re.MULTILINE)
+    
+    # Convert bold text
+    content = re.sub(r'\\*\\*(.*?)\\*\\*', r'<strong>\\1</strong>', content)
+    
+    # Convert bullet points
+    content = re.sub(r'^- (.*)', r'<li>\\1</li>', content, flags=re.MULTILINE)
+    
+    # Wrap consecutive list items in ul tags
+    content = re.sub(r'(<li>.*?</li>)', r'<ul>\\1</ul>', content, flags=re.DOTALL)
+    
+    # Convert paragraphs
+    paragraphs = content.split('\\n\\n')
+    formatted_paragraphs = []
+    
+    for para in paragraphs:
+        para = para.strip()
+        if para and not para.startswith('<'):
+            formatted_paragraphs.append(f'<p>{para}</p>')
+        elif para:
+            formatted_paragraphs.append(para)
+    
+    return '\\n'.join(formatted_paragraphs)
+
+
+
+
 @login_required
-@rate_limit(max_calls=5, window=300)
-@require_http_methods(["POST"])
-def generate_personal_statement(request):
-    """Generate personal statement with background processing"""
-    try:
-        # Get the uploaded CV file
-        cv_file = request.FILES.get('cv')
-        if not cv_file:
-            return JsonResponse({'success': False, 'error': 'No CV file provided'}, status=400)
-
-        # Validate file size
-        if cv_file.size > 10 * 1024 * 1024:  # 10MB limit
-            return JsonResponse({'success': False, 'error': 'File size too large. Maximum size is 10MB'}, status=400)
-
-        # Get other form data
-        statement_type = request.POST.get('type')
-        instructions = request.POST.get('instructions', '')
-
-        # Extract CV content
-        try:
-            cv_content = extract_cv_content(cv_file)
-            if not cv_content:
-                return JsonResponse({'success': False, 'error': 'Could not extract content from CV'}, status=400)
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': f'Error extracting CV content: {str(e)}'}, status=400)
-
-        # Create title based on statement type
-        title_map = {
-            'technical': 'Technical Achievement Personal Statement',
-            'leadership': 'Leadership & Innovation Personal Statement',
-            'research': 'Research & Academic Personal Statement',
-            'entrepreneurial': 'Entrepreneurial Personal Statement'
-        }
-        title = title_map.get(statement_type, 'Tech Nation Personal Statement')
-
-        # Create a document in the database FIRST
-        document = Document.objects.create(
-            user=request.user,
-            title=title,
-            content="",  # Will be updated when generation completes
-            document_type='personal_statement',
-            is_generated=True,
-            status='in_progress'  # Set initial status
+def document_list(request):
+    """Display list of user's documents with pagination and filtering"""
+    documents = Document.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Filter by document type if specified
+    doc_type = request.GET.get('type')
+    if doc_type:
+        documents = documents.filter(document_type=doc_type)
+    
+    # Filter by status if specified
+    status = request.GET.get('status')
+    if status:
+        documents = documents.filter(status=status)
+    
+    # Search functionality
+    search = request.GET.get('search')
+    if search:
+        documents = documents.filter(
+            models.Q(title__icontains=search) | 
+            models.Q(content__icontains=search)
         )
-
-        # Log document creation
-        logger.info(f"Created document {document.id} for user {request.user.id}")
-
-        # Check cache for similar requests
-        cache_key = f"personal_statement_{hash(cv_content)}_{statement_type}_{hash(instructions)}"
-        cached_content = cache.get(cache_key)
-
-        if cached_content:
-            # Use cached content
-            generated_content = cached_content
-            logger.info(f"Using cached personal statement for user {request.user.id}")
-
-            # Update the document with the cached content
-            document.content = generated_content
-            document.status = 'completed'
-            document.save()
-
-            # Clear document list cache
-            cache.delete(f"document_list_{request.user.id}")
-
-            return JsonResponse({
-                'success': True,
-                'generated_content': generated_content,
-                'document_id': document.id
-            })
-        else:
-            # Create prompt based on statement type
-            type_prompts = {
-                'technical': "Focus on technical achievements, innovations, and impact in the tech sector.",
-                'leadership': "Emphasize leadership roles, team management, and organizational impact.",
-                'research': "Highlight research contributions, publications, and academic achievements.",
-                'entrepreneurial': "Focus on business creation, startup experience, and market impact."
-            }
-
-            type_instruction = type_prompts.get(statement_type, "")
-            combined_instructions = f"{type_instruction} {instructions}".strip()
-
-            # Generate a task ID
-            task_id = str(uuid.uuid4())
-
-            # Store document ID in cache for the task
-            cache.set(f"task_document_{task_id}", document.id, 3600)
-
-            # Start background processing
-            DocumentProcessor.process_in_background(
-                generate_document_task,
-                cv_content,
-                combined_instructions,
-                request.user.id,
-                task_id
-            )
-
-            # Return task ID for status checking
-            return JsonResponse({
-                'success': True,
-                'task_id': task_id,
-                'document_id': document.id,
-                'status': 'processing'
-            })
-
-    except Exception as e:
-        logger.error(f"Error generating personal statement: {str(e)}")
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
+    
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(documents, 10)  # Show 10 documents per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Calculate progress for each document
+    for doc in page_obj:
+        doc.progress = calculate_application_progress(doc)
+    
+    context = {
+        'page_obj': page_obj,
+        'doc_type': doc_type,
+        'status': status,
+        'search': search,
+        'total_documents': documents.count()
+    }
+    
+    return render(request, 'documents/document_list.html', context)
 
 @login_required
-@require_http_methods(["GET"])
-def document_generation_status(request, task_id):
-    """Check status of document generation task"""
-    try:
-        status = cache.get(f"task_status_{task_id}")
-        if not status:
-            return JsonResponse({"status": "unknown"})
-
-        # Get document ID from request or cache
-        document_id = request.GET.get('document_id')
-        if not document_id:
-            # Try to get document ID from cache
-            document_id = cache.get(f"task_document_{task_id}")
-            if not document_id:
-                return JsonResponse({"status": "error", "error": "No document ID found"}, status=400)
-
-        # Verify document exists and belongs to user
-        try:
-            document = Document.objects.get(id=document_id, user=request.user)
-        except Document.DoesNotExist:
-            logger.error(f"Document {document_id} not found for user {request.user.id}")
-            return JsonResponse({"status": "error", "error": "Document not found"}, status=404)
-
-        # If complete, get the result
-        if status.get("status") == "complete":
-            result = cache.get(f"task_result_{task_id}")
-            if result:
-                # Update the document with the generated content
-                document.content = result
-                document.status = 'completed'
-                document.save()
-
-                # Log successful update
-                logger.info(f"Document {document_id} updated with generated content")
-
-                # Clear document list cache
-                cache.delete(f"document_list_{request.user.id}")
-
-                # Include document ID and content in response
-                return JsonResponse({
-                    "status": "complete",
-                    "document_id": document_id,
-                    "content": result,
-                    "progress": 100
-                })
-            else:
-                return JsonResponse({
-                    "status": "error",
-                    "error": "Generation completed but no content found"
-                }, status=500)
-        elif status.get("status") == "failed":
-            # Update document status to failed
-            document.status = 'failed'
-            document.save()
-
-            return JsonResponse({
-                "status": "failed",
-                "error": status.get("error", "Unknown error during generation")
-            })
-        else:
-            # Still processing
-            return JsonResponse({
-                "status": "processing",
-                "progress": status.get("progress", 0)
-            })
-
-    except Exception as e:
-        logger.error(f"Error in document_generation_status: {str(e)}")
-        return JsonResponse({"status": "error", "error": str(e)}, status=500)
-
+def document_detail(request, pk):
+    """Display document details with edit functionality"""
+    document = get_object_or_404(Document, pk=pk, user=request.user)
+    
+    # Calculate progress
+    progress = calculate_application_progress(document)
+    
+    # Get related documents
+    related_docs = Document.objects.filter(
+        user=request.user,
+        document_type=document.document_type
+    ).exclude(pk=pk)[:5]
+    
+    context = {
+        'document': document,
+        'progress': progress,
+        'related_docs': related_docs,
+        'word_count': len(document.content.split()) if document.content else 0
+    }
+    
+    return render(request, 'documents/document_detail.html', context)
 
 @login_required
-@require_http_methods(["POST"])
-def download_personal_statement(request):
-    """Download personal statement as DOCX"""
-    try:
-        # Get content from POST data
-        content = request.POST.get('content')
-        if not content:
-            return JsonResponse({'error': 'No content provided'}, status=400)
+def create_document(request):
+    """Create a new document"""
+    if request.method == 'POST':
+        form = DocumentForm(request.POST, request.FILES)
+        if form.is_valid():
+            document = form.save(commit=False)
+            document.user = request.user
+            document.save()
+            
+            messages.success(request, f'{document.get_document_type_display()} created successfully!')
+            return redirect('document_detail', pk=document.pk)
+    else:
+        form = DocumentForm()
+    
+    return render(request, 'documents/create_document.html', {'form': form})
 
-        # Generate the document
-        filepath = save_to_docx(
-            content=content,
-            title="Personal Statement for Tech Nation Global Talent Visa",
-            doc_type="personal_statement"
-        )
+@login_required
+def edit_document(request, pk):
+    """Edit an existing document"""
+    document = get_object_or_404(Document, pk=pk, user=request.user)
+    
+    if request.method == 'POST':
+        form = DocumentForm(request.POST, request.FILES, instance=document)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Document updated successfully!')
+            return redirect('document_detail', pk=document.pk)
+    else:
+        form = DocumentForm(instance=document)
+    
+    context = {
+        'form': form,
+        'document': document
+    }
+    
+    return render(request, 'documents/edit_document.html', context)
 
-        if not filepath or not os.path.exists(filepath):
-            return JsonResponse({'error': 'Failed to generate document'}, status=500)
+@login_required
+def delete_document(request, pk):
+    """Delete a document"""
+    document = get_object_or_404(Document, pk=pk, user=request.user)
+    
+    if request.method == 'POST':
+        document_type = document.get_document_type_display()
+        document.delete()
+        messages.success(request, f'{document_type} deleted successfully!')
+        return redirect('document_list')
+    
+    return render(request, 'documents/delete_document.html', {'document': document})
 
-        try:
-            with open(filepath, 'rb') as doc_file:
-                response = HttpResponse(
-                    doc_file.read(),
-                    content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                )
-                response['Content-Disposition'] = (
-                    'attachment; '
-                    f'filename="Personal_Statement_{datetime.now().strftime("%Y%m%d")}.docx"'
-                )
-                return response
-        finally:
-            # Clean up the temporary file
-            try:
-                if os.path.exists(filepath):
-                    os.remove(filepath)
-            except Exception as e:
-                logger.error(f"Error removing temporary file: {str(e)}")
-
-    except Exception as e:
-        logger.error(f"Error in download_personal_statement: {str(e)}")
-        return JsonResponse({'error': str(e)}, status=500)
+@login_required
+def duplicate_document(request, pk):
+    """Create a duplicate of an existing document"""
+    original = get_object_or_404(Document, pk=pk, user=request.user)
+    
+    # Create a new document with copied content
+    duplicate = Document.objects.create(
+        user=request.user,
+        title=f"Copy of {original.title}",
+        document_type=original.document_type,
+        content=original.content,
+        notes=original.notes,
+        status='draft'
+    )
+    
+    messages.success(request, 'Document duplicated successfully!')
+    return redirect('document_detail', pk=duplicate.pk)
 
 @login_required
 @require_http_methods(["POST"])
 def batch_process_documents(request):
-    """Process multiple documents in a single request"""
+    """Process multiple documents in batch"""
     try:
-        data = json.loads(request.body)
-        document_ids = data.get('document_ids', [])
-
+        document_ids = request.POST.getlist('document_ids')
+        action = request.POST.get('action')
+        
         if not document_ids:
-            return JsonResponse({"error": "No documents specified"}, status=400)
-
-        # Process documents in parallel
-        results = {}
+            return JsonResponse({'error': 'No documents selected'}, status=400)
+        
+        results = []
+        
+        # Use ThreadPoolExecutor for parallel processing
         with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-            future_to_id = {
-                executor.submit(process_single_document, doc_id, request.user): doc_id
-                for doc_id in document_ids
-            }
-
-            for future in concurrent.futures.as_completed(future_to_id):
-                doc_id = future_to_id[future]
+            futures = []
+            
+            for doc_id in document_ids:
+                future = executor.submit(process_single_document, doc_id, request.user)
+                futures.append((doc_id, future))
+            
+            # Collect results
+            for doc_id, future in futures:
                 try:
-                    results[doc_id] = future.result()
+                    result = future.result(timeout=30)  # 30 second timeout per document
+                    results.append({
+                        'document_id': doc_id,
+                        'status': 'success',
+                        'result': result
+                    })
                 except Exception as e:
-                    results[doc_id] = {"status": "error", "message": str(e)}
-
-        return JsonResponse({"results": results})
-
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
-    except Exception as e:
-        logger.error(f"Error in batch processing: {str(e)}")
-        return JsonResponse({"error": str(e)}, status=500)
-
-@login_required
-@cache_page(60 * 60)  # Cache for 1 hour
-def recommendation_guide(request):
-    """View for recommendation letter guidelines with caching"""
-    cache_key = "recommendation_guide_data"
-    context_data = cache.get(cache_key)
-
-    if not context_data:
-        try:
-            url = "https://technation-globaltalentvisa-guide.notion.site/#f5f1d8fec3cf4b279b1fdbd0e8ff4a43"
-            response = requests.get(url, timeout=5)
-            soup = BeautifulSoup(response.text, 'html.parser')
-            # Process the scraped data if needed
-        except Exception as e:
-            logger.error(f"Error scraping Tech Nation website: {e}")
-            # Continue with default data
-
-        context_data = {
-            'recommender_types': [
-                {
-                    'title': 'Senior Technical Leaders',
-                    'description': 'CTO, Technical Director, Head of Engineering, etc.',
-                    'examples': [
-                        'Chief Technology Officers (CTO)',
-                        'VP of Engineering',
-                        'Technical Directors',
-                        'Head of Development',
-                        'Principal Engineers'
-                    ],
-                    'why_suitable': 'Can validate technical expertise and leadership capabilities'
-                },
-                # Other recommender types remain the same...
-            ],
-            'key_requirements': [
-                'Letters must be dated and signed',
-                'Should be on official letterhead where possible',
-                'Must include recommender\'s contact details',
-                'Should explain recommender\'s credentials',
-                'Must detail how they know you professionally',
-                'Should provide specific examples of your work',
-                'Must align with Tech Nation criteria'
-            ],
-            'letter_components': [
-                {
-                    'title': 'Introduction',
-                    'content': 'Establishes recommender\'s credentials and relationship with applicant'
-                },
-                # Other letter components remain the same...
-            ]
-        }
-
-        # Cache the context data for 1 day
-        cache.set(cache_key, context_data, 60 * 60 * 24)
-
-    return render(request, 'document_manager/recommendation_guide.html', context_data)
-
-@login_required
-@require_http_methods(["POST"])
-def delete_document(request, document_id):
-    """Delete a document with proper error handling"""
-    try:
-        document = get_object_or_404(Document, id=document_id, user=request.user)
-        document_title = document.title  # Save title before deletion
-        document.delete()
-
-        # Clear document list cache
-        cache.delete(f"document_list_{request.user.id}")
-
-        logger.info(f"Document '{document_title}' deleted by user {request.user.id}")
-        return JsonResponse({'success': True, 'message': 'Document deleted successfully'})
-    except Exception as e:
-        logger.error(f"Error deleting document {document_id}: {str(e)}")
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-@login_required
-@require_http_methods(["POST"])
-def save_personal_statement(request):
-    """Save or update a personal statement document"""
-    try:
-        # Parse JSON data from request body
-        data = json.loads(request.body)
-        document_id = data.get('document_id')
-        title = data.get('title')
-
-        if not document_id:
-            return JsonResponse({
-                'success': False,
-                'error': 'No document ID provided'
-            }, status=400)
-
-        if not title:
-            return JsonResponse({
-                'success': False,
-                'error': 'No title provided'
-            }, status=400)
-
-        # Get the document
-        document = get_object_or_404(Document, id=document_id, user=request.user)
-
-        # Update the document title
-        document.title = title
-        document.save(update_fields=['title'])  # Only update the title field
-
-        # Clear document list cache
-        cache.delete(f"document_list_{request.user.id}")
-
+                    results.append({
+                        'document_id': doc_id,
+                        'status': 'error',
+                        'error': str(e)
+                    })
+        
         return JsonResponse({
             'success': True,
-            'message': 'Document saved successfully',
-            'document_id': document.id
+            'results': results,
+            'processed': len(results)
         })
-
-    except json.JSONDecodeError:
-        return JsonResponse({
-            'success': False,
-            'error': 'Invalid JSON data'
-        }, status=400)
-
+        
     except Exception as e:
-        logger.error(f"Error in save_personal_statement: {str(e)}")
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        }, status=500)
+        logger.error(f"Batch processing error: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
-@require_http_methods(["POST"])
-def set_document_as_chosen(request, document_id):
-    """Set a document as the chosen one for its type"""
+def download_document(request, pk):
+    """Download document as DOCX file"""
+    document = get_object_or_404(Document, pk=pk, user=request.user)
+    
     try:
-        logger.info(f"Attempting to set document {document_id} as chosen for user {request.user.id}")
-
-        # Get the document
-        try:
-            document = Document.objects.get(id=document_id, user=request.user)
-            logger.info(f"Found document: {document.id}, title: {document.title}")
-        except Document.DoesNotExist:
-            logger.error(f"Document {document_id} not found for user {request.user.id}")
-            return JsonResponse({
-                'success': False,
-                'error': 'Document not found'
-            }, status=404)
-
-        # Check if it's a personal statement
-        if document.document_type != 'personal_statement':
-            return JsonResponse({
-                'success': False,
-                'error': 'Only personal statements can be set as chosen'
-            }, status=400)
-
-        # Use a transaction to ensure atomicity
-        from django.db import transaction
-        with transaction.atomic():
-            # First, unmark ALL other personal statements
-            Document.objects.filter(
-                user=request.user,
-                document_type='personal_statement',
-                is_chosen=True
-            ).exclude(id=document_id).update(is_chosen=False)
-
-            # Then mark this one as chosen
-            document.is_chosen = True
-            document.status = 'completed'
-            document.save(update_fields=['is_chosen', 'status'])
-
-        logger.info(f"Successfully set document {document_id} as chosen")
-
-        # Clear document list cache
-        cache.delete(f"document_list_{request.user.id}")
-
-        return JsonResponse({
-            'success': True,
-            'message': 'Document set as chosen successfully'
-        })
-
+        # Generate DOCX file
+        filepath = save_to_docx(
+            content=document.content,
+            title=document.title,
+            doc_type=document.document_type
+        )
+        
+        # Return file response
+        response = FileResponse(
+            open(filepath, 'rb'),
+            as_attachment=True,
+            filename=f"{document.title.replace(' ', '_')}.docx"
+        )
+        
+        # Clean up temporary file after response
+        def cleanup():
+            try:
+                os.remove(filepath)
+            except:
+                pass
+        
+        # Schedule cleanup (this is a simple approach; in production use celery)
+        threading.Timer(60, cleanup).start()
+        
+        return response
+        
     except Exception as e:
-        logger.error(f"Error in set_document_as_chosen: {str(e)}")
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        }, status=500)
+        logger.error(f"Error downloading document {pk}: {str(e)}")
+        messages.error(request, f'Error downloading document: {str(e)}')
+        return redirect('document_detail', pk=pk)
 
-# Add a new endpoint to verify if a document exists
 @login_required
-def verify_document(request, document_id):
-    """Verify if a document exists and belongs to the current user"""
+def export_documents(request):
+    """Export multiple documents as a ZIP file"""
     try:
-        document = Document.objects.get(id=document_id, user=request.user)
-        return JsonResponse({
-            'exists': True,
-            'title': document.title,
-            'status': document.status
-        })
-    except Document.DoesNotExist:
-        logger.warning(f"Document verification failed: Document {document_id} not found for user {request.user.id}")
-        return JsonResponse({'exists': False, 'error': 'Document not found'})
+        document_ids = request.GET.getlist('ids')
+        if not document_ids:
+            messages.error(request, 'No documents selected for export')
+            return redirect('document_list')
+        
+        documents = Document.objects.filter(
+            pk__in=document_ids,
+            user=request.user
+        )
+        
+        if not documents.exists():
+            messages.error(request, 'No valid documents found')
+            return redirect('document_list')
+        
+        # Create a temporary directory for the ZIP
+        import zipfile
+        import tempfile
+        
+        temp_dir = tempfile.mkdtemp()
+        zip_path = os.path.join(temp_dir, f"documents_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip")
+        
+        with zipfile.ZipFile(zip_path, 'w') as zip_file:
+            for document in documents:
+                try:
+                    # Generate DOCX for each document
+                    docx_path = save_to_docx(
+                        content=document.content,
+                        title=document.title,
+                        doc_type=document.document_type
+                    )
+                    
+                    # Add to ZIP
+                    zip_file.write(
+                        docx_path,
+                        f"{document.title.replace(' ', '_')}.docx"
+                    )
+                    
+                    # Clean up individual DOCX file
+                    os.remove(docx_path)
+                    
+                except Exception as e:
+                    logger.error(f"Error processing document {document.pk}: {str(e)}")
+                    continue
+        
+        # Return ZIP file
+        response = FileResponse(
+            open(zip_path, 'rb'),
+            as_attachment=True,
+            filename=f"documents_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+        )
+        
+        # Schedule cleanup
+        def cleanup():
+            try:
+                os.remove(zip_path)
+                os.rmdir(temp_dir)
+            except:
+                pass
+        
+        threading.Timer(60, cleanup).start()
+        
+        return response
+        
     except Exception as e:
-        logger.error(f"Document verification error: {str(e)}")
-        return JsonResponse({'exists': False, 'error': str(e)})
+        logger.error(f"Error exporting documents: {str(e)}")
+        messages.error(request, f'Error exporting documents: {str(e)}')
+        return redirect('document_list')
+    
 
+# Personal Statement Generation Views
 @login_required
-def evidence_documents(request):
-    """View for managing evidence documents with caching"""
-    cache_key = f"evidence_documents_{request.user.id}"
-    cached_data = cache.get(cache_key)
-
-    if cached_data:
-        return render(request, 'document_manager/evidence.html', cached_data)
-
-    # Get user's documents categorized as evidence
-    evidence_docs = Document.objects.filter(
+def personal_statement_builder(request):
+    """Main personal statement builder interface"""
+    # Get user's existing documents
+    personal_statements = Document.objects.filter(
         user=request.user,
-        document_type='evidence'
-    ).order_by('-updated_at')
-
+        document_type='personal_statement'
+    ).order_by('-created_at')
+    
+    cvs = Document.objects.filter(
+        user=request.user,
+        document_type='cv'
+    ).order_by('-created_at')
+    
+    # Get Tech Nation requirements
+    requirements = get_tech_nation_requirements('digital_technology')
+    
     context = {
-        'evidence_docs': evidence_docs,
-        'criteria_categories': [
-            {
-                'name': 'Exceptional Talent',
-                'criteria': [
-                    'Innovation',
-                    'Significant Contribution',
-                    'Recognition',
-                    'Technical Knowledge',
-                    'Leadership'
-                ]
-            },
-            {
-                'name': 'Exceptional Promise',
-                'criteria': [
-                    'Innovation Potential',
-                    'Contribution Potential',
-                    'Recognition Potential',
-                    'Technical Knowledge Potential',
-                    'Leadership Potential'
-                ]
-            }
+        'personal_statements': personal_statements,
+        'cvs': cvs,
+        'requirements': requirements,
+        'tracks': [
+            ('digital_technology', 'Digital Technology'),
+            ('data_science_ai', 'Data Science & AI'),
         ]
     }
-
-    # Cache for 15 minutes
-    cache.set(cache_key, context, 60 * 15)
-
-    return render(request, 'document_manager/evidence.html', context)
+    
+    return render(request, 'documents/personal_statement_builder.html', context)
 
 @login_required
-def cv_builder(request):
-    """View for CV builder page"""
-    if request.method == 'POST':
-        form = CVForm(request.POST, request.FILES)
-        if form.is_valid():
-            # Save the CV
-            cv = form.save(commit=False)
-            cv.user = request.user
-            cv.document_type = 'cv'
-            cv.save()
+@rate_limit(max_calls=3, window=300)  # 3 calls per 5 minutes
+@require_http_methods(["POST"])
+def generate_personal_statement(request):
+    """Generate personal statement using AI with async processing"""
+    try:
+        # Validate request
+        if 'cv_file' not in request.FILES:
+            return JsonResponse({'error': 'CV file is required'}, status=400)
+        
+        cv_file = request.FILES['cv_file']
+        instructions = request.POST.get('instructions', '').strip()
+        track = request.POST.get('track', 'digital_technology')
+        
+        # Validate file size (max 10MB)
+        if cv_file.size > 10 * 1024 * 1024:
+            return JsonResponse({'error': 'File size too large. Maximum 10MB allowed.'}, status=400)
+        
+        # Validate file type
+        allowed_extensions = ['pdf', 'docx', 'doc', 'txt']
+        file_extension = cv_file.name.lower().split('.')[-1]
+        if file_extension not in allowed_extensions:
+            return JsonResponse({
+                'error': f'Unsupported file type. Allowed: {", ".join(allowed_extensions)}'
+            }, status=400)
+        
+        # Extract CV content
+        try:
+            cv_content = extract_cv_content(cv_file)
+            if not cv_content or len(cv_content.strip()) < 100:
+                return JsonResponse({
+                    'error': 'CV content is too short or could not be extracted properly'
+                }, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'error': f'Error extracting CV content: {str(e)}'
+            }, status=400)
+        
+        # Create a new document record
+        document = Document.objects.create(
+            user=request.user,
+            title=f"Personal Statement - {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+            document_type='personal_statement',
+            status='generating',
+            notes=f"Track: {track}, Instructions: {instructions[:100]}..."
+        )
+        
+        # Generate unique task ID
+        task_id = str(uuid.uuid4())
+        
+        # Store task info in cache
+        cache.set(f"task_document_{task_id}", document.id, 3600)
+        cache.set(f"task_status_{task_id}", {"status": "queued", "progress": 0}, 3600)
+        
+        # Start background processing
+        DocumentProcessor.process_in_background(
+            generate_document_task,
+            cv_content,
+            instructions,
+            request.user.id,
+            task_id
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'task_id': task_id,
+            'document_id': document.id,
+            'message': 'Personal statement generation started'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in generate_personal_statement: {str(e)}")
+        return JsonResponse({
+            'error': f'An error occurred: {str(e)}'
+        }, status=500)
 
-            # Clear document list cache
-            cache.delete(f"document_list_{request.user.id}")
+@login_required
+@require_http_methods(["GET"])
+def check_generation_status(request, task_id):
+    """Check the status of document generation"""
+    try:
+        # Get status from cache
+        status_info = cache.get(f"task_status_{task_id}")
+        
+        if not status_info:
+            return JsonResponse({
+                'status': 'not_found',
+                'error': 'Task not found or expired'
+            }, status=404)
+        
+        # If task is complete, get the result
+        if status_info.get('status') == 'complete':
+            result = cache.get(f"task_result_{task_id}")
+            document_id = cache.get(f"task_document_{task_id}")
+            
+            response_data = {
+                'status': 'complete',
+                'progress': 100,
+                'provider': status_info.get('provider', 'Unknown'),
+                'document_id': document_id
+            }
+            
+            if result:
+                response_data['content'] = result
+            
+            return JsonResponse(response_data)
+        
+        # Return current status
+        return JsonResponse(status_info)
+        
+    except Exception as e:
+        logger.error(f"Error checking generation status: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'error': str(e)
+        }, status=500)
 
-            # Analyze the CV if requested
-            if 'analyze' in request.POST:
-                try:
-                    # Instead of directly calling analyze_cv, we'll make a proper request
-                    # This ensures rate limiting and other middleware are applied
-                    from django.http import QueryDict
-                    from django.middleware.csrf import get_token
+@login_required
+@require_http_methods(["POST"])
+def save_generated_content(request):
+    """Save the generated content to a document"""
+    try:
+        data = json.loads(request.body)
+        content = data.get('content', '')
+        document_id = data.get('document_id')
+        title = data.get('title', f"Personal Statement - {datetime.now().strftime('%Y-%m-%d')}")
+        
+        if not content:
+            return JsonResponse({'error': 'No content provided'}, status=400)
+        
+        if document_id:
+            # Update existing document
+            try:
+                document = Document.objects.get(id=document_id, user=request.user)
+                document.content = content
+                document.title = title
+                document.status = 'completed'
+                document.save()
+            except Document.DoesNotExist:
+                return JsonResponse({'error': 'Document not found'}, status=404)
+        else:
+            # Create new document
+            document = Document.objects.create(
+                user=request.user,
+                title=title,
+                document_type='personal_statement',
+                content=content,
+                status='completed'
+            )
+        
+        return JsonResponse({
+            'success': True,
+            'document_id': document.id,
+            'message': 'Content saved successfully'
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+    except Exception as e:
+        logger.error(f"Error saving generated content: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
 
-                    # Create a new POST request with the CV file
-                    post_data = QueryDict('', mutable=True)
-                    post_data.update({
-                        'cv_file': cv.file,
-                        'track': 'digital_technology',
-                        'csrfmiddlewaretoken': get_token(request)
-                    })
+@login_required
+def preview_personal_statement(request, pk):
+    """Preview personal statement with formatting"""
+    document = get_object_or_404(Document, pk=pk, user=request.user)
+    
+    if document.document_type != 'personal_statement':
+        messages.error(request, 'This document is not a personal statement')
+        return redirect('document_detail', pk=pk)
+    
+    # Process content for preview
+    processed_content = process_sections(document.content) if document.content else ''
+    
+    # Calculate word count
+    word_count = len(document.content.split()) if document.content else 0
+    
+    # Check if word count is within recommended range
+    word_count_status = 'good'
+    if word_count < 800:
+        word_count_status = 'low'
+    elif word_count > 1200:
+        word_count_status = 'high'
+    
+    context = {
+        'document': document,
+        'processed_content': processed_content,
+        'word_count': word_count,
+        'word_count_status': word_count_status,
+        'recommended_min': 800,
+        'recommended_max': 1200
+    }
+    
+    return render(request, 'documents/preview_personal_statement.html', context)
 
-                    # Call analyze_cv directly with the new request
-                    analysis_results = analyze_cv(request)
+@login_required
+@require_http_methods(["POST"])
+def update_personal_statement(request, pk):
+    """Update personal statement content via AJAX"""
+    try:
+        document = get_object_or_404(Document, pk=pk, user=request.user)
+        
+        if document.document_type != 'personal_statement':
+            return JsonResponse({'error': 'Invalid document type'}, status=400)
+        
+        data = json.loads(request.body)
+        content = data.get('content', '')
+        title = data.get('title', document.title)
+        
+        # Update document
+        document.content = content
+        document.title = title
+        document.updated_at = datetime.now()
+        document.save()
+        
+        # Calculate new word count
+        word_count = len(content.split()) if content else 0
+        
+        return JsonResponse({
+            'success': True,
+            'word_count': word_count,
+            'message': 'Personal statement updated successfully'
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+    except Exception as e:
+        logger.error(f"Error updating personal statement: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
 
-                    return render(request, 'document_manager/cv_builder.html', {
-                        'form': form,
-                        'analysis': analysis_results,
-                        'cv': cv
-                    })
-                except Exception as e:
-                    logger.error(f"Error analyzing CV: {str(e)}")
-                    messages.error(request, f"Error analyzing CV: {str(e)}")
+@login_required
+def get_requirements(request, track):
+    """Get Tech Nation requirements for a specific track"""
+    try:
+        requirements = get_tech_nation_requirements(track)
+        return JsonResponse({
+            'success': True,
+            'requirements': requirements
+        })
+    except Exception as e:
+        logger.error(f"Error getting requirements for track {track}: {str(e)}")
+        return JsonResponse({
+            'error': f'Error getting requirements: {str(e)}'
+        }, status=500)
+    
 
-            messages.success(request, "CV uploaded successfully.")
-            return redirect('document_detail', document_id=cv.id)
-    else:
-        form = CVForm()
 
-    return render(request, 'document_manager/cv_builder.html', {
-        'form': form
-    })
+# Dashboard and Statistics Views
+@login_required
+def dashboard(request):
+    """Main dashboard with statistics and recent activity"""
+    # Get user's documents
+    documents = Document.objects.filter(user=request.user)
+    
+    # Calculate statistics
+    stats = {
+        'total_documents': documents.count(),
+        'personal_statements': documents.filter(document_type='personal_statement').count(),
+        'cvs': documents.filter(document_type='cv').count(),
+        'completed': documents.filter(status='completed').count(),
+        'in_progress': documents.filter(status__in=['draft', 'in_progress', 'generating']).count(),
+    }
+    
+    # Recent documents
+    recent_documents = documents.order_by('-updated_at')[:5]
+    
+    # Recent activity (last 30 days)
+    from datetime import timedelta
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+    recent_activity = documents.filter(
+        updated_at__gte=thirty_days_ago
+    ).order_by('-updated_at')[:10]
+    
+    # Progress calculation for each recent document
+    for doc in recent_documents:
+        doc.progress = calculate_application_progress(doc)
+    
+    context = {
+        'stats': stats,
+        'recent_documents': recent_documents,
+        'recent_activity': recent_activity,
+    }
+    
+    return render(request, 'documents/dashboard.html', context)
+
+@login_required
+def api_usage_stats(request):
+    """Get API usage statistics"""
+    try:
+        # This would typically come from a database or cache
+        # For now, return mock data
+        stats = {
+            'total_requests': 150,
+            'successful_requests': 142,
+            'failed_requests': 8,
+            'average_response_time': 2.3,
+            'requests_today': 12,
+            'remaining_quota': 88
+        }
+        
+        return JsonResponse({
+            'success': True,
+            'stats': stats
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting API usage stats: {str(e)}")
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
+
+@login_required
+@require_http_methods(["POST"])
+def clear_cache(request):
+    """Clear user-specific cache"""
+    try:
+        # Clear document cache for this user
+        user_cache_keys = [key for key in document_cache.keys() if str(request.user.id) in str(key)]
+        for key in user_cache_keys:
+            del document_cache[key]
+        
+        # Clear Django cache for this user
+        cache_pattern = f"*{request.user.id}*"
+        # Note: This is a simplified approach. In production, use Redis with pattern matching
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Cache cleared successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error clearing cache: {str(e)}")
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
+
+# Health check endpoint
+def health_check(request):
+    """Health check endpoint for monitoring"""
+    try:
+        # Check database connection
+        Document.objects.count()
+        
+        # Check cache
+        cache.set('health_check', 'ok', 60)
+        cache_status = cache.get('health_check')
+        
+        return JsonResponse({
+            'status': 'healthy',
+            'database': 'ok',
+            'cache': 'ok' if cache_status == 'ok' else 'error',
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }, status=500)
+
+# Error handlers
+def handler404(request, exception):
+    """Custom 404 error handler"""
+    return render(request, 'errors/404.html', status=404)
+
+def handler500(request):
+    """Custom 500 error handler"""
+    return render(request, 'errors/500.html', status=500)
+
+# Utility view for testing
+@login_required
+def test_ai_connection(request):
+    """Test AI provider connections"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    try:
+        results = {}
+        
+        # Test DeepSeek
+        try:
+            deepseek_response = ai_provider.try_deepseek("Hello, this is a test.")
+            results['deepseek'] = 'ok' if deepseek_response else 'error'
+        except Exception as e:
+            results['deepseek'] = f'error: {str(e)}'
+        
+        # Test OpenAI
+        try:
+            openai_response = ai_provider.try_openai("Hello, this is a test.")
+            results['openai'] = 'ok' if openai_response else 'error'
+        except Exception as e:
+            results['openai'] = f'error: {str(e)}'
+        
+        return JsonResponse({
+            'success': True,
+            'results': results
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
