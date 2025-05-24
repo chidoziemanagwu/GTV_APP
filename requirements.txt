@@ -10,9 +10,8 @@ psycopg2-binary>=2.9.7
 # Authentication
 django-allauth>=0.57.0
 
-# Scheduling
+# Scheduling (the current missing package)
 django-apscheduler>=0.6.2
-APScheduler>=3.10.4
 
 # WebSockets and Channels
 channels>=4.0.0
@@ -84,42 +83,29 @@ django-widget-tweaks>=1.4.12
 # API and serialization
 djangorestframework>=3.14.0
 
-# Common Django packages
+# Common Django packages (with correct versions)
 django-bootstrap5>=23.3
 django-filter>=23.2
 django-import-export>=3.2.0
 django-mptt>=0.14.0
 django-taggit>=4.0.0
-
-# Cache and session
 django-redis>=5.3.0
 
 # Admin enhancements
 django-admin-interface>=0.26.0
-django-colorfield>=0.9.0
 
-# Timezone and internationalization
+# Timezone
 pytz>=2023.3
-django-timezone-field>=5.1
 
-# Email
-django-ses>=3.5.0
-
-# Social auth (if using social login)
+# Social auth
 social-auth-app-django>=5.2.0
 
-# Task queue alternatives
+# Background tasks
 django-rq>=2.8.1
 rq>=1.15.1
 
-# File uploads
+# File cleanup
 django-cleanup>=8.0.0
-
-# Pagination
-django-pure-pagination>=0.3.0
-
-# Search
-django-haystack>=3.2.1
 
 # Notifications
 django-notifications-hq>=1.8.0
@@ -130,73 +116,18 @@ django-guardian>=2.4.0
 # Versioning
 django-reversion>=5.0.4
 
-# Caching
-django-cachalot>=2.6.1
-
-# Compression
-django-compressor>=4.4
-
-# Thumbnails
-easy-thumbnails>=2.8.5
-
 # Rich text
 django-ckeditor>=6.7.0
-
-# REST API extras
-django-rest-swagger>=2.2.0
-drf-yasg>=1.21.7
-
-# Background tasks
-django-background-tasks>=1.2.8
 
 # Model utilities
 django-model-utils>=4.3.1
 
-# Form handling
-django-formtools>=2.4.1
-
-# File management
-django-filer>=3.1.0
-
-# Audit trail
-django-simple-history>=3.4.0
-
-# Settings management
-django-environ>=0.11.2
-
-# Database migrations
-django-migration-testcase>=1.0.0
-
-# Performance monitoring
-django-silk>=5.0.4
-
-# Content types
-django-polymorphic>=3.1.0
-
-# Tree models
-django-treebeard>=4.7
-
-# Soft delete
-django-safedelete>=1.3.2
-
-# UUID fields
-django-uuid-upload-path>=1.0.0
-
-# Phone number fields
+# Phone numbers
 django-phonenumber-field>=7.1.0
 phonenumbers>=8.13.19
 
-# Country fields
+# Countries
 django-countries>=7.5.1
-
-# Money fields
-django-money>=3.2.0
-
-# Image processing
-django-imagekit>=4.1.0
-
-# Bulk operations
-django-bulk-update>=2.2.0
 
 # Health checks
 django-health-check>=3.17.0
@@ -204,54 +135,18 @@ django-health-check>=3.17.0
 # Rate limiting
 django-ratelimit>=4.1.0
 
-# CORS
-django-cors-headers>=4.3.0
-
-# Security headers
-django-security>=0.17.0
-
-# Content Security Policy
-django-csp>=3.7
-
-# Two-factor authentication
+# Two-factor auth
 django-otp>=1.2.2
 qrcode>=7.4.2
 
 # Captcha
 django-recaptcha>=3.0.0
 
-# Sitemap
+# SEO and robots
 django-robots>=6.1
 
-# SEO
-django-meta>=2.2.0
-
-# Analytics
-django-analytical>=3.1.0
-
-# A/B testing
+# Feature flags
 django-waffle>=4.1.0
 
-# Feature flags
-django-flags>=5.0.13
-
-# Maintenance mode
-django-maintenance-mode>=0.21.1
-
-# Database connection pooling
-django-db-pool>=1.0.1
-
-# Profiling
-django-debug-panel>=0.8.3
-
-# Memory profiling
-memory-profiler>=0.61.0
-
-# Code quality
-flake8>=6.0.0
-black>=23.7.0
-isort>=5.12.0
-
-# Documentation
-Sphinx>=7.1.2
-sphinx-rtd-theme>=1.3.0
+# Environment management
+django-environ>=0.11.2
