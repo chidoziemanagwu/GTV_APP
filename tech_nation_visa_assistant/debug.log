@@ -2488,3 +2488,16 @@ INFO 2025-05-24 10:37:00,705 schedulers Scheduler started successfully
 INFO 2025-05-24 10:37:00,780 autoreload Watching for file changes with StatReloader
 WARNING 2025-05-24 10:37:07,343 document_generator OpenAI API key not found. Document generation will not function properly.
 WARNING 2025-05-24 10:37:07,469 document_generator OpenAI API key not found. Document generation will not function properly.
+INFO 2025-05-24 10:40:27,012 basehttp "GET / HTTP/1.1" 301 0
+INFO 2025-05-24 10:40:27,107 basehttp code 400, message Bad request version ('\x02h2\x08http/1.1\x003\x04ï\x04íZZ\x00\x01\x00\x11ì\x04ÀÔ2\x0eµ\x81Æ÷(^\x1bÔ\x7f\x104:ªpv\x18L2')
+ERROR 2025-05-24 10:40:27,114 basehttp You're accessing the development server over HTTPS, but it only supports HTTP.
+INFO 2025-05-24 10:40:27,122 basehttp code 400, message Bad request version ('¨ñ\x8dÈà@lB¡ë\x80Ë9×>Îôp\x06H¨_§\x84\x90Ö²k¹BTÉQuâLb\x08Â\x94blÜi+[äe\x8e\x879qK·ò$ËE6^Êd{Ã¸¸¾V+×"«,Ãwå¬¢¥ÄÈ&')
+ERROR 2025-05-24 10:40:27,125 basehttp You're accessing the development server over HTTPS, but it only supports HTTP.
+INFO 2025-05-24 10:40:44,894 basehttp code 400, message Bad request version ('**\x13\x01\x13\x02\x13\x03À+À/À,À0Ì©Ì¨À\x13À\x14\x00\x9c\x00\x9d\x00/\x005\x01\x00\x06SJJ\x00\x00\x00')
+ERROR 2025-05-24 10:40:44,904 basehttp You're accessing the development server over HTTPS, but it only supports HTTP.
+INFO 2025-05-24 10:40:44,993 basehttp code 400, message Bad request version ('ÍÀÜp\x05Vq\x18\x18Ut\x0eZ§è\x97Å¹ð\x11\x14Îaü&o\x9dY\\Í\x12')
+ERROR 2025-05-24 10:40:44,996 basehttp You're accessing the development server over HTTPS, but it only supports HTTP.
+INFO 2025-05-24 10:41:09,112 basehttp code 400, message Bad request version ('F|7\x10\x12\x8ab²yãã¦÷ßõ¾¼±ø4')
+ERROR 2025-05-24 10:41:09,138 basehttp You're accessing the development server over HTTPS, but it only supports HTTP.
+INFO 2025-05-24 10:41:09,200 basehttp code 400, message Bad request version ('¸\x00H\x9ccB\x8b\x89\x89k\x83Í')
+ERROR 2025-05-24 10:41:09,201 basehttp You're accessing the development server over HTTPS, but it only supports HTTP.
