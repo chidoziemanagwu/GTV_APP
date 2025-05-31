@@ -7196,3 +7196,6 @@ INFO 2025-05-31 09:43:52,718 basehttp "POST /stripe-webhook/ HTTP/1.1" 200 0
 INFO 2025-05-31 09:43:56,556 basehttp "GET /accounts/dashboard/ HTTP/1.1" 200 5754
 INFO 2025-05-31 09:44:01,462 basehttp "GET /accounts/profile/ HTTP/1.1" 200 7933
 INFO 2025-05-31 09:44:17,041 basehttp "GET /documents/ HTTP/1.1" 200 10249
+INFO 2025-05-31 11:41:08,591 basehttp "GET /documents/purchase-points/ HTTP/1.1" 200 7792
+INFO 2025-05-31 11:41:14,966 basehttp "GET /documents/purchase-points/ HTTP/1.1" 200 7839
+INFO 2025-05-31 11:41:44,710 basehttp "GET /documents/ HTTP/1.1" 200 10285
