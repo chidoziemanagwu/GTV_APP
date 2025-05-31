@@ -1,20 +1,121 @@
-<!-- templates/expert_marketplace/book_consultation.html -->
 {% extends 'dashboard_base.html' %}
+
+{% block extra_css %}
+<style>
+    .glass-bg {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 1.25rem;
+        box-shadow: 0 4px 32px 0 rgba(37,99,235,0.08);
+    }
+    .gradient-header {
+        background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%);
+        color: #fff;
+        border-radius: 1.25rem 1.25rem 0 0;
+        padding: 2rem 1.5rem 1.5rem 1.5rem;
+        box-shadow: 0 2px 16px 0 rgba(37,99,235,0.10);
+    }
+    .modern-btn {
+        background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%);
+        color: #fff;
+        font-weight: 600;
+        border-radius: 0.75rem;
+        padding: 0.75rem 2.5rem;
+        transition: background 0.2s, box-shadow 0.2s;
+        box-shadow: 0 2px 8px 0 rgba(37,99,235,0.10);
+        border: none;
+    }
+    .modern-btn:hover {
+        background: linear-gradient(90deg, #1d4ed8 0%, #2563eb 100%);
+        box-shadow: 0 4px 16px 0 rgba(37,99,235,0.15);
+    }
+    .consultant-grid {
+        display: grid;
+        grid-template-columns: repeat(1, 1fr);
+        gap: 2rem;
+    }
+    @media (min-width: 640px) {
+        .consultant-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    @media (min-width: 1024px) {
+        .consultant-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+    .consultant-card {
+        background: rgba(255,255,255,0.95);
+        border-radius: 1rem;
+        box-shadow: 0 4px 24px 0 rgba(37,99,235,0.08);
+        padding: 2rem 1.25rem 1.5rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: 1px solid #e0e7ef;
+        min-height: 340px;
+    }
+    .consultant-card:hover {
+        transform: translateY(-4px) scale(1.03);
+        box-shadow: 0 8px 32px 0 rgba(37,99,235,0.15);
+    }
+    .star {
+        color: #fbbf24;
+        margin-right: 2px;
+    }
+    .star-empty {
+        color: #d1d5db;
+        margin-right: 2px;
+    }
+    .consultant-photo {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 50%;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px 0 rgba(37,99,235,0.10);
+        border: 4px solid #dbeafe;
+    }
+    .consultant-name {
+        font-weight: 600;
+        color: #2563eb;
+        font-size: 1.1rem;
+        margin-bottom: 0.25rem;
+        text-align: center;
+    }
+    .consultant-title {
+        font-size: 0.95rem;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+    .consultant-desc {
+        font-size: 0.95rem;
+        color: #334155;
+        text-align: center;
+        margin-top: 0.5rem;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
+
     <div class="max-w-3xl mx-auto">
-        <!-- Step 1: Pricing Info -->
-        <div class="mb-8 bg-white rounded-lg shadow-lg p-6">
-            <h2 class="text-2xl font-bold mb-4">Book a Consultation</h2>
-            <div class="bg-blue-50 p-4 rounded-lg">
-                <p class="text-lg mb-2">
-                    <span class="font-semibold">Duration:</span> {{ consultation_duration }} minutes
-                </p>
-                <p class="text-lg mb-2">
-                    <span class="font-semibold">Fee:</span> £{{ consultation_fee }}
-                </p>
-                <p class="text-gray-600">
+        <div class="mb-8 glass-bg">
+            <div class="gradient-header">
+                <h2 class="text-2xl font-bold mb-2">Book a Consultation</h2>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-8">
+                    <p class="text-lg mb-2 sm:mb-0">
+                        <span class="font-semibold">Duration:</span> {{ consultation_duration }} minutes
+                    </p>
+                    <p class="text-lg mb-2 sm:mb-0">
+                        <span class="font-semibold">Fee:</span> £{{ consultation_fee }}
+                    </p>
+                </div>
+                <p class="text-blue-100 mt-2">
                     Get expert guidance on your Tech Nation Global Talent Visa application from our experienced consultants.
                 </p>
             </div>
@@ -28,17 +129,17 @@
             </div>
             {% endif %}
 
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="glass-bg p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                        <label class="modern-label">Date</label>
                         {{ form.scheduled_date }}
                         {% if form.scheduled_date.errors %}
                         <p class="text-red-600 text-sm mt-1">{{ form.scheduled_date.errors.0 }}</p>
                         {% endif %}
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                        <label class="modern-label">Time</label>
                         {{ form.scheduled_time }}
                         {% if form.scheduled_time.errors %}
                         <p class="text-red-600 text-sm mt-1">{{ form.scheduled_time.errors.0 }}</p>
@@ -48,28 +149,28 @@
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <label class="modern-label">Full Name</label>
                         {{ form.name }}
                         {% if form.name.errors %}
                         <p class="text-red-600 text-sm mt-1">{{ form.name.errors.0 }}</p>
                         {% endif %}
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <label class="modern-label">Email</label>
                         {{ form.email }}
                         {% if form.email.errors %}
                         <p class="text-red-600 text-sm mt-1">{{ form.email.errors.0 }}</p>
                         {% endif %}
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                        <label class="modern-label">Phone</label>
                         {{ form.phone }}
                         {% if form.phone.errors %}
                         <p class="text-red-600 text-sm mt-1">{{ form.phone.errors.0 }}</p>
                         {% endif %}
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <label class="modern-label">Description</label>
                         {{ form.description }}
                         {% if form.description.errors %}
                         <p class="text-red-600 text-sm mt-1">{{ form.description.errors.0 }}</p>
@@ -79,11 +180,39 @@
             </div>
 
             <div class="flex justify-end">
-                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                <button type="submit" class="modern-btn">
                     Book Consultation
                 </button>
             </div>
         </form>
+    </div>
+
+    <!-- Meet Our Consultants Section -->
+    <div class="mt-16">
+        <h3 class="text-xl font-bold text-blue-700 mb-6 text-center">Meet Our Consultants</h3>
+        <div class="consultant-grid">
+            {% for consultant in consultants %}
+            <div class="consultant-card">
+                <img src="{{ consultant.photo_url }}" alt="{{ consultant.name }}" class="consultant-photo" />
+                <div class="consultant-name">{{ consultant.name }}</div>
+                <div class="consultant-title">{{ consultant.title }}</div>
+                <div class="flex items-center justify-center mb-1">
+                    {% for i in "12345" %}
+                        {% if forloop.counter <= consultant.rating %}
+                            <span class="star">&#9733;</span>
+                        {% else %}
+                            <span class="star-empty">&#9734;</span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="consultant-desc">
+                    {{ consultant.bio }}
+                </div>
+            </div>
+            {% empty %}
+            <p class="col-span-4 text-center text-gray-500">No consultants available at this time.</p>
+            {% endfor %}
+        </div>
     </div>
 </div>
 {% endblock %}

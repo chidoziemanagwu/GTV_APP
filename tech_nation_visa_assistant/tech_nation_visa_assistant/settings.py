@@ -24,6 +24,8 @@ if not ALLOWED_HOSTS or ALLOWED_HOSTS == ['']:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'gtv-app.onrender.com', '*.onrender.com']
 
 
+
+
 # Add this to your settings.py
 CSRF_TRUSTED_ORIGINS = [
     'https://gtv-app.onrender.com',
@@ -304,9 +306,19 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+if DEBUG:
+    # Development settings - disable HTTPS redirects
+    SECURE_SSL_REDIRECT = False
+    SECURE_HSTS_SECONDS = 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+
 # API Keys
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
-DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')  # Add DeepSeek API key
+# OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+# DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')  # Add DeepSeek API key
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
 
 # Base URL
 BASE_URL = os.environ.get('BASE_URL', 'http://localhost:8000')
@@ -314,9 +326,9 @@ BASE_URL = os.environ.get('BASE_URL', 'http://localhost:8000')
 # Stripe settings
 STRIPE_PUBLIC_KEY = os.environ.get('STRIPE_PUBLIC_KEY', '')
 STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
+# In settings.py
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
-STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLIC_KEY')
-
 # Allauth settings
 ACCOUNT_EMAIL_VERIFICATION = 'optional'
 ACCOUNT_SESSION_REMEMBER = True
@@ -394,10 +406,18 @@ LOGGING = {
 
 # AI model settings
 AI_MODELS = {
-    'default': 'gpt-4.1-nano',
-    'fallback': 'gpt-3.5-turbo',
-    'document_generation': 'gpt-4',
-    'cv_analysis': 'gpt-4',
+    'default': 'llama-3.1-8b-instant',  # Groq model
+    'fallback': 'llama-3.1-8b-instant',  # Same model for consistency
+    'document_generation': 'llama-3.1-70b-versatile',  # Larger model for complex docs
+    'cv_analysis': 'llama-3.1-8b-instant',
+    'chat': 'llama-3.1-8b-instant',
+}
+
+GROQ_MODEL_SETTINGS = {
+    'temperature': 0.7,
+    'max_tokens': 2000,
+    'top_p': 0.9,
+    'stream': True,  # Enable streaming for better UX
 }
 
 # Create cache table command to run after deployment:

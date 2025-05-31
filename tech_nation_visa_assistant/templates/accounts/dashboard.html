@@ -8,11 +8,11 @@
         <!-- Stats Overview -->
         <div class="w-full lg:w-3/4 order-2 lg:order-1">
             <!-- Welcome Banner -->
-            <div class="mb-6 p-6 rounded-xl bg-gradient-to-r from-primary-600 to-primary-800 text-white relative overflow-hidden">
+            <div class="mb-6 p-6 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white relative overflow-hidden">
                 <div class="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
                 <div class="relative z-10">
                     <h1 class="text-2xl font-bold mb-2">Welcome back, {{ user.get_full_name|default:"there" }}!</h1>
-                    <p class="text-primary-100">Your visa application journey is {{ progress_percentage|default:"30" }}% complete. 
+                    <p class="text-blue-100">Your visa application journey is {{ progress_percentage|default:"30" }}% complete. 
                         {% if has_chosen_personal_statement %}
                             You're ready to submit your application!
                         {% else %}
@@ -27,7 +27,7 @@
 
             <!-- Evidence Documents Card -->
             <div class="mb-6 p-6 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-600 text-white relative overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                <a href="{% url 'document_manager:evidence_documents' %}" class="block relative z-10">
+                <a href="{% url 'document_manager:document_list' %}" class="block relative z-10">
                     <div class="flex items-center justify-between">
                         <div>
                             <h2 class="text-xl font-bold mb-2">Evidence Documents</h2>
@@ -45,17 +45,17 @@
             <div class="bg-white rounded-xl shadow-sm p-6 mb-6 backdrop-blur-xl bg-white/80 border border-gray-100">
                 <div class="flex items-center justify-between mb-6 flex-wrap gap-2">
                     <h2 class="text-xl font-bold text-gray-800">
-                        <i class="fas fa-chart-line text-primary-500 mr-2"></i>
+                        <i class="fas fa-chart-line text-blue-600 mr-2"></i>
                         Application Progress
                     </h2>
-                    <span class="px-4 py-2 bg-primary-50 text-primary-700 rounded-full text-sm font-medium">
+                    <span class="px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
                         {{ progress_percentage|default:"30" }}% Complete
                     </span>
                 </div>
                 
                 <div class="mb-8">
                     <div class="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-                        <div class="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full" style="width: {{ progress_percentage|default:"30" }}%"></div>
+                        <div class="h-full bg-gradient-to-r from-blue-600 to-blue-500 rounded-full" style="width: {{ progress_percentage|default:"30" }}%"></div>
                     </div>
                 </div>
                 
@@ -75,13 +75,13 @@
                     </div>
 
                     <!-- Document Preparation - Updated to reflect chosen personal statement -->
-                    <div class="flex items-center p-4 {% if has_chosen_personal_statement %}bg-green-50 border-green-100{% else %}bg-primary-50 border-primary-100{% endif %} rounded-lg border">
-                        <div class="w-10 h-10 {% if has_chosen_personal_statement %}bg-gradient-to-br from-green-400 to-green-500{% else %}bg-gradient-to-br from-primary-400 to-primary-500{% endif %} text-white rounded-full flex items-center justify-center mr-4 shadow-sm flex-shrink-0">
+                    <div class="flex items-center p-4 {% if has_chosen_personal_statement %}bg-green-50 border-green-100{% else %}bg-blue-50 border-blue-100{% endif %} rounded-lg border">
+                        <div class="w-10 h-10 {% if has_chosen_personal_statement %}bg-gradient-to-br from-green-400 to-green-500{% else %}bg-gradient-to-br from-blue-600 to-blue-500{% endif %} text-white rounded-full flex items-center justify-center mr-4 shadow-sm flex-shrink-0">
                             <i class="fas fa-file-alt"></i>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <h3 class="font-semibold {% if has_chosen_personal_statement %}text-green-800{% else %}text-primary-800{% endif %} text-truncate">Document Preparation</h3>
-                            <p class="text-sm {% if has_chosen_personal_statement %}text-green-600{% else %}text-primary-600{% endif %} text-truncate">
+                            <h3 class="font-semibold {% if has_chosen_personal_statement %}text-green-800{% else %}text-blue-800{% endif %} text-truncate">Document Preparation</h3>
+                            <p class="text-sm {% if has_chosen_personal_statement %}text-green-600{% else %}text-blue-600{% endif %} text-truncate">
                                 {% if has_chosen_personal_statement %}
                                     Completed - Personal statement chosen
                                 {% elif document_progress > 0 %}
@@ -95,7 +95,7 @@
                                 {% endif %}
                             </p>
                         </div>
-                        <a href="{% url 'document_manager:document_list' %}" class="{% if has_chosen_personal_statement %}text-green-400 hover:text-green-600{% else %}text-primary-400 hover:text-primary-600{% endif %} flex-shrink-0">
+                        <a href="{% url 'document_manager:document_list' %}" class="{% if has_chosen_personal_statement %}text-green-400 hover:text-green-600{% else %}text-blue-400 hover:text-blue-600{% endif %} flex-shrink-0">
                             <i class="fas fa-chevron-right"></i>
                         </a>
                     </div>
@@ -144,7 +144,7 @@
             <!-- Profile Card -->
             <div class="bg-white rounded-xl shadow-sm p-6 backdrop-blur-xl bg-white/80 border border-gray-100">
                 <div class="flex items-center mb-6">
-                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-xl font-bold mr-4 shadow-sm flex-shrink-0">
+                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl font-bold mr-4 shadow-sm flex-shrink-0">
                         {{ user.email|slice:":1"|upper }}
                     </div>
                     <div class="flex-1 min-w-0">
@@ -168,18 +168,46 @@
                     </div>
                 </div>
 
-                <!-- Add this after the existing profile card info -->
-                <div class="mt-4 p-3 bg-pink-50 rounded-lg">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm text-gray-600">Referral Points</span>
-                        <span class="font-medium text-gray-800">{{ user.profile.ai_points|default:"0" }}</span>
+                <!-- Points Cards -->
+                <div class="mt-4 grid grid-cols-1 gap-4">
+                    <!-- AI Points Card -->
+                    <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                        <div class="flex items-center mb-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                            </svg>
+                            <h3 class="font-semibold text-blue-800">AI Points</h3>
+                        </div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm text-gray-600">Available Points</span>
+                            <span class="font-medium text-blue-700">{{ request.user.points.balance|default:"0" }}</span>
+                        </div>
+                        <a href="{% url 'document_manager:purchase_points' %}" class="w-full inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg hover:from-blue-700 hover:to-blue-600 transition duration-150 shadow-sm">
+                            <i class="fas fa-plus-circle mr-2"></i>
+                            Get More Points
+                        </a>
                     </div>
-                    <a href="{% url 'referrals:share' %}" class="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center justify-center">
-                        <i class="fas fa-share-alt mr-1"></i> Share & Earn Points
-                    </a>
+
+                    <!-- Referral Points Card - UPDATED -->
+                    <div class="p-4 bg-pink-50 rounded-lg border border-pink-100">
+                        <div class="flex items-center mb-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-pink-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h10v7h-2l-1 2H8l-1-2H5V5z" clip-rule="evenodd" />
+                            </svg>
+                            <h3 class="font-semibold text-pink-800">Referral Points</h3>
+                        </div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm text-gray-600">Available Points</span>
+                            <span class="font-medium text-pink-700">{{ total_points_earned|default:"0" }}</span>
+                        </div>
+                        <a href="{% url 'referrals:share' %}" class="w-full inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-pink-500 to-pink-400 text-white rounded-lg hover:from-pink-600 hover:to-pink-500 transition duration-150 shadow-sm">
+                            <i class="fas fa-share-alt mr-2"></i>
+                            Share & Earn Points
+                        </a>
+                    </div>
                 </div>
 
-                <a href="{% url 'accounts:profile' %}" class="mt-6 w-full inline-flex items-center justify-center px-4 py-2 border border-primary-500 text-primary-600 rounded-lg hover:bg-primary-50 transition duration-150">
+                <a href="{% url 'accounts:profile' %}" class="mt-6 w-full inline-flex items-center justify-center px-4 py-2 border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 transition duration-150">
                     <i class="fas fa-user-edit mr-2"></i>
                     Edit Profile
                 </a>
@@ -188,12 +216,12 @@
             <!-- Quick Actions -->
             <div class="bg-white rounded-xl shadow-sm p-6 backdrop-blur-xl bg-white/80 border border-gray-100">
                 <h2 class="text-xl font-bold text-gray-800 mb-4">
-                    <i class="fas fa-bolt text-primary-500 mr-2"></i>
+                    <i class="fas fa-bolt text-blue-600 mr-2"></i>
                     Quick Actions
                 </h2>
                 <div class="space-y-3">
                     <!-- Evidence Documents Link (New) -->
-                    <a href="{% url 'document_manager:evidence_documents' %}" class="flex items-center p-3 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition duration-150">
+                    <a href="{% url 'document_manager:document_list' %}" class="flex items-center p-3 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition duration-150">
                         <div class="w-10 h-10 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mr-3 flex-shrink-0">
                             <i class="fas fa-folder-open"></i>
                         </div>
@@ -201,19 +229,12 @@
                         <i class="fas fa-chevron-right ml-auto text-gray-400 flex-shrink-0"></i>
                     </a>
 
-                    <a href="{% url 'document_manager:document_list' %}" class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition duration-150">
-                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="fas fa-file-alt"></i>
+                    <!-- Purchase Points Link -->
+                    <a href="{% url 'document_manager:purchase_points' %}" class="flex items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition duration-150">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="fas fa-coins"></i>
                         </div>
-                        <span class="font-medium text-gray-700 flex-1 min-w-0 text-truncate">My Documents</span>
-                        <i class="fas fa-chevron-right ml-auto text-gray-400 flex-shrink-0"></i>
-                    </a>
-
-                    <a href="{% url 'ai_assistant:chat' %}" class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition duration-150">
-                        <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-500 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="fas fa-robot"></i>
-                        </div>
-                        <span class="font-medium text-gray-700 flex-1 min-w-0 text-truncate">AI Assistant</span>
+                        <span class="font-medium text-gray-700 flex-1 min-w-0 text-truncate">Purchase AI Points</span>
                         <i class="fas fa-chevron-right ml-auto text-gray-400 flex-shrink-0"></i>
                     </a>
 
@@ -225,16 +246,8 @@
                         <i class="fas fa-chevron-right ml-auto text-gray-400 flex-shrink-0"></i>
                     </a>
 
-                    <a href="{% url 'notion_monitor:change_list' %}" class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition duration-150">
-                        <div class="w-10 h-10 rounded-full bg-yellow-100 text-yellow-500 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="fas fa-bell"></i>
-                        </div>
-                        <span class="font-medium text-gray-700 flex-1 min-w-0 text-truncate">Guide Updates</span>
-                        <i class="fas fa-chevron-right ml-auto text-gray-400 flex-shrink-0"></i>
-                    </a>
-
-                    <!-- Quick Actions Section - Add this item -->
-                    <a href="{% url 'referrals:share' %}" class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition duration-150">
+                    <!-- Refer & Earn Link -->
+                    <a href="{% url 'referrals:share' %}" class="flex items-center p-3 bg-pink-50 rounded-lg hover:bg-pink-100 transition duration-150">
                         <div class="w-10 h-10 rounded-full bg-pink-100 text-pink-500 flex items-center justify-center mr-3 flex-shrink-0">
                             <i class="fas fa-share-alt"></i>
                         </div>

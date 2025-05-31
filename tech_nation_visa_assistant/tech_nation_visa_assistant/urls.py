@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from accounts.views import home
 from django.contrib.auth import views as auth_views
+from document_manager.views import stripe_webhook  # Import the webhook view directly
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -46,6 +47,7 @@ urlpatterns = [
     path('monitor/', include('notion_monitor.urls', namespace='notion_monitor')),
     path('payments/', include('payments.urls')),
     path('referrals/', include('referrals.urls', namespace='referrals')),
+    path('stripe-webhook/', stripe_webhook, name='stripe_webhook'),
     path('', home, name='home'),  # Keep home at root URL
 ]
 

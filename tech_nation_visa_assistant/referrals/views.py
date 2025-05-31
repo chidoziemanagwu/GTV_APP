@@ -1,5 +1,6 @@
 # referrals/views.py (optimized)
 
+from datetime import timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -11,7 +12,9 @@ from django.core.cache import cache
 from .models import ReferralCode, ReferralClick, ReferralSignup
 import urllib.parse
 from django.db.models import Sum
+from django.utils import timezone
 import logging
+from accounts.utils import verify_recaptcha, is_disposable_email, rate_limit_signup
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +25,7 @@ def share_link(request):
     try:
         # Get or create referral code for the user
         referral_code, created = ReferralCode.objects.get_or_create(user=request.user)
-        
+
         # Get base URL (with protocol and domain)
         if request.is_secure():
             protocol = 'https'
@@ -30,25 +33,38 @@ def share_link(request):
             protocol = 'http'
         domain = request.get_host()
         base_url = f"{protocol}://{domain}"
-        
+
         # Generate share URL
         share_url = f"{base_url}/referrals/join/{referral_code.code}/"
-        
+
         # Generate social media share URLs
         share_text = "Join me on Tech Nation Visa Assistant - the AI-powered platform that helps with your Global Talent visa application!"
-        
+
         # WhatsApp share URL
         whatsapp_share_url = f"https://wa.me/?text={urllib.parse.quote(share_text + ' ' + share_url)}"
-        
+
         # Twitter share URL
         twitter_share_url = f"https://twitter.com/intent/tweet?text={urllib.parse.quote(share_text)}&url={urllib.parse.quote(share_url)}"
-        
+
+        # Force refresh referral code to get latest data
+        referral_code.refresh_from_db()
+
         # Get referral stats - use select_related for efficiency
         total_referrals = referral_code.signups.count()
-        paying_customers = referral_code.signups.filter(points_awarded=True)
-        paying_customers_count = paying_customers.count()
-        total_points = paying_customers_count * 3  # 3 points per paying customer
-        
+
+        # Explicitly fetch all signups to ensure they're loaded
+        signups = list(referral_code.signups.all())
+
+        # Count paying customers
+        paying_customers_count = sum(1 for signup in signups if signup.points_awarded)
+
+        # Calculate total points (3 per paying customer)
+        total_points = paying_customers_count * 3
+
+        # Log data for debugging
+        logger.info(f"User: {request.user.username}, Referrals: {total_referrals}, Paying: {paying_customers_count}, Points: {total_points}")
+        logger.info(f"Signups: {signups}")
+
         context = {
             'referral_code': referral_code,
             'share_url': share_url,
@@ -58,13 +74,15 @@ def share_link(request):
             'paying_customers_count': paying_customers_count,
             'total_points': total_points,
         }
-        
+
         return render(request, 'referrals/share.html', context)
-    
+
     except Exception as e:
         logger.error(f"Error in share_link: {e}")
         context = {'error': f"An error occurred: {str(e)}"}
         return render(request, 'referrals/share.html', context)
+    
+    
 
 @require_POST
 @csrf_protect
@@ -120,40 +138,55 @@ def track_click(request, code):
             'message': str(e)
         }, status=500)
 
+
+
 def join_with_referral(request, code):
-    """Process a referral when someone clicks a referral link"""
+    """Process a referral when someone clicks a referral link, with anti-gaming."""
     try:
         referral_code = ReferralCode.objects.get(code=code)
+        ip = request.META.get('REMOTE_ADDR', '')
 
-        # Track click using F() expression to avoid race conditions
-        from django.db.models import F
-        
-        # Create click record
+        # Track click
         ReferralClick.objects.create(
             referral_code=referral_code,
-            ip_address=request.META.get('REMOTE_ADDR', ''),
+            ip_address=ip,
             user_agent=request.META.get('HTTP_USER_AGENT', '')
         )
-
-        # Increment click counter
+        from django.db.models import F
         ReferralCode.objects.filter(code=code).update(clicks=F('clicks') + 1)
 
-        # Check if user is authenticated
+        # If user is authenticated, prevent self-referral
         if request.user.is_authenticated:
+            if request.user == referral_code.user:
+                messages.error(request, "You cannot refer yourself.")
+                return redirect('accounts:dashboard')
             messages.success(request, "Referral code applied! Thank you for using a referral link.")
-            return redirect('accounts:dashboard')  # Redirect to dashboard if already logged in
+            return redirect('accounts:dashboard')
+
+        # --- Anti-gaming: Limit referrals per IP per day ---
+        recent_referrals = ReferralSignup.objects.filter(
+            ip_address=ip,
+            timestamp__gte=timezone.now() - timedelta(days=1)
+        ).count()
+        if recent_referrals >= 3:
+            messages.error(request, "Too many referrals from this IP address. Please try again later.")
+            return redirect('account_signup')
+
+        # --- Store referral code in session for use after signup ---
+        request.session['referral_code'] = code
 
         # Redirect to signup with referral code in URL parameter
         return redirect(f'/accounts/signup/?ref={code}')
 
     except ReferralCode.DoesNotExist:
-        # Handle invalid referral code
         messages.error(request, "Invalid referral code.")
-        return redirect('home')  # Your home URL
+        return redirect('home')
     except Exception as e:
         logger.error(f"Error in join_with_referral: {e}")
         messages.error(request, "An error occurred while processing your referral.")
         return redirect('home')
+
+
 
 @login_required
 def referral_stats(request):

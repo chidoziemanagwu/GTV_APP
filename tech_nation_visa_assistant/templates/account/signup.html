@@ -70,6 +70,22 @@
         </div>
     </div>
 
+    {% if form.errors %}
+<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+    <p class="font-bold">Please correct the following errors:</p>
+    <ul class="list-disc ml-5">
+        {% for field in form %}
+            {% for error in field.errors %}
+                <li>{{ field.label }}: {{ error }}</li>
+            {% endfor %}
+        {% endfor %}
+        {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
     <form class="space-y-6" method="post" action="{% url 'account_signup' %}" id="signup-form">
         {% csrf_token %}
 
@@ -85,6 +101,21 @@
                 <p class="mt-2 text-sm text-red-600">{{ form.email.errors.0 }}</p>
             {% endif %}
         </div>
+
+
+        <div>
+    <label for="id_username" class="block text-sm font-medium text-gray-700">
+        {% trans "Username" %}
+    </label>
+    <div class="mt-1">
+        <input type="text" name="username" id="id_username" autocomplete="username" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+    </div>
+    {% if form.username.errors %}
+        <p class="mt-2 text-sm text-red-600">{{ form.username.errors.0 }}</p>
+    {% endif %}
+</div>
+
 
         <div>
             <label for="id_password1" class="block text-sm font-medium text-gray-700">

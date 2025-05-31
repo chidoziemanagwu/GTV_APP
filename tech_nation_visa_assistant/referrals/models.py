@@ -1,6 +1,10 @@
 from django.db import models
 from django.conf import settings
 import uuid
+from django.utils import timezone
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ReferralCode(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -67,6 +71,42 @@ class ReferralSignup(models.Model):
     def __str__(self):
         return f"Referral signup by {self.referred_user.email} using code {self.referral_code.code}"
 
+    def award_points(self):
+        """Award points to the referrer when a referred user makes a purchase"""
+        if not self.points_awarded:
+            try:
+                # Mark as awarded
+                self.points_awarded = True
+                self.points_awarded_at = timezone.now()
+                self.save()
+
+                # Update successful referrals count
+                self.referral_code.successful_referrals += 1
+                self.referral_code.save()
+
+                # Award points to referrer
+                referrer = self.referral_code.user
+
+                # Update UserPoints
+                from document_manager.models import UserPoints
+                referrer_points, _ = UserPoints.objects.get_or_create(user=referrer)
+                referrer_points.add_points(3)  # Award 3 bonus points
+
+                # Also update profile directly as a backup
+                try:
+                    referrer.profile.ai_points += 3
+                    referrer.profile.lifetime_points += 3
+                    referrer.profile.save()
+                except Exception as e:
+                    logger.error(f"Error updating profile points: {e}")
+
+                logger.info(f"Awarded 3 referral points to {referrer.username} for {self.referred_user.username}'s purchase")
+                return True
+            except Exception as e:
+                logger.error(f"Error awarding referral points: {e}")
+                return False
+        return False
+
 
 class ReferralClick(models.Model):
     referral_code = models.ForeignKey(ReferralCode, on_delete=models.CASCADE, related_name='clicks_log')
@@ -79,4 +119,3 @@ class ReferralClick(models.Model):
 
     def __str__(self):
         return f"Click on {self.referral_code.code} at {self.timestamp}"
-

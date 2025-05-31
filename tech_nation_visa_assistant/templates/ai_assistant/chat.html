@@ -27,6 +27,44 @@ body {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
+/* FIXED: Typing indicator styles */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.typing-dots {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.typing-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    background-color: #6b7280;
+    border-radius: 50%;
+    animation: typing-bounce 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+.typing-dot:nth-child(3) { animation-delay: 0s; }
+
+@keyframes typing-bounce {
+    0%, 80%, 100% {
+        transform: scale(0.8);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
 /* Scrollbar styles */
 .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
@@ -250,13 +288,6 @@ body {
                         <span class="hidden sm:inline">Send</span>
                         <i class="fas fa-paper-plane"></i>
                     </button>
-                
-                    <!-- Typing indicator -->
-                    <div id="typing-indicator" class="hidden flex items-center space-x-1 sm:space-x-2 absolute left-4 -top-6">
-                        <div class="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-blue-600 rounded-full animate-bounce"></div>
-                        <div class="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-                        <div class="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
-                    </div>
                 </form>
             </div>
         </div>
@@ -290,7 +321,6 @@ body {
         const chatMessages = document.getElementById('chat-messages');
         const chatForm = document.getElementById('chat-form');
         const messageInput = document.getElementById('message-input');
-        const typingIndicator = document.getElementById('typing-indicator');
         const welcomeMessageEl = document.getElementById('welcome-message');
       
         // Add markdown CSS
@@ -390,11 +420,6 @@ body {
             chatForm.dispatchEvent(new Event('submit'));
         };
 
-        // Create a function to get the CSRF token
-        function getCSRFToken() {
-            return document.querySelector('[name=csrfmiddlewaretoken]').value;
-        }
-
         // Replace your current form submit handler with this streaming version
         function initializeEventListeners() {
             // Form submission
@@ -426,10 +451,10 @@ body {
             });
         }
 
-        // Add this new function to handle streaming submissions
+        // FIXED: Enhanced streaming submit function with better error handling
         async function handleStreamingSubmit(e) {
             e.preventDefault();
-        
+
             const message = messageInput.value.trim();
             if (!message) return;
 
@@ -441,8 +466,8 @@ body {
             // Add user message and clear input
             addUserMessage(message);
             messageInput.value = '';
-        
-            // Create placeholder for AI response
+
+            // Create AI message with proper typing indicator inside the bubble
             const responseId = Date.now();
             const aiMessageHtml = `
                 <div class="flex items-start space-x-2">
@@ -450,64 +475,112 @@ body {
                         <i class="fas fa-robot text-white text-sm"></i>
                     </div>
                     <div class="max-w-[90%] sm:max-w-[80%] message-ai rounded-2xl px-3 sm:px-4 py-3 sm:py-4">
-                        <div class="text-gray-800 text-sm font-medium markdown-content" id="streaming-response-${responseId}"></div>
+                        <div class="text-gray-800 text-sm font-medium markdown-content" id="streaming-response-${responseId}">
+                            <div class="typing-indicator">
+                                <span class="text-gray-500 text-sm mr-2">AI is typing</span>
+                                <div class="typing-dots">
+                                    <div class="typing-dot"></div>
+                                    <div class="typing-dot"></div>
+                                    <div class="typing-dot"></div>
+                                </div>
+                            </div>
+                        </div>
                         <div class="text-xs text-gray-500 mt-2 font-medium">${new Date().toLocaleTimeString()}</div>
                     </div>
                 </div>
             `;
             appendMessageAndScroll(aiMessageHtml);
-        
+
             const responseElement = document.getElementById(`streaming-response-${responseId}`);
-            showTypingIndicator();
-        
+
             try {
-                // Set up event source for streaming - use the correct URL path
-                const eventSource = new EventSource(`/ai-assistant/stream-message/?message=${encodeURIComponent(message)}`);
-                let fullResponse = '';
+                // FIXED: Correct URL and better error handling
+                const streamUrl = `/ai-assistant/stream-message/?message=${encodeURIComponent(message)}`;
+                console.log('🔗 Connecting to:', streamUrl);
                 
-            
+                const eventSource = new EventSource(streamUrl);
+                let fullResponse = '';
+                let hasReceivedData = false;
+                
+                // Set a timeout to detect if no data is received
+                const timeout = setTimeout(() => {
+                    if (!hasReceivedData) {
+                        console.error('❌ No data received within 10 seconds');
+                        responseElement.innerHTML = '<div class="text-red-600">Connection timeout. Please try again.</div>';
+                        eventSource.close();
+                    }
+                }, 10000);
+                
                 // Handle incoming chunks
                 eventSource.onmessage = function(event) {
-                    const data = JSON.parse(event.data);
-                
-                    if (data.content) {
-                        // Append new content
-                        fullResponse += data.content;
-                        responseElement.innerHTML = marked.parse(fullResponse);
+                    hasReceivedData = true;
+                    clearTimeout(timeout);
                     
-                        // Format any disclaimers in the partial response
-                        formatDisclaimers(responseElement);
-                        scrollToBottom();
-                    }
-                
-                    if (data.done) {
-                        // Response complete, do final formatting
-                        responseElement.innerHTML = marked.parse(fullResponse);
-                        formatDisclaimers(responseElement);
+                    try {
+                        console.log('📨 Raw event data:', event.data);
+                        const data = JSON.parse(event.data);
+                        console.log('📊 Parsed data:', data);
                     
-                        // Update queries counter if provided
-                        if (data.remaining_queries !== undefined) {
-                            updateQueriesCounter(data.remaining_queries);
+                        if (data.content) {
+                            // Append new content
+                            fullResponse += data.content;
+                            responseElement.innerHTML = marked.parse(fullResponse);
+                        
+                            // Format any disclaimers in the partial response
+                            formatDisclaimers(responseElement);
+                            scrollToBottom();
                         }
                     
-                        // Clean up
+                        if (data.done) {
+                            console.log('✅ Stream completed successfully');
+                            // Response complete, do final formatting
+                            responseElement.innerHTML = marked.parse(fullResponse);
+                            formatDisclaimers(responseElement);
+                        
+                            // Update queries counter if provided
+                            if (data.remaining_queries !== undefined) {
+                                updateQueriesCounter(data.remaining_queries);
+                            }
+                        
+                            // Clean up
+                            eventSource.close();
+                            scrollToBottom();
+                        }
+                        
+                        if (data.error) {
+                            console.error('❌ Stream error:', data.error);
+                            responseElement.innerHTML = `<div class="text-red-600">Error: ${data.error}</div>`;
+                            eventSource.close();
+                        }
+                    } catch (parseError) {
+                        console.error('❌ Error parsing event data:', parseError, 'Raw data:', event.data);
+                        responseElement.innerHTML = '<div class="text-red-600">Data parsing error. Please try again.</div>';
                         eventSource.close();
-                        hideTypingIndicator();
-                        scrollToBottom();
                     }
                 };
               
                 // Handle errors
                 eventSource.onerror = function(error) {
-                    console.error('EventSource error:', error);
-                    responseElement.innerHTML = 'Error connecting to server. Please try again.';
+                    console.error('❌ EventSource error:', error);
+                    console.log('EventSource readyState:', eventSource.readyState);
+                    
+                    if (eventSource.readyState === EventSource.CLOSED) {
+                        console.log('EventSource connection closed');
+                    }
+                    
+                    responseElement.innerHTML = '<div class="text-red-600">Connection error. Please try again.</div>';
                     eventSource.close();
-                    hideTypingIndicator();
+                    clearTimeout(timeout);
                 };
+                
+                // Handle connection opening
+                eventSource.onopen = function(event) {
+                    console.log('✅ EventSource connection opened successfully');
+                };
+                
             } catch (error) {
-                console.error('Error:', error);
-                hideTypingIndicator();
-                addErrorMessage();
+                console.error('❌ Error setting up EventSource:', error);
+                responseElement.innerHTML = '<div class="text-red-600">Failed to connect. Please try again.</div>';
             }
         }
 
@@ -559,14 +632,6 @@ body {
         }
 
         // Utility functions
-        function showTypingIndicator() {
-            typingIndicator.classList.remove('hidden');
-        }
-
-        function hideTypingIndicator() {
-            typingIndicator.classList.add('hidden');
-        }
-
         function scrollToBottom() {
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }

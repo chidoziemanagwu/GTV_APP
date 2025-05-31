@@ -14,6 +14,7 @@ urlpatterns = [
     path('<int:pk>/delete/', views.delete_document, name='delete_document'),
     path('<int:pk>/duplicate/', views.duplicate_document, name='duplicate_document'),
     path('<int:pk>/download/', views.download_document, name='download_document'),
+    path('<int:pk>/set-as-chosen/', views.set_as_chosen, name='set_as_chosen'),
     path('export/', views.export_documents, name='export_documents'),
 
     # Personal statement views
@@ -32,29 +33,40 @@ urlpatterns = [
     path('generation/status/<str:task_id>/', views.check_generation_status, name='check_generation_status'),
     path('generation/history/', views.generation_history, name='generation_history'),
 
-    # AJAX and partial views
-    path('form/partial/', views.document_form_partial, name='document_form_partial'),
-    path('stats/', views.document_stats, name='document_stats'),
-    path('quick-actions/', views.quick_actions, name='quick_actions'),
-    path('<int:pk>/toggle-status/', views.toggle_document_status, name='toggle_document_status'),
-    path('search/', views.search_documents, name='search_documents'),
-    path('<int:pk>/preview/', views.document_preview, name='document_preview'),
-    path('<int:pk>/notes/', views.update_document_notes, name='update_document_notes'),
+    # Document enhancement and AI features
+    path('quick-generate/', views.quick_generate, name='quick_generate'),
+    path('regenerate-section/', views.regenerate_section, name='regenerate_section'),
+    path('<int:pk>/improve/', views.improve_document, name='improve_document'),
+    path('<int:pk>/versions/', views.document_versions, name='document_versions'),
+    path('compare/', views.compare_documents, name='compare_documents'),
+    path('<int:pk>/feedback/', views.document_feedback, name='document_feedback'),
+    path('<int:pk>/analytics/', views.document_analytics, name='document_analytics'),
 
     # Batch operations
     path('batch-process/', views.batch_process_documents, name='batch_process_documents'),
 
     # Requirements and templates
     path('requirements/<str:track>/', views.get_requirements, name='get_requirements'),
-    path('templates/', views.template_library, name='template_library'),
 
     # Dashboard and settings
     path('dashboard/', views.dashboard, name='dashboard'),
-    path('settings/', views.user_settings, name='user_settings'),
 
     # API and utilities
     path('api/usage-stats/', views.api_usage_stats, name='api_usage_stats'),
     path('api/clear-cache/', views.clear_cache, name='clear_cache'),
-    path('api/test-ai/', views.test_ai_connection, name='test_ai_connection'),
     path('health/', views.health_check, name='health_check'),
+    path('recommendation-guide/', views.recommendation_guide, name='recommendation_guide'),
+    path('generation/status/<str:task_id>/', views.check_generation_status, name='document_generation_status'),
+
+
+    path('purchase-points/', views.purchase_points, name='purchase_points'),
+    path('checkout-package/<int:package_id>/', views.checkout_package, name='checkout_package'),
+    path('process-payment/<int:package_id>/', views.process_payment, name='process_payment'),
+    path('documents/check-points/', views.check_points, name='check_points'),
+    path('check-pending-payments/', views.check_pending_payments, name='check_pending_payments'),
+
+    path('payment-success/<str:transaction_id>/', views.payment_success, name='payment_success'),
+    path('payment-failed/', views.payment_cancel, name='payment_failed'),
+
+    path('payment-success-redirect/', views.payment_success_redirect, name='payment_success_redirect'),
 ]

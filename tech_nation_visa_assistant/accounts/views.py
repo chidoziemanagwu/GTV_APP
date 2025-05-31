@@ -21,7 +21,7 @@ from django.core.paginator import Paginator
 from django.conf import settings
 # accounts/views.py
 from allauth.account.views import LoginView, SignupView, PasswordResetView
-from .utils import verify_recaptcha
+from .utils import verify_recaptcha, is_disposable_email, rate_limit_signup
 from django.urls import reverse
 from allauth.socialaccount.models import SocialAccount
 from django.core.exceptions import ValidationError
@@ -92,30 +92,81 @@ class CustomPasswordResetView(PasswordResetView):
 
 class CustomSignupView(SignupView):
     def form_valid(self, form):
-        # Verify Turnstile
+        # --- Anti-gaming: Rate limit by IP ---
+        if not rate_limit_signup(self.request):
+            form.add_error(None, "Too many signups from your IP. Please try again later.")
+            messages.error(self.request, "Too many signups from your IP. Please try again later.")
+            return self.form_invalid(form)
+
+        # --- Anti-gaming: Block disposable emails ---
+        email = form.cleaned_data.get('email')
+        if is_disposable_email(email):
+            form.add_error('email', "Disposable email addresses are not allowed.")
+            messages.error(self.request, "Disposable email addresses are not allowed.")
+            return self.form_invalid(form)
+
+        # --- Security: Verify Turnstile/reCAPTCHA ---
         recaptcha_response = self.request.POST.get('g-recaptcha-response')
         if not verify_recaptcha(self.request):
             form.add_error(None, "Security verification failed. Please try again.")
             messages.error(self.request, "Security verification failed. Please try again.")
             return self.form_invalid(form)
 
-        # Continue with normal signup process
+        # --- Referral code (optional, if you want to auto-link on signup) ---
+        referral_code = self.request.GET.get('ref')
+        if referral_code:
+            self.request.session['referral_code'] = referral_code  # Store for use after signup
+
+        # --- Continue with normal signup process ---
         response = super().form_valid(form)
 
-        # Only send welcome email for form signups (not social)
+        # --- Only send welcome email for form signups (not social) ---
         if not hasattr(self.user, 'socialaccount_set') or not self.user.socialaccount_set.exists():
-            # Send welcome email
             send_email(
                 subject="Welcome to Tech Nation Visa Assistant",
-                template_name="emails/account/welcome.html",  # Updated path
-                context={
-                    'user': self.user,
-                },
+                template_name="emails/account/welcome.html",
+                context={'user': self.user},
                 recipient_email=self.user.email
             )
 
+        # ... inside form_valid after user is created ...
+        referral_code = self.request.session.pop('referral_code', None)
+        if referral_code:
+            from referrals.models import ReferralCode, ReferralSignup
+            try:
+                code_obj = ReferralCode.objects.get(code=referral_code)
+                # Prevent self-referral
+                if code_obj.user != self.user:
+                    # Limit referrals per IP
+                    ip = self.request.META.get('REMOTE_ADDR', '')
+                    from django.utils import timezone
+                    from datetime import timedelta
+                    recent_referrals = ReferralSignup.objects.filter(
+                        ip_address=ip,
+                        timestamp__gte=timezone.now() - timedelta(days=1)
+                    ).count()
+                    if recent_referrals < 3:
+                        # Optionally, block disposable emails for referred user
+                        if not is_disposable_email(self.user.email):
+                            ReferralSignup.objects.get_or_create(
+                                referral_code=code_obj,
+                                referred_user=self.user,
+                                defaults={'ip_address': ip}
+                            )
+            except ReferralCode.DoesNotExist:
+                pass  # Invalid code, ignore
+
         return response
 
+    def form_invalid(self, form):
+        # Add error messages based on error type
+        if '__all__' in form.errors:
+            for error in form.errors['__all__']:
+                messages.error(self.request, error)
+        elif form.errors:
+            messages.error(self.request, "There was an error with your signup. Please check the form and try again.")
+        return super().form_invalid(form)
+    
 
 
         
@@ -332,38 +383,55 @@ def dashboard(request):
         'submission_ready': has_chosen_personal_statement,  # New variable for template
     }
 
+    # Calculate referral points
+    referral_points = 0
     try:
-        referral_code = request.user.referralcode
-        referral_signups = referral_code.signups.all()
-        paying_referrals = referral_signups.filter(points_awarded=True)
+        from referrals.models import ReferralCode, ReferralSignup
+        referral_code = ReferralCode.objects.filter(user=request.user).first()
+        if referral_code:
+            # Get referral stats
+            referral_signups = referral_code.signups.all()
+            paying_referrals = referral_signups.filter(points_awarded=True)
 
-        context.update({
-            'referral_code': referral_code,
-            'total_referrals': referral_signups.count(),
-            'paying_referrals': paying_referrals.count(),
-            'total_points_earned': paying_referrals.count() * 3,
-            'paying_customers_count': paying_referrals.count(),  # Additional variable for the template
-        })
+            # Calculate total points (3 per paying customer)
+            referral_points = paying_referrals.count() * 3
+
+            context.update({
+                'referral_code': referral_code,
+                'total_referrals': referral_signups.count(),
+                'paying_referrals': paying_referrals.count(),
+                'referral_points': referral_points,  # Add this explicitly for the template
+                'total_points_earned': referral_points,  # Keep this for backward compatibility
+                'paying_customers_count': paying_referrals.count(),
+            })
+        else:
+            # Create a referral code if one doesn't exist
+            referral_code = ReferralCode.objects.create(user=request.user)
+            context.update({
+                'referral_code': referral_code,
+                'total_referrals': 0,
+                'paying_referrals': 0,
+                'referral_points': 0,  # Add this explicitly for the template
+                'total_points_earned': 0,
+                'paying_customers_count': 0,
+            })
     except Exception as e:
-        # User might not have a referral code yet, create one
-        try:
-            from referrals.models import ReferralCode
-            if not hasattr(request.user, 'referralcode'):
-                referral_code = ReferralCode.objects.create(user=request.user)
-                context.update({
-                    'referral_code': referral_code,
-                    'total_referrals': 0,
-                    'paying_referrals': 0,
-                    'total_points_earned': 0,
-                    'paying_customers_count': 0,
-                })
-        except:
-            # If referrals app isn't set up yet
-            pass
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error calculating referral points: {e}")
+        # Set default values if there's an error
+        context.update({
+            'referral_points': 0,
+            'total_points_earned': 0,
+            'paying_customers_count': 0,
+        })
 
-    return render(request, 'accounts/dashboard.html', context)    
-    
-    
+    return render(request, 'accounts/dashboard.html', context)
+
+
+
+
+
     
     
     
@@ -481,6 +549,14 @@ def profile(request):
     """User profile view and edit"""
     profile = request.user.profile
 
+    # Get user points
+    try:
+        from document_manager.models import UserPoints
+        user_points = UserPoints.objects.get(user=request.user)
+    except:
+        # If UserPoints model doesn't exist or user doesn't have points
+        user_points = None
+
     if request.method == 'POST':
         form = ProfileUpdateForm(request.POST, instance=profile)
         if form.is_valid():
@@ -509,10 +585,13 @@ def profile(request):
     context = {
         'form': form,
         'profile': profile,
-        'remaining_queries': profile.ai_queries_limit - profile.ai_queries_used,
+        'remaining_queries': profile.ai_queries_limit - profile.ai_queries_used if hasattr(profile, 'ai_queries_used') else 0,
+        'user_points': user_points.balance if user_points else 0,
     }
 
     return render(request, 'accounts/profile.html', context)
+
+
 
 
 

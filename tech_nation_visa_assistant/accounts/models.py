@@ -172,9 +172,10 @@ class UserProfile(models.Model):
 
     # Referral System
     ai_points = models.IntegerField(default=0)
+    lifetime_points = models.IntegerField(default=0)  # Add this field
     total_referrals = models.IntegerField(default=0)
     successful_referrals = models.IntegerField(default=0)
-
+    is_paid_user = models.BooleanField(default=False)
 
 
     def get_progress_percentage(self):

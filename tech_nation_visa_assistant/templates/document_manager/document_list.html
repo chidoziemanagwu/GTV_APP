@@ -226,40 +226,63 @@
                     Create Document
                     <i class="fas fa-chevron-down ml-2"></i>
                 </button>
-                <div x-show="open" @click.away="open = false" 
-                     class="origin-top-right absolute right-0 mt-2 w-full sm:w-64 rounded-xl shadow-xl bg-white bg-opacity-90 backdrop-blur-lg border border-gray-100 focus:outline-none divide-y divide-gray-100 z-50" 
-                     role="menu">
-                    <div class="py-2" role="none">
-                        <a href="{% url 'document_manager:personal_statement_builder' %}" 
-                           class="flex items-center px-4 py-3 text-gray-700 hover:bg-primary-50 transition duration-150" role="menuitem">
-                            <i class="fas fa-file-alt text-primary-500 mr-3 w-5"></i>
-                            <div>
-                                <span class="font-medium">Personal Statement</span>
-                                <p class="text-xs text-gray-500 mt-1">Generate a draft based on your CV and experience</p>
-                            </div>
-                        </a>
-                        <a href="{% url 'document_manager:create_document' doc_type='cv' %}" 
-                           class="flex items-center px-4 py-3 text-gray-700 hover:bg-primary-50 transition duration-150" role="menuitem">
-                            <i class="fas fa-user-tie text-blue-500 mr-3 w-5"></i>
-                            <div>
-                                <span class="font-medium">CV Enhancement</span>
-                                <p class="text-xs text-gray-500 mt-1">Upload and improve your existing CV</p>
-                            </div>
-                        </a>
-                        <a href="{% url 'document_manager:recommendation_guide' %}" 
-                           class="flex items-center px-4 py-3 text-gray-700 hover:bg-primary-50 transition duration-150" role="menuitem">
-                            <i class="fas fa-envelope text-purple-500 mr-3 w-5"></i>
-                            <div>
-                                <span class="font-medium">Recommender's Guide</span>
-                                <p class="text-xs text-gray-500 mt-1">Essential guidelines and examples for Tech Nation visa recommendation letters</p>
-                            </div>
-                        </a>
-                    </div>
-                </div>
+             <div x-show="open" @click.away="open = false" 
+             style="z-index: 9999;"
+     class="origin-top-right absolute right-0 mt-2 w-full sm:w-64 rounded-xl shadow-xl bg-white bg-opacity-90 backdrop-blur-lg border border-gray-100 focus:outline-none divide-y divide-gray-100" 
+     role="menu">
+    <div class="py-2" role="none">
+        <a href="{% url 'document_manager:personal_statement_builder' %}" 
+           class="flex items-center px-4 py-3 text-gray-700 hover:bg-primary-50 transition duration-150" role="menuitem">
+            <i class="fas fa-file-alt text-primary-500 mr-3 w-5"></i>
+            <div>
+                <span class="font-medium">Personal Statement</span>
+                <p class="text-xs text-gray-500 mt-1">Generate a draft based on your CV and experience</p>
+            </div>
+        </a>
+        <a href="{% url 'document_manager:create_document' %}?doc_type=cv" 
+           class="flex items-center px-4 py-3 text-gray-700 hover:bg-primary-50 transition duration-150" role="menuitem">
+            <i class="fas fa-user-tie text-blue-500 mr-3 w-5"></i>
+            <div>
+                <span class="font-medium">CV Enhancement</span>
+                <p class="text-xs text-gray-500 mt-1">Upload and improve your existing CV</p>
+            </div>
+        </a>
+        <a href="{% url 'document_manager:recommendation_guide' %}" 
+           class="flex items-center px-4 py-3 text-gray-700 hover:bg-primary-50 transition duration-150" role="menuitem">
+            <i class="fas fa-envelope text-purple-500 mr-3 w-5"></i>
+            <div>
+                <span class="font-medium">Recommender's Guide</span>
+                <p class="text-xs text-gray-500 mt-1">Essential guidelines and examples for Tech Nation visa recommendation letters</p>
+            </div>
+        </a>
+    </div>
+</div>
             </div>
         </div>
     </div>
     
+
+<!-- AI Points Section -->
+<div  style="z-index: 1;" class="bg-white bg-opacity-70 rounded-xl p-4 sm:p-6 mb-6 border border-white border-opacity-20">
+    <div class="flex flex-col sm:flex-row justify-between items-center">
+        <div class="flex items-center mb-3 sm:mb-0">
+            <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg shadow-lg flex items-center justify-center mr-3">
+                <i class="fas fa-coins text-white text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800">Your AI Points</h2>
+                <p class="text-sm text-gray-600">You currently have <span class="font-bold text-purple-600">{{ request.user.points.balance|default:"0" }}</span> AI points</p>
+            </div>
+        </div>
+        <a href="{% url 'document_manager:purchase_points' %}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+            <i class="fas fa-plus-circle mr-2"></i>
+            Get More Points
+        </a>
+    </div>
+</div>
+
+
+
     <!-- Disclaimer Banner -->
     <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 sm:mb-8 rounded-lg">
         <div class="flex flex-col sm:flex-row">
@@ -281,99 +304,98 @@
     </div>
 
     {% if document_groups %}
-    {% for doc_type, documents in document_groups.items %}
-    <div class="bg-white bg-opacity-70 backdrop-blur-lg rounded-xl shadow-lg p-4 sm:p-6 mb-6 border border-white border-opacity-20">
-        <div class="flex items-center mb-4 sm:mb-6">
-            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br 
-                {% if doc_type == 'Personal Statements' %}from-blue-400 to-blue-600
-                {% elif doc_type == 'CVs' %}from-purple-400 to-purple-600
-                {% elif doc_type == 'Recommendation Letters' %}from-green-400 to-green-600
-                {% else %}from-yellow-400 to-yellow-600{% endif %}
-                shadow-lg flex items-center justify-center mr-3 sm:mr-4">
-                <i class="fas {% if doc_type == 'Personal Statements' %}fa-file-alt
-                            {% elif doc_type == 'CVs' %}fa-user-tie
-                            {% elif doc_type == 'Recommendation Letters' %}fa-envelope
-                            {% else %}fa-certificate{% endif %} text-white text-sm sm:text-xl"></i>
-            </div>
-            <h2 class="text-lg sm:text-xl font-bold text-gray-800">{{ doc_type }}</h2>
+{% for doc_type, documents in document_groups.items %}
+<div class="bg-white bg-opacity-70 backdrop-blur-lg rounded-xl shadow-lg p-4 sm:p-6 mb-6 border border-white border-opacity-20">
+    <div class="flex items-center mb-4 sm:mb-6">
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br 
+            {% if doc_type == 'Personal Statements' %}from-blue-400 to-blue-600
+            {% elif doc_type == 'CVs' %}from-purple-400 to-purple-600
+            {% elif doc_type == 'Recommendation Letters' %}from-green-400 to-green-600
+            {% else %}from-yellow-400 to-yellow-600{% endif %}
+            shadow-lg flex items-center justify-center mr-3 sm:mr-4">
+            <i class="fas {% if doc_type == 'Personal Statements' %}fa-file-alt
+                        {% elif doc_type == 'CVs' %}fa-user-tie
+                        {% elif doc_type == 'Recommendation Letters' %}fa-envelope
+                        {% else %}fa-certificate{% endif %} text-white text-sm sm:text-xl"></i>
         </div>
-        
-        <div class="overflow-x-auto -mx-4 sm:mx-0">
-            <table id="documentsTable-{{ doc_type|slugify }}" class="min-w-full divide-y divide-gray-200 display responsive nowrap">
-                <thead>
-                    <tr class="bg-gray-50 bg-opacity-50">
-                        <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                        <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Generated</th>
-                        <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for document in documents %}
-                    <tr data-document-id="{{ document.id }}">
-                        <td class="px-3 sm:px-6 py-3 sm:py-4">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0 hidden sm:block">
-                                    <i class="fas fa-file-alt text-gray-400"></i>
-                                </div>
-                                <div class="sm:ml-4">
-                                    <div class="text-sm font-medium text-gray-900">{{ document.title }}</div>
-                                    {% if document.related_criteria %}
-                                        <div class="text-xs text-gray-500">{{ document.related_criteria.name }}</div>
-                                    {% endif %}
-                                </div>
+        <h2 class="text-lg sm:text-xl font-bold text-gray-800">{{ doc_type }}</h2>
+    </div>
+    <div class="overflow-x-auto -mx-4 sm:mx-0">
+        <table id="documentsTable-{{ doc_type|slugify }}" class="min-w-full divide-y divide-gray-200 display responsive nowrap">
+            <thead>
+                <tr class="bg-gray-50 bg-opacity-50">
+                    <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                    <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Generated</th>
+                    <th class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for document in documents %}
+                <tr data-document-id="{{ document.id }}">
+                    <td class="px-3 sm:px-6 py-3 sm:py-4">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 hidden sm:block">
+                                <i class="fas fa-file-alt text-gray-400"></i>
                             </div>
-                        </td>
-                        <td class="px-3 sm:px-6 py-3 sm:py-4">
-                            <span class="px-2 sm:px-3 py-1 inline-flex items-center rounded-full text-xs font-medium
-                                {% if document.status == 'completed' %}bg-green-100 text-green-800
-                                {% elif document.status == 'in_progress' %}bg-yellow-100 text-yellow-800
-                                {% elif document.status == 'review' %}bg-blue-100 text-blue-800
-                                {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                <span class="w-2 h-2 rounded-full mr-1 sm:mr-2
-                                    {% if document.status == 'completed' %}bg-green-400
-                                    {% elif document.status == 'in_progress' %}bg-yellow-400
-                                    {% elif document.status == 'review' %}bg-blue-400
-                                    {% else %}bg-gray-400{% endif %}"></span>
-                                {{ document.get_status_display }}
-                            </span>
-                        </td>
-                        <td class="px-3 sm:px-6 py-3 sm:py-4">
-                            <div class="text-xs sm:text-sm text-gray-500">
-                                <i class="far fa-clock mr-1 sm:mr-2"></i>
-                                {{ document.updated_at|date:"M d, Y" }}
-                            </div>
-                        </td>
-                        <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium">
-                            <div class="flex flex-col sm:flex-row sm:space-x-3 space-y-2 sm:space-y-0">
-                                <a href="{% url 'document_manager:document_detail' document.id %}" 
-                                   class="text-primary-600 hover:text-primary-900">
-                                    <i class="fas fa-eye mr-1"></i>View
-                                </a>
-                                <button onclick="showDeleteModal({{ document.id }}, '{{ document.title|escapejs }}')"
-                                        class="text-red-600 hover:text-red-900 text-left">
-                                    <i class="fas fa-trash-alt mr-1"></i>Delete
-                                </button>
-                                {% if document.document_type == 'personal_statement' %}
-                                    {% if document.is_chosen %}
-                                        <span class="px-2 py-1 text-green-800 rounded-full text-xs inline-block sm:inline">
-                                            <i class="fas fa-check-circle mr-1"></i>Chosen for Submission
-                                        </span>
-                                    {% else %}
-                                        <button onclick="setAsChosen({{ document.id }})" 
-                                                class="text-blue-600 hover:text-blue-900 text-left">
-                                            <i class="fas fa-check-circle mr-1"></i>Set as Chosen
-                                        </button>
-                                    {% endif %}
+                            <div class="sm:ml-4">
+                                <div class="text-sm font-medium text-gray-900">{{ document.title }}</div>
+                                {% if document.related_criteria %}
+                                    <div class="text-xs text-gray-500">{{ document.related_criteria.name }}</div>
                                 {% endif %}
                             </div>
-                        </td>
-                    </tr>
+                        </div>
+                    </td>
+                    <td class="px-3 sm:px-6 py-3 sm:py-4">
+                        <span class="px-2 sm:px-3 py-1 inline-flex items-center rounded-full text-xs font-medium
+                            {% if document.status == 'completed' %}bg-green-100 text-green-800
+                            {% elif document.status == 'in_progress' %}bg-yellow-100 text-yellow-800
+                            {% elif document.status == 'review' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            <span class="w-2 h-2 rounded-full mr-1 sm:mr-2
+                                {% if document.status == 'completed' %}bg-green-400
+                                {% elif document.status == 'in_progress' %}bg-yellow-400
+                                {% elif document.status == 'review' %}bg-blue-400
+                                {% else %}bg-gray-400{% endif %}"></span>
+                            {{ document.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="px-3 sm:px-6 py-3 sm:py-4">
+                        <div class="text-xs sm:text-sm text-gray-500">
+                            <i class="far fa-clock mr-1 sm:mr-2"></i>
+                            {{ document.updated_at|date:"M d, Y" }}
+                        </div>
+                    </td>
+                    <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium">
+                        <div class="flex flex-col sm:flex-row sm:space-x-3 space-y-2 sm:space-y-0">
+                            <a href="{% url 'document_manager:document_detail' document.id %}" 
+                               class="text-primary-600 hover:text-primary-900">
+                                <i class="fas fa-eye mr-1"></i>View
+                            </a>
+                            <button onclick="showDeleteModal({{ document.id }}, '{{ document.title|escapejs }}')"
+                                    class="text-red-600 hover:text-red-900 text-left">
+                                <i class="fas fa-trash-alt mr-1"></i>Delete
+                            </button>
+                            {% if document.document_type == 'personal_statement' %}
+                                {% if document.is_chosen %}
+                                    <span class="px-2 py-1 text-green-800 rounded-full text-xs inline-block sm:inline">
+                                        <i class="fas fa-check-circle mr-1"></i>Chosen for Submission
+                                    </span>
+                                {% else %}
+                                    <button onclick="setAsChosen({{ document.id }})" 
+                                            class="text-blue-600 hover:text-blue-900 text-left">
+                                        <i class="fas fa-check-circle mr-1"></i>Set as Chosen
+                                    </button>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
                 {% endfor %}
-                </tbody>
-            </table>
-        </div>
+            </tbody>
+        </table>
     </div>
+</div>
 {% endfor %}
     {% else %}
         <div class="bg-white bg-opacity-70 backdrop-blur-lg rounded-xl shadow-lg p-6 sm:p-12 text-center border border-white border-opacity-20">
@@ -396,7 +418,7 @@
                     <i class="fas fa-plus-circle mr-2"></i>
                     Create Personal Statement
                 </a>
-                <a href="{% url 'document_manager:create_document' doc_type='cv' %}" 
+                <a href="{% url 'document_manager:create_document' %}?doc_type=cv" 
                    class="inline-flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 border border-primary-300 shadow-sm text-sm font-medium rounded-xl text-primary-700 bg-white hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition duration-150">
                     <i class="fas fa-file-alt mr-2"></i>
                     Upload CV
@@ -664,20 +686,26 @@ function setAsChosen(documentId) {
             'X-CSRFToken': getCookie('csrftoken'),
             'Content-Type': 'application/json'
         },
-        // Add cache control to prevent caching
         cache: 'no-store'
     })
     .then(response => {
+        console.log('Response status:', response.status);
         if (!response.ok) {
-            throw new Error('Network response was not ok');
+            if (response.status === 404) {
+                throw new Error('URL not found - check your URL configuration');
+            }
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         return response.json();
     })
     .then(data => {
+        console.log('Response data:', data);
         if (data.success) {
             showToast(data.message, 'success');
             // Force a complete page reload with cache busting
-            window.location.href = window.location.href + '?t=' + new Date().getTime();
+            setTimeout(() => {
+                window.location.href = window.location.href + '?t=' + new Date().getTime();
+            }, 1000);
         } else {
             showToast(data.error || 'An error occurred', 'error');
             // Reset button
@@ -686,8 +714,8 @@ function setAsChosen(documentId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        showToast('Failed to update document status. Please try again.', 'error');
+        console.error('Error details:', error);
+        showToast(`Failed to update document: ${error.message}`, 'error');
         // Reset button
         button.innerHTML = originalText;
         button.disabled = false;
@@ -709,5 +737,32 @@ function setAsChosen(documentId) {
             console.error('Failed to copy text: ', err);
         });
     }
+</script>
+
+
+<script>
+$(document).ready(function() {
+    // Initialize DataTable for Personal Statements table with responsive and mobile-friendly options
+    $('#documentsTable-personal-statements').DataTable({
+        responsive: true,
+        pageLength: 5,
+        lengthMenu: [[5, 10, 25], [5, 10, 25]],
+        language: {
+            search: "",
+            searchPlaceholder: "Search documents...",
+            lengthMenu: "_MENU_ per page",
+            info: "Showing _START_ to _END_ of _TOTAL_ documents",
+            infoEmpty: "No documents available"
+        },
+        columnDefs: [
+            { orderable: false, targets: 3 }, // Disable sorting on actions column
+            { responsivePriority: 1, targets: 0 }, // Title is most important
+            { responsivePriority: 2, targets: 3 } // Actions are second most important
+        ],
+        order: [[2, 'desc']], // Sort by last updated by default
+        stateSave: false,
+        destroy: true
+    });
+});
 </script>
 {% endblock %}

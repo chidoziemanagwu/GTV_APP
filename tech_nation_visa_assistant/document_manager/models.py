@@ -96,6 +96,9 @@ class Document(models.Model):
         default=False,
         help_text="Indicates if this document is the user's chosen version for submission"
     )
+
+    notes = models.TextField(blank=True, null=True)  # Add this line
+    
     class Meta:
         ordering = ['-updated_at']
 
@@ -152,3 +155,166 @@ class DocumentComment(models.Model):
 
     def __str__(self):
         return f"Comment on {self.document.title}"
+    
+
+
+
+# Add this to your models.py
+class UserPoints(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='points')
+    balance = models.IntegerField(default=0)
+    lifetime_points = models.IntegerField(default=0)
+    last_purchase = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.balance} points"
+
+    def add_points(self, amount):
+        self.balance += amount
+        self.lifetime_points += amount
+
+        # Update the user's profile as well
+        try:
+            profile = self.user.profile
+            profile.ai_points = self.balance
+            profile.lifetime_points = self.lifetime_points
+            profile.is_paid_user = True  # Set to paid user when points are added
+            profile.save()
+        except Exception as e:
+            print(f"Error updating profile points: {e}")
+
+        self.save()
+
+    def use_points(self, amount):
+        if self.balance >= amount:
+            self.balance -= amount
+            self.save()
+
+            # Update the user's profile
+            try:
+                profile = self.user.profile
+                profile.ai_points = self.balance
+
+                # If points are depleted, update paid status
+                if self.balance <= 0:
+                    profile.is_paid_user = False
+
+                profile.save()
+            except Exception as e:
+                print(f"Error updating profile points: {e}")
+
+            return True
+        return False
+
+
+class PointsPackage(models.Model):
+    name = models.CharField(max_length=100)
+    points = models.IntegerField()
+    price = models.DecimalField(max_digits=6, decimal_places=2)
+    description = models.TextField()
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.points} points (£{self.price})"
+    
+
+class PointsTransaction(models.Model):
+    PAYMENT_STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('refunded', 'Refunded'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='points_transactions')
+    package = models.ForeignKey(PointsPackage, on_delete=models.SET_NULL, null=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    points = models.IntegerField()
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    stripe_payment_intent_id = models.CharField(max_length=255, blank=True, null=True)
+    stripe_checkout_id = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.points} points - {self.get_payment_status_display()}"
+    
+
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=UserPoints)
+def sync_points_with_profile(sender, instance, **kwargs):
+    """Sync points between UserPoints and UserProfile"""
+    try:
+        profile = instance.user.profile
+        profile.ai_points = instance.balance
+        profile.lifetime_points = instance.lifetime_points
+        profile.is_paid_user = instance.balance > 0
+        profile.save()
+    except Exception as e:
+        print(f"Error syncing points with profile: {e}")
+
+
+@receiver(post_save, sender='accounts.UserProfile')
+def create_user_points(sender, instance, created, **kwargs):
+    """Create UserPoints when a UserProfile is created"""
+    if created:
+        from document_manager.models import UserPoints
+        try:
+            UserPoints.objects.get(user=instance.user)
+        except UserPoints.DoesNotExist:
+            UserPoints.objects.create(
+                user=instance.user,
+                balance=instance.ai_points,
+                lifetime_points=instance.lifetime_points
+            )
+
+
+
+from django.utils import timezone
+import logging
+
+logger = logging.getLogger(__name__)
+
+def award_referral_points(user):
+    """
+    Award referral points to the referrer when a user makes a purchase
+
+    Args:
+        user: The user who made the purchase
+    """
+    from referrals.models import ReferralSignup
+    from document_manager.models import UserPoints
+
+    try:
+        # Find if this user was referred by someone
+        referral = ReferralSignup.objects.get(referred_user=user)
+
+        if not referral.points_awarded:  # Only award points once
+            # Get the referrer
+            referrer = referral.referral_code.user
+
+            # Award bonus points to the referrer
+            referrer_points, _ = UserPoints.objects.get_or_create(user=referrer)
+            referrer_points.add_points(3)  # Award 3 bonus points
+
+            # Mark the referral as converted with points awarded
+            referral.points_awarded = True
+            referral.points_awarded_at = timezone.now()
+            referral.save()
+
+            logger.info(f"Awarded 3 referral points to {referrer.username} for {user.username}'s purchase")
+            return True
+        else:
+            logger.info(f"Referral points already awarded for {user.username}")
+            return False
+
+    except ReferralSignup.DoesNotExist:
+        # User wasn't referred
+        logger.info(f"User {user.username} made a purchase but wasn't referred")
+        return False
+    except Exception as e:
+        logger.error(f"Error processing referral bonus: {str(e)}")
+        return False

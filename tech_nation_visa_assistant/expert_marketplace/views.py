@@ -5,7 +5,7 @@ from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 from django.utils.html import strip_tags
-from .models import Booking
+from .models import Booking, Expert
 from .forms import ConsultationBookingForm
 
 def book_consultation(request):
@@ -53,10 +53,13 @@ def book_consultation(request):
     else:
         form = ConsultationBookingForm()
 
+    consultants = Expert.objects.filter(available=True)
+
     return render(request, 'expert_marketplace/book_consultation.html', {
         'form': form,
         'consultation_fee': '100',
         'consultation_duration': '30',
+        'consultants': consultants,  # Add this line
     })
 
 def consultation_confirmation(request):

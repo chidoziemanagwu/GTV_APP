@@ -81,6 +81,28 @@
             <p class="text-gray-600">Generate your Tech Nation visa personal statement using our AI assistant</p>
         </div>
 
+
+        <!-- Add this right after the header section, before the grid -->
+<div class="p-6 mb-6 bg-white rounded-lg shadow-sm border border-gray-200">
+    <div class="flex flex-col sm:flex-row justify-between items-center">
+        <div class="flex items-center mb-3 sm:mb-0">
+            <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg shadow-lg flex items-center justify-center mr-3">
+                <i class="fas fa-coins text-white text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800">Your AI Points</h2>
+                <p class="text-sm text-gray-600">You currently have <span class="font-bold text-purple-600">{{ user_points.balance }}</span> AI points</p>
+                <p class="text-xs text-gray-500">Generating a personal statement requires <span class="font-bold text-purple-600">{{ personal_statement_points_cost }}</span> points</p>
+            </div>
+        </div>
+        <a href="{% url 'document_manager:purchase_points' %}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+            <i class="fas fa-plus-circle mr-2"></i>
+            Get More Points
+        </a>
+    </div>
+</div>
+
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Guidelines Card -->
             <div class="p-6 bg-white rounded-lg shadow-sm border border-gray-200">
@@ -231,13 +253,53 @@ document.addEventListener('DOMContentLoaded', function() {
     const plainTextContent = document.querySelector('#plainTextContent');
     const cvUpload = document.querySelector('#cv-upload');
     const fileName = document.querySelector('#file-name');
+    const strengthCircle = document.getElementById('strengthCircle');
+    const strengthScore = document.getElementById('strengthScore');
+    
+
+    if (strengthCircle && strengthScore) {
+        // Get the value from the template
+        let strengthValue = parseInt(strengthScore.textContent.replace('%', ''));
+        
+        const dashArray = 251.2;
+        const dashOffset = dashArray - ((strengthValue / 100) * dashArray);
+        
+        // Set initial state
+        strengthCircle.style.strokeDashoffset = dashArray;
+        
+        // Trigger animation after a short delay
+        setTimeout(() => {
+            strengthCircle.style.strokeDashoffset = dashOffset;
+        }, 300);
+    }
+
     
     // File upload handler
     cvUpload.addEventListener('change', function(e) {
         const fileNameDiv = document.querySelector('#file-name');
         const fileNameText = document.querySelector('.file-name-text');
         if (e.target.files[0]) {
-            fileNameText.textContent = e.target.files[0].name;
+            const file = e.target.files[0];
+            
+            // Validate file size (10MB limit)
+            if (file.size > 10 * 1024 * 1024) {
+                showToast('File is too large. Please upload a file smaller than 10MB.', 'error');
+                e.target.value = '';
+                fileNameDiv.classList.add('hidden');
+                return;
+            }
+            
+            // Validate file type
+            const allowedTypes = ['.pdf', '.doc', '.docx'];
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+            if (!allowedTypes.includes(fileExtension)) {
+                showToast('Please upload a CV in PDF, DOC, or DOCX format only.', 'error');
+                e.target.value = '';
+                fileNameDiv.classList.add('hidden');
+                return;
+            }
+            
+            fileNameText.textContent = file.name;
             fileNameDiv.classList.remove('hidden');
         } else {
             fileNameDiv.classList.add('hidden');
@@ -248,7 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function showToast(message, type = 'info') {
         const toastConfig = {
             text: message,
-            duration: 3000,
+            duration: 4000,
             gravity: "bottom",
             position: "right",
             stopOnFocus: true,
@@ -264,7 +326,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to convert HTML to plain text with better formatting
     function htmlToPlainText(html) {
-        // Create a temporary div
         const temp = document.createElement('div');
         temp.innerHTML = html;
 
@@ -274,7 +335,6 @@ document.addEventListener('DOMContentLoaded', function() {
             disclaimer.remove();
         }
 
-        // Clean up the content
         let text = '';
 
         // Add title
@@ -289,21 +349,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Process sections
         const sections = temp.querySelectorAll('.text-gray-700');
-        let currentSection = '';
-
         sections.forEach(section => {
             let content = section.textContent.trim();
             
-            // Handle section headers
             if (content.includes('**')) {
                 content = content.replace(/\*\*/g, '');
                 if (content.includes(':')) {
-                    currentSection = content;
                     text += `\n${content}\n`;
                     text += "-------------------\n";
                 }
             } else {
-                // Handle bullet points
                 if (section.closest('li')) {
                     text += `• ${content}\n`;
                 } else {
@@ -321,221 +376,270 @@ document.addEventListener('DOMContentLoaded', function() {
         })}\n`;
         text += "Important: This is a template only - must be customized for actual visa application\n";
 
-        // Final cleanup
-        text = text
-            .replace(/\n\s*\n\s*\n/g, '\n\n')  // Replace triple+ newlines with double
-            .replace(/\n\s+/g, '\n')           // Remove leading spaces after newlines
-            .trim();                           // Remove extra whitespace
-
-        return text;
+        return text.replace(/\n\s*\n\s*\n/g, '\n\n').replace(/\n\s+/g, '\n').trim();
     }
 
     // Copy button handler
-    // Copy button handler
-copyBtn.addEventListener('click', async function() {
-    try {
-        // Get the content from the preview
-        const previewDiv = document.getElementById('previewContent');
-        
-        // Extract text content, preserving structure
-        let plainText = '';
-        
-        // Add title
-        const title = previewDiv.querySelector('h1');
-        if (title) {
-            plainText += title.textContent + '\n';
-            plainText += '='.repeat(title.textContent.length) + '\n\n';
-        } else {
-            plainText += "Personal Statement for Tech Nation Global Talent Visa\n";
-            plainText += "===============================================\n\n";
-        }
-        
-        // Add disclaimer
-        plainText += "DISCLAIMER:\n";
-        plainText += "This document is auto-generated using AI for SAMPLE PURPOSES ONLY.\n";
-        plainText += "Please customize it according to your specific circumstances before using in your actual visa application.\n\n";
-        plainText += "===============================================\n\n";
-        
-        // Process sections
-        const sections = previewDiv.querySelectorAll('h2');
-        sections.forEach(section => {
-            // Add section header
-            plainText += section.textContent + '\n';
-            plainText += '-'.repeat(section.textContent.length) + '\n\n';
+    copyBtn.addEventListener('click', async function() {
+        try {
+            const previewDiv = document.getElementById('previewContent');
+            let plainText = '';
             
-            // Find all elements until the next section
-            let currentElement = section.nextElementSibling;
-            while (currentElement && currentElement.tagName !== 'H2' && currentElement.tagName !== 'HR') {
-                if (currentElement.tagName === 'H3') {
-                    // Subsection header
-                    plainText += currentElement.textContent + '\n';
-                    plainText += '.'.repeat(currentElement.textContent.length) + '\n\n';
-                } else if (currentElement.tagName === 'P') {
-                    // Paragraph
-                    plainText += currentElement.textContent + '\n\n';
-                } else if (currentElement.tagName === 'UL') {
-                    // List
-                    const items = currentElement.querySelectorAll('li');
-                    items.forEach(item => {
-                        plainText += '• ' + item.textContent + '\n';
-                    });
-                    plainText += '\n';
-                }
-                currentElement = currentElement.nextElementSibling;
+            // Add title
+            const title = previewDiv.querySelector('h1');
+            if (title) {
+                plainText += title.textContent + '\n';
+                plainText += '='.repeat(title.textContent.length) + '\n\n';
+            } else {
+                plainText += "Personal Statement for Tech Nation Global Talent Visa\n";
+                plainText += "===============================================\n\n";
             }
-        });
-        
-        // Add footer
-        plainText += "===============================================\n";
-        plainText += `Generated on: ${new Date().toLocaleDateString('en-GB', { 
-            day: 'numeric', 
-            month: 'long', 
-            year: 'numeric' 
-        })}\n`;
-        plainText += "Important: This is a template only - must be customized for actual visa application\n";
-        
-        // Copy to clipboard
-        await navigator.clipboard.writeText(plainText);
-        showToast('Text copied to clipboard', 'success');
-        
-        // Show success feedback
-        const originalText = copyBtn.innerHTML;
-        copyBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Copied!';
-        copyBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-        copyBtn.classList.add('bg-green-600', 'hover:bg-green-700');
-        
-        // Reset button after 2 seconds
-        setTimeout(() => {
-            copyBtn.innerHTML = originalText;
-            copyBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
-            copyBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
-        }, 2000);
-        
-    } catch (error) {
-        console.error('Error copying text:', error);
-        showToast('Failed to copy text. Please try again.', 'error');
-    }
-});
+            
+            // Add disclaimer
+            plainText += "DISCLAIMER:\n";
+            plainText += "This document is auto-generated using AI for SAMPLE PURPOSES ONLY.\n";
+            plainText += "Please customize it according to your specific circumstances before using in your actual visa application.\n\n";
+            plainText += "===============================================\n\n";
+            
+            // Process sections
+            const sections = previewDiv.querySelectorAll('h2');
+            sections.forEach(section => {
+                plainText += section.textContent + '\n';
+                plainText += '-'.repeat(section.textContent.length) + '\n\n';
+                
+                let currentElement = section.nextElementSibling;
+                while (currentElement && currentElement.tagName !== 'H2' && currentElement.tagName !== 'HR') {
+                    if (currentElement.tagName === 'H3') {
+                        plainText += currentElement.textContent + '\n';
+                        plainText += '.'.repeat(currentElement.textContent.length) + '\n\n';
+                    } else if (currentElement.tagName === 'P') {
+                        plainText += currentElement.textContent + '\n\n';
+                    } else if (currentElement.tagName === 'UL') {
+                        const items = currentElement.querySelectorAll('li');
+                        items.forEach(item => {
+                            plainText += '• ' + item.textContent + '\n';
+                        });
+                        plainText += '\n';
+                    }
+                    currentElement = currentElement.nextElementSibling;
+                }
+            });
+            
+            // Add footer
+            plainText += "===============================================\n";
+            plainText += `Generated on: ${new Date().toLocaleDateString('en-GB', { 
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric' 
+            })}\n`;
+            plainText += "Important: This is a template only - must be customized for actual visa application\n";
+            
+            // Copy to clipboard
+            await navigator.clipboard.writeText(plainText);
+            showToast('Text copied to clipboard', 'success');
+            
+            // Show success feedback
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Copied!';
+            copyBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            copyBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            
+            setTimeout(() => {
+                copyBtn.innerHTML = originalText;
+                copyBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                copyBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            }, 2000);
+            
+        } catch (error) {
+            console.error('Error copying text:', error);
+            showToast('Failed to copy text. Please try again.', 'error');
+        }
+    });
 
 // Generate button handler
 generateBtn.addEventListener('click', async function() {
-    // Check if CV is uploaded
+    // Validate CV upload
     if (!cvUpload.files[0]) {
-        showToast('Please upload your CV', 'error');
+        showToast('Please upload your CV before generating a personal statement.', 'error');
+        cvUpload.focus();
         return;
     }
 
-    // Check if type is selected
+    // Validate type selection
     const selectedType = document.querySelector('#generationType').value;
     if (!selectedType) {
-        showToast('Please select a personal statement type', 'error');
+        showToast('Please select a personal statement type.', 'error');
+        document.querySelector('#generationType').focus();
         return;
     }
 
+    // Prepare form data
     const formData = new FormData();
     formData.append('type', selectedType);
-    formData.append('cv', cvUpload.files[0]);
+    formData.append('cv_file', cvUpload.files[0]);
     formData.append('instructions', document.querySelector('#instructions').value || '');
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
     try {
         // Show loading state
         generateBtn.disabled = true;
-        generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+        generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing your CV...';
 
-        const response = await fetch('{% url "document_manager:generate_personal_statement_optimized" %}', {
+        const response = await fetch('/documents/personal-statement/generate/', {
             method: 'POST',
-            body: formData
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         });
 
+        // Check if the response is JSON
+        const contentType = response.headers.get('content-type');
+        
+        if (!contentType || !contentType.includes('application/json')) {
+            // Not JSON - could be a redirect to purchase page
+            const responseText = await response.text();
+            console.error('Non-JSON response received:', responseText);
+            
+            // Check if it contains text about needing points
+            if (responseText.includes('You need') && responseText.includes('AI points')) {
+                window.location.href = '/documents/purchase-points/';  // Correct URL with documents prefix
+                return;
+            } else {
+                throw new Error('Server returned non-JSON response. Please try again.');
+            }
+        }
+
+        // Parse JSON response
         const data = await response.json();
         
+        // Check for redirect in the response (for insufficient points)
+        if (data.redirect) {
+            showToast(data.error || 'Redirecting to purchase points page...', 'warning');
+            setTimeout(() => {
+                window.location.href = data.redirect;  // Use the URL from the response
+            }, 1500); // Short delay to show the toast
+            return;
+        }
+        
         if (!response.ok) {
-            throw new Error(data.error || 'Generation failed');
+            // Handle other error types
+            let errorMessage = data.error || `Server error: ${response.status}`;
+            
+            switch(data.error_type) {
+                case 'missing_cv':
+                    errorMessage = 'Please upload your CV file before generating a personal statement.';
+                    break;
+                case 'file_too_large':
+                    errorMessage = 'Your CV file is too large. Please upload a file smaller than 10MB.';
+                    break;
+                case 'invalid_format':
+                    errorMessage = 'Please upload your CV in PDF, DOC, or DOCX format only.';
+                    break;
+                case 'extraction_failed':
+                    errorMessage = 'We couldn\'t read your CV file. Please check that it\'s not corrupted and try uploading again.';
+                    break;
+                case 'cv_too_short':
+                    errorMessage = 'Your CV appears to be too short or empty. Please upload a complete CV with detailed information.';
+                    break;
+                case 'insufficient_content':
+                    errorMessage = 'Your CV doesn\'t contain enough content. Please upload a more detailed CV with at least 50 words.';
+                    break;
+                case 'server_error':
+                    errorMessage = 'An unexpected error occurred. Please try again or contact support if the problem persists.';
+                    break;
+            }
+            
+            throw new Error(errorMessage);
         }
         
         if (data.success) {
-            // Check if content is available immediately or if we need to poll for it
             if (data.generated_content) {
                 // Content is available immediately
                 displayGeneratedContent(data.generated_content, data.document_id, selectedType);
                 
-                // Reset button state AFTER content is displayed
+                // Reset button state immediately for sync generation
                 generateBtn.disabled = false;
                 generateBtn.innerHTML = '<i class="fas fa-magic mr-2"></i>Generate Personal Statement';
+                
+                showToast('Personal statement generated successfully!', 'success');
             } else if (data.task_id) {
                 // Content is being generated asynchronously
-                showToast('Your personal statement is being generated...', 'info');
-                
-                // Poll for the result - button state will be reset inside this function
-                // only after content is displayed
+                generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating your statement...';
+                showToast('Your personal statement is being generated. This may take a few moments...', 'info');
                 await pollForGenerationResult(data.task_id, data.document_id, selectedType);
             } else {
-                throw new Error('No content or task ID returned');
+                throw new Error('No content or task ID returned from server');
             }
         } else {
             throw new Error(data.error || 'Failed to generate content');
         }
 
     } catch (error) {
-        console.error('Error:', error);
-        showToast('Error: ' + error.message, 'error');
+        console.error('Generation error:', error);
+        showToast(error.message, 'error');
         
-        // Reset button state
+        // Reset button state on error
         generateBtn.disabled = false;
         generateBtn.innerHTML = '<i class="fas fa-magic mr-2"></i>Generate Personal Statement';
     }
 });
 
-// Function to poll for generation result
+
+
+    // Function to poll for generation result
+    // Modify your pollForGenerationResult function to handle non-JSON responses
 async function pollForGenerationResult(taskId, documentId, selectedType) {
-    const maxAttempts = 30; // Maximum number of polling attempts
-    const pollInterval = 2000; // Poll every 2 seconds
+    const maxAttempts = 60; // 2 minutes max (60 * 2 seconds)
+    const pollInterval = 2000;
     let attempts = 0;
     
     const pollTimer = setInterval(async () => {
         attempts++;
         
         try {
-            const response = await fetch(`{% url "document_manager:document_generation_status" "TASK_ID" %}`.replace('TASK_ID', taskId) + `?document_id=${documentId}`);
+            const response = await fetch(`/documents/generation/status/${taskId}/?document_id=${documentId}`);
+            
+            if (!response.ok) {
+                throw new Error(`Status check failed: ${response.status}`);
+            }
+            
+            // Check if the response is JSON before parsing
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Server returned non-JSON response. Please try again.');
+            }
+            
             const data = await response.json();
             
             if (data.status === 'complete' && data.content) {
-                // Generation complete
                 clearInterval(pollTimer);
-                
-                // Display the content first
                 displayGeneratedContent(data.content, documentId, selectedType);
-                showToast('Personal statement generated successfully', 'success');
+                showToast('Personal statement generated successfully!', 'success');
                 
-                // Reset button state AFTER content is displayed
+                // Reset button state
                 generateBtn.disabled = false;
                 generateBtn.innerHTML = '<i class="fas fa-magic mr-2"></i>Generate Personal Statement';
                 
             } else if (data.status === 'failed') {
-                // Generation failed
                 clearInterval(pollTimer);
+                throw new Error(data.error || 'Generation failed on the server');
                 
-                // Reset button state
-                generateBtn.disabled = false;
-                generateBtn.innerHTML = '<i class="fas fa-magic mr-2"></i>Generate Personal Statement';
-                
-                throw new Error(data.error || 'Generation failed');
             } else if (attempts >= maxAttempts) {
-                // Timeout
                 clearInterval(pollTimer);
+                throw new Error('Generation is taking longer than expected. Please try again later.');
                 
-                // Reset button state
-                generateBtn.disabled = false;
-                generateBtn.innerHTML = '<i class="fas fa-magic mr-2"></i>Generate Personal Statement';
-                
-                throw new Error('Generation timed out. Please try again later.');
+            } else {
+                // Update progress if available
+                if (data.progress !== undefined) {
+                    generateBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Generating... ${data.progress}%`;
+                }
             }
-            // Otherwise continue polling
+            
         } catch (error) {
             clearInterval(pollTimer);
             console.error('Polling error:', error);
-            showToast('Error: ' + error.message, 'error');
+            showToast(error.message, 'error');
             
             // Reset button state
             generateBtn.disabled = false;
@@ -544,157 +648,148 @@ async function pollForGenerationResult(taskId, documentId, selectedType) {
     }, pollInterval);
 }
 
-// Function to display the generated content
-function displayGeneratedContent(content, docId, selectedType) {
-    // Add disclaimer to preview
-    const disclaimerHtml = `
-        <div class="p-4 mb-6 text-yellow-800 bg-yellow-50 border-l-4 border-yellow-300">
-            <p><strong>Disclaimer:</strong> This is a sample document generated for reference purposes only. Please customize it according to your specific circumstances before using in your actual visa application.</p>
-        </div>
-    `;
-    
-    previewContent.innerHTML = disclaimerHtml + content;
-    previewSection.classList.remove('hidden');
-    
-    // Store document ID - ensure it's a valid ID
-    if (docId) {
-        documentId.value = docId;
-        console.log("Document ID set to:", docId); // Debug log
-        
-        // Automatically save the document with default title
-        const titleMap = {
-            'technical': 'Technical Achievement Personal Statement',
-            'leadership': 'Leadership & Innovation Personal Statement',
-            'research': 'Research & Academic Personal Statement',
-            'entrepreneurial': 'Entrepreneurial Personal Statement'
-        };
-        
-        const defaultTitle = titleMap[selectedType] || 'Tech Nation Personal Statement';
-        documentTitle.value = defaultTitle;
-        
-        // Auto-save with default title
-        saveDocument(docId, defaultTitle);
-    } else {
-        console.error("No document ID received from server");
-        showToast("Warning: Document ID not received. Save may not work.", "warning");
-    }
-    
-    // Store plain text version
-    plainTextContent.value = htmlToPlainText(content);
-    
-    // Smooth scroll to preview
-    previewSection.scrollIntoView({ behavior: 'smooth' });
-    
-    // Note: We do NOT reset the button state here - that's handled by the calling function
-    // after this function completes
-}
-
-// Function to save document
-async function saveDocument(id, title) {
-    try {
-        const response = await fetch('{% url "document_manager:save_personal_statement" %}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify({
-                document_id: id,
-                title: title
-            })
-        });
-
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.error || 'Failed to save document');
-        }
-
-        if (data.success) {
-            console.log("Document saved successfully with ID:", id);
-            // Don't show toast for auto-save to avoid confusion
-        } else {
-            throw new Error(data.error || 'Failed to save document');
-        }
-    } catch (error) {
-        console.error('Error saving document:', error);
-        showToast('Error saving: ' + error.message, 'error');
-    }
-}
 
 
 
 
-
-// Rename button handler
-renameBtn.addEventListener('click', async function() {
-    const title = documentTitle.value.trim();
-    const id = documentId.value;
-    
-    if (!title) {
-        showToast('Please enter a title for your document', 'error');
-        return;
-    }
-    
-    if (!id) {
-        showToast('No document to rename', 'error');
-        return;
-    }
-
-    try {
-        // Show loading state
-        renameBtn.disabled = true;
-        const originalText = renameBtn.innerHTML;
-        renameBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Saving...';
-
-        // First save the document with the new title
-        const saveResponse = await fetch('{% url "document_manager:save_personal_statement" %}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify({
-                document_id: id,
-                title: title
-            })
-        });
-
-        const saveData = await saveResponse.json();
-        
-        if (!saveResponse.ok || !saveData.success) {
-            throw new Error(saveData.error || 'Failed to rename document');
-        }
-
-        // Then set the document as chosen
-        const chosenResponse = await fetch(`/documents/${id}/set-as-chosen/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+    // Function to display the generated content
+    function displayGeneratedContent(content, docId, selectedType) {
+        try {
+            // Add disclaimer to preview
+            const disclaimerHtml = `
+                <div class="p-4 mb-6 text-yellow-800 bg-yellow-50 border-l-4 border-yellow-300">
+                    <p><strong>Disclaimer:</strong> This is a sample document generated for reference purposes only. Please customize it according to your specific circumstances before using in your actual visa application.</p>
+                </div>
+            `;
+            
+            previewContent.innerHTML = disclaimerHtml + content;
+            previewSection.classList.remove('hidden');
+            
+            // Store document ID
+            if (docId) {
+                documentId.value = docId;
+                console.log("Document ID set to:", docId);
+                
+                // Set default title based on type
+                const titleMap = {
+                    'technical': 'Technical Achievement Personal Statement',
+                    'leadership': 'Leadership & Innovation Personal Statement',
+                    'research': 'Research & Academic Personal Statement',
+                    'entrepreneurial': 'Entrepreneurial Personal Statement'
+                };
+                
+                const defaultTitle = titleMap[selectedType] || 'Tech Nation Personal Statement';
+                documentTitle.value = defaultTitle;
+                
+                // Skip auto-save since the document is already created during generation
+                // Just show a message that the document is ready
+                console.log("Document created with ID:", docId, "and title will be set on rename");
+            } else {
+                console.error("No document ID received from server");
+                showToast("Warning: Document ID not received. Manual save may be required.", "warning");
             }
-        });
-
-        if (!chosenResponse.ok) {
-            console.warn("Could not set document as chosen, but save was successful");
-            showToast('Document renamed successfully, but could not set as chosen', 'warning');
-        } else {
-            showToast('Document renamed and set as chosen successfully', 'success');
+            
+            // Store plain text version
+            plainTextContent.value = htmlToPlainText(content);
+            
+            // Smooth scroll to preview
+            setTimeout(() => {
+                previewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+            
+        } catch (error) {
+            console.error('Error displaying content:', error);
+            showToast('Error displaying generated content. Please try again.', 'error');
         }
-    } catch (error) {
-        console.error('Error:', error);
-        showToast('Error: ' + error.message, 'error');
-    } finally {
-        // Reset button state
-        renameBtn.disabled = false;
-        renameBtn.innerHTML = '<i class="fas fa-save mr-1"></i>Rename';
     }
-});
 
+    // Rename button handler (this is the main save function now)
+    renameBtn.addEventListener('click', async function() {
+        const title = documentTitle.value.trim();
+        const id = documentId.value;
+        
+        if (!title) {
+            showToast('Please enter a title for your document.', 'error');
+            documentTitle.focus();
+            return;
+        }
+        
+        if (!id) {
+            showToast('No document to rename. Please generate a personal statement first.', 'error');
+            return;
+        }
 
+        try {
+            // Show loading state
+            renameBtn.disabled = true;
+            const originalText = renameBtn.innerHTML;
+            renameBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Saving...';
 
-// View All Documents button
+            // Save the document with the new title
+            const saveResponse = await fetch('/documents/personal-statement/save/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    document_id: id,
+                    title: title
+                })
+            });
+
+            // Check if the response is JSON before parsing
+            const contentType = saveResponse.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Server returned non-JSON response. Please try again.');
+            }
+
+            const saveData = await saveResponse.json();
+            
+            if (!saveResponse.ok || !saveData.success) {
+                throw new Error(saveData.error || 'Failed to save document');
+            }
+
+            showToast('Document saved successfully!', 'success');
+
+        } catch (error) {
+            console.error('Save error:', error);
+            showToast('Error: ' + error.message, 'error');
+        } finally {
+            // Reset button state
+            renameBtn.disabled = false;
+            renameBtn.innerHTML = '<i class="fas fa-save mr-1"></i>Save';
+        }
+    });
+
+    // View All Documents button
     viewAllBtn.addEventListener('click', function() {
-        window.location.href = '{% url "document_manager:document_list" %}';
+        window.location.href = '/documents/';
+    });
+
+    // Form validation on submit (backup)
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        generateBtn.click();
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+Enter to generate
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            if (!generateBtn.disabled) {
+                generateBtn.click();
+            }
+        }
+        
+        // Ctrl+S to save/rename
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            if (!renameBtn.disabled && documentId.value) {
+                renameBtn.click();
+            }
+        }
     });
 });
 </script>

@@ -1,0 +1,417 @@
+<!-- templates/document_manager/purchase_points.html -->
+{% extends 'dashboard_base.html' %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Header Section -->
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-700 mb-4">Purchase AI Points</h1>
+        <p class="text-xl text-gray-600 max-w-3xl mx-auto">Power your Tech Nation Visa application with AI assistance</p>
+        
+        <div class="inline-flex items-center bg-blue-50 rounded-full px-6 py-3 mt-6 shadow-sm">
+            <i class="fas fa-coins text-yellow-500 mr-3 text-xl"></i>
+            <span class="text-gray-700">Your current balance: <strong class="text-blue-600 font-bold">{{ user_points.balance }} points</strong></span>
+        </div>
+    </div>
+    
+    <!-- Pricing Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        {% for package in packages %}
+        <div class="relative {% if forloop.counter == 2 %}transform md:scale-110 z-10{% endif %}">
+            <div class="h-full flex flex-col bg-white rounded-xl shadow-lg overflow-hidden border-0 transition-all duration-300 hover:shadow-xl {% if forloop.counter == 2 %}ring-2 ring-blue-500{% endif %}">
+                
+                {% if forloop.counter == 2 %}
+                <div class="absolute -top-4 inset-x-0 flex justify-center">
+                    <span class="inline-flex items-center px-4 py-1 rounded-full text-sm font-semibold bg-gradient-to-r from-yellow-400 to-yellow-500 text-white shadow-md">
+                        <i class="fas fa-star mr-1"></i> BEST VALUE
+                    </span>
+                </div>
+                {% endif %}
+                
+                <div class="p-6 text-center {% if forloop.counter == 2 %}bg-gradient-to-br from-blue-500 to-indigo-600 text-white{% else %}bg-gradient-to-br from-gray-50 to-gray-100{% endif %}">
+                    <h3 class="text-2xl font-bold mb-0">{{ package.name }}</h3>
+                </div>
+                
+                <div class="flex-grow p-6 flex flex-col items-center text-center">
+                    <div class="mb-6">
+                        <span class="text-4xl font-extrabold {% if forloop.counter == 2 %}text-blue-600{% endif %}">£{{ package.price }}</span>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <span class="inline-flex items-center px-4 py-2 rounded-full text-lg font-medium bg-blue-100 text-blue-800">
+                            {{ package.points }} points
+                        </span>
+                    </div>
+                    
+                    <p class="mb-6 text-gray-600">{{ package.description }}</p>
+                    
+                    <div class="mt-auto mb-6">
+                        {% if forloop.counter == 1 %}
+                        <div class="text-gray-500">
+                            <span>£{{ package.price | div:package.points|floatformat:2 }} per point</span>
+                        </div>
+                        {% else %}
+                        <div class="text-green-600">
+                            <div class="font-bold">£{{ package.price|div:package.points|floatformat:2 }} per point</div>
+                            {% if forloop.counter > 1 %}
+                            <div class="mt-2">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-arrow-down mr-1"></i>
+                                    {{ package.price|div:package.points|div:packages.0.price|div:packages.0.points|sub:1|mul:-100|floatformat:0 }}% savings
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="px-6 pb-6">
+                    <button onclick="showPaymentModal('{{ package.id }}', '{{ package.name }}', '{{ package.price }}', '{{ package.points }}')" 
+                       class="w-full flex items-center justify-center px-8 py-3 rounded-full text-base font-medium {% if forloop.counter == 2 %}bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white{% else %}bg-white border border-blue-600 text-blue-600 hover:bg-blue-50{% endif %} transition-all duration-200 shadow-sm">
+                        {% if forloop.counter == 2 %}
+                        <i class="fas fa-bolt mr-2"></i>
+                        {% endif %}
+                        Buy Now
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Points Usage Table -->
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+                <h4 class="text-xl font-bold text-gray-800 flex items-center">
+                    <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                    How Points Are Used
+                </h4>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                            <th class="px-6 py-4 text-center text-sm font-medium text-gray-500 uppercase tracking-wider">Points Required</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        <tr class="hover:bg-gray-50 transition-colors duration-150">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">Generate Personal Statement</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                    3 points
+                                </span>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 transition-colors duration-150">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                                        <i class="fas fa-search"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">Analyze CV</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                    1 point
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- FAQ Section -->
+        <div class="mt-8 text-center">
+            <p class="text-gray-500 flex items-center justify-center">
+                <i class="fas fa-question-circle mr-2"></i>
+                Have questions about AI points? <a href="#" class="ml-1 text-blue-600 hover:text-blue-800 font-medium">Contact support</a>
+            </p>
+        </div>
+    </div>
+    
+    <!-- Testimonials -->
+    <div class="mt-16 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 shadow-inner">
+        <h3 class="text-2xl font-bold text-center text-gray-800 mb-8">What Our Users Say</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm">
+                <div class="flex items-center mb-4">
+                    <div class="text-yellow-400">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+                <p class="text-gray-600 mb-4">"The AI-generated personal statement saved me hours of work and helped me highlight achievements I wouldn't have thought to include."</p>
+                <div class="font-medium text-gray-900">Sarah K.</div>
+                <div class="text-sm text-gray-500">Software Engineer</div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm">
+                <div class="flex items-center mb-4">
+                    <div class="text-yellow-400">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+                <p class="text-gray-600 mb-4">"Worth every point! The CV analysis gave me insights that significantly improved my application's strength."</p>
+                <div class="font-medium text-gray-900">Michael T.</div>
+                <div class="text-sm text-gray-500">Data Scientist</div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm">
+                <div class="flex items-center mb-4">
+                    <div class="text-yellow-400">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star-half-alt"></i>
+                    </div>
+                </div>
+                <p class="text-gray-600 mb-4">"The document improvement feature helped me refine my personal statement to perfectly align with Tech Nation criteria."</p>
+                <div class="font-medium text-gray-900">Priya M.</div>
+                <div class="text-sm text-gray-500">UX Designer</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal with Stripe Integration -->
+<div id="paymentModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 text-white">
+            <div class="flex justify-between items-center">
+                <h3 class="text-xl font-bold" id="modalTitle">Purchase Points</h3>
+                <button onclick="closePaymentModal()" class="text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <div class="mb-6 text-center">
+                <div class="text-gray-600 mb-2">You are purchasing</div>
+                <div class="text-2xl font-bold text-gray-900" id="packageName">Standard Package</div>
+                <div class="flex justify-center items-center gap-3 mt-2">
+                    <span class="text-xl font-bold text-blue-600" id="packagePrice">£9.99</span>
+                    <span class="text-gray-400">•</span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800" id="packagePoints">10 points</span>
+                </div>
+            </div>
+            
+            <form id="payment-form" action="{% url 'document_manager:process_payment' 0 %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="packageIdInput" name="package_id" value="">
+                
+                <div class="mb-4">
+                    <label for="card-element" class="block text-sm font-medium text-gray-700 mb-2">
+                        Credit or debit card
+                    </label>
+                    <div id="card-element" class="p-3 border border-gray-300 rounded-lg bg-white">
+                        <!-- Stripe Elements will be inserted here -->
+                    </div>
+                    <div id="card-errors" class="mt-2 text-sm text-red-600" role="alert"></div>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name on Card</label>
+                    <input type="text" id="name" name="name" placeholder="John Smith" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <button type="submit" id="submit-button" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center">
+                    <i class="fas fa-lock mr-2"></i>
+                    <span id="button-text">Pay Securely</span>
+                    <div id="spinner" class="hidden">
+                        <i class="fas fa-spinner fa-spin ml-2"></i>
+                    </div>
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center text-xs text-gray-500">
+                <p>Your payment is secure and encrypted. By proceeding, you agree to our <a href="#" class="text-blue-600 hover:underline">Terms of Service</a>.</p>
+                <div class="flex justify-center mt-3 space-x-2">
+                    <i class="fab fa-cc-visa text-blue-800 text-lg"></i>
+                    <i class="fab fa-cc-mastercard text-red-600 text-lg"></i>
+                    <i class="fab fa-cc-amex text-blue-500 text-lg"></i>
+                    <i class="fab fa-cc-discover text-orange-500 text-lg"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Stripe.js -->
+<script src="https://js.stripe.com/v3/"></script>
+
+<script>
+
+    
+
+
+    // Initialize Stripe
+    const stripe = Stripe('{{ STRIPE_PUBLISHABLE_KEY }}');
+    const elements = stripe.elements();
+    
+    // Create card Element and mount it
+    const cardElement = elements.create('card', {
+        style: {
+            base: {
+                color: '#32325d',
+                fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+                fontSmoothing: 'antialiased',
+                fontSize: '16px',
+                '::placeholder': {
+                    color: '#aab7c4'
+                }
+            },
+            invalid: {
+                color: '#fa755a',
+                iconColor: '#fa755a'
+            }
+        },
+        hidePostalCode: true // Add this line to hide the postal code field
+    });
+
+    
+    // Payment modal functions
+function showPaymentModal(packageId, packageName, packagePrice, packagePoints) {
+    document.getElementById('modalTitle').textContent = 'Purchase ' + packageName;
+    document.getElementById('packageName').textContent = packageName;
+    document.getElementById('packagePrice').textContent = '£' + packagePrice;
+    document.getElementById('packagePoints').textContent = packagePoints + ' points';
+    document.getElementById('packageIdInput').value = packageId;
+    
+    // Update form action
+    document.getElementById('payment-form').action = "{% url 'document_manager:process_payment' 0 %}".replace('0', packageId);
+    
+    // Show modal
+    document.getElementById('paymentModal').classList.remove('hidden');
+    
+    // Initialize Stripe elements only when modal is shown
+    if (!cardElement) {
+        const stripe = Stripe('{{ STRIPE_PUBLISHABLE_KEY }}');
+        const elements = stripe.elements();
+        
+        cardElement = elements.create('card', {
+            style: {
+                base: {
+                    color: '#32325d',
+                    fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+                    fontSmoothing: 'antialiased',
+                    fontSize: '16px',
+                    '::placeholder': {
+                        color: '#aab7c4'
+                    }
+                },
+                invalid: {
+                    color: '#fa755a',
+                    iconColor: '#fa755a'
+                }
+            }
+        });
+    }
+    
+    // Mount card element when modal is shown
+    setTimeout(() => {
+        cardElement.mount('#card-element');
+    }, 100);
+}
+
+function closePaymentModal() {
+    document.getElementById('paymentModal').classList.add('hidden');
+    if (cardElement) {
+        cardElement.unmount();
+    }
+}
+    
+    // Handle form submission
+    const form = document.getElementById('payment-form');
+    const submitButton = document.getElementById('submit-button');
+    const buttonText = document.getElementById('button-text');
+    const spinner = document.getElementById('spinner');
+    
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        
+        // Disable the submit button to prevent repeated clicks
+        submitButton.disabled = true;
+        buttonText.textContent = 'Processing...';
+        spinner.classList.remove('hidden');
+        
+        const name = document.getElementById('name').value;
+        
+        try {
+            const { paymentMethod, error } = await stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement,
+                billing_details: {
+                    name: name,
+                },
+            });
+            
+            if (error) {
+                // Show error to your customer
+                const errorElement = document.getElementById('card-errors');
+                errorElement.textContent = error.message;
+                
+                submitButton.disabled = false;
+                buttonText.textContent = 'Pay Securely';
+                spinner.classList.add('hidden');
+            } else {
+                // Send paymentMethod.id to your server
+                const packageId = document.getElementById('packageIdInput').value;
+                
+                // Create a hidden input to store the payment method ID
+                const hiddenInput = document.createElement('input');
+                hiddenInput.setAttribute('type', 'hidden');
+                hiddenInput.setAttribute('name', 'payment_method_id');
+                hiddenInput.setAttribute('value', paymentMethod.id);
+                form.appendChild(hiddenInput);
+                
+                // Submit the form
+                form.submit();
+            }
+        } catch (err) {
+            console.error(err);
+            const errorElement = document.getElementById('card-errors');
+            errorElement.textContent = 'An unexpected error occurred. Please try again.';
+            
+            submitButton.disabled = false;
+            buttonText.textContent = 'Pay Securely';
+            spinner.classList.add('hidden');
+        }
+    });
+    
+    // Close modal when clicking outside
+    document.getElementById('paymentModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closePaymentModal();
+        }
+    });
+</script>
+{% endblock %}

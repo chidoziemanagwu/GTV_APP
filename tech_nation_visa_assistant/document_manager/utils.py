@@ -1,8 +1,22 @@
 from django.db.models import Q
-from .models import Document
+from .models import Document, UserPoints
+from functools import wraps
+from django.http import JsonResponse
+from django.shortcuts import redirect
+from django.contrib import messages
 
-def calculate_application_progress(user):
+
+
+def calculate_application_progress(user_or_document):
     """Calculate the user's application progress based on completed steps"""
+    # Handle both user object and document object
+    if hasattr(user_or_document, 'user'):
+        # It's a document object, get the user
+        user = user_or_document.user
+    else:
+        # It's already a user object
+        user = user_or_document
+
     total_steps = 4  # Adjusted to match the 4 steps in your dashboard
     completed_steps = 0
     progress_details = {}
@@ -34,24 +48,38 @@ def calculate_application_progress(user):
         progress_details['cv'] = False
 
     # Step 3: Check for mandatory evidence documents
-    # Get count of mandatory criteria
-    mandatory_criteria_count = user.documents.filter(
-        related_criteria__criteria_type='mandatory',
-        document_type='evidence'
-    ).values('related_criteria').distinct().count()
+    try:
+        # Get count of mandatory criteria
+        mandatory_criteria_count = user.documents.filter(
+            related_criteria__criteria_type='mandatory',
+            document_type='evidence'
+        ).values('related_criteria').distinct().count()
 
-    # Get count of completed mandatory evidence documents
-    completed_mandatory_count = user.documents.filter(
-        related_criteria__criteria_type='mandatory',
-        document_type='evidence',
-        status='completed'
-    ).values('related_criteria').distinct().count()
+        # Get count of completed mandatory evidence documents
+        completed_mandatory_count = user.documents.filter(
+            related_criteria__criteria_type='mandatory',
+            document_type='evidence',
+            status='completed'
+        ).values('related_criteria').distinct().count()
 
-    if mandatory_criteria_count > 0 and completed_mandatory_count >= mandatory_criteria_count:
-        completed_steps += 1
-        progress_details['mandatory_evidence'] = True
-    else:
-        progress_details['mandatory_evidence'] = False
+        if mandatory_criteria_count > 0 and completed_mandatory_count >= mandatory_criteria_count:
+            completed_steps += 1
+            progress_details['mandatory_evidence'] = True
+        else:
+            progress_details['mandatory_evidence'] = False
+    except Exception:
+        # Fallback if related_criteria doesn't exist
+        has_evidence = Document.objects.filter(
+            user=user,
+            document_type='evidence',
+            status='completed'
+        ).exists()
+
+        if has_evidence:
+            completed_steps += 1
+            progress_details['mandatory_evidence'] = True
+        else:
+            progress_details['mandatory_evidence'] = False
 
     # Step 4: Check for recommendation letters
     has_recommendation = Document.objects.filter(
@@ -75,6 +103,7 @@ def calculate_application_progress(user):
         'total_steps': total_steps,
         'details': progress_details
     }
+
 
 def get_document_status_counts(user):
     """Get counts of documents by status for a user"""
@@ -141,3 +170,41 @@ def get_criteria_completion_status(user):
     ).order_by('related_criteria__criteria_type', 'related_criteria__name')
 
     return criteria_status
+
+
+
+def require_points(points_required):
+    """Decorator to check if user has enough points"""
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped_view(request, *args, **kwargs):
+            # Get or create user points
+            user_points, created = UserPoints.objects.get_or_create(user=request.user)
+
+            # Check if user has enough points
+            if user_points.balance >= points_required:
+                # Add points_required to kwargs so the view can use it
+                kwargs['points_required'] = points_required
+                return view_func(request, *args, **kwargs)
+            else:
+                # Use the correct URL for purchase points
+                purchase_url = '/documents/purchase-points/'  # Correct URL with documents prefix
+
+                # Handle AJAX requests
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'error': f'You need {points_required} AI points for this action. You currently have {user_points.balance} points.',
+                        'redirect': purchase_url,
+                        'points_required': points_required,
+                        'current_balance': user_points.balance
+                    }, status=402)  # 402 Payment Required
+
+                # Handle regular requests
+                messages.error(
+                    request,
+                    f'You need {points_required} AI points for this action. You currently have {user_points.balance} points.'
+                )
+                return redirect('document_manager:purchase_points')  # Use the named URL pattern
+
+        return _wrapped_view
+    return decorator

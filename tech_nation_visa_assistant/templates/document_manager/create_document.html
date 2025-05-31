@@ -5,7 +5,7 @@
 {% block content %}
 <div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4 sm:px-6 lg:px-8">
     <div class="mx-auto">
-        <!-- Header Section - Improved for mobile -->
+        <!-- Header Section -->
         <div class="bg-white/70 backdrop-blur-lg rounded-xl shadow-lg p-4 sm:p-6 mb-8 border border-white border-opacity-20">
             <div class="flex flex-col sm:flex-row sm:items-center mb-4">
                 <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg shadow-lg flex items-center justify-center mb-3 sm:mb-0 sm:mr-4">
@@ -17,6 +17,29 @@
                 </div>
             </div>
         </div>
+
+
+                <!-- Add this right after the header section, before the grid -->
+<div class="p-6 mb-6 bg-white rounded-lg shadow-sm border border-gray-200">
+    <div class="flex flex-col sm:flex-row justify-between items-center">
+        <div class="flex items-center mb-3 sm:mb-0">
+            <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg shadow-lg flex items-center justify-center mr-3">
+                <i class="fas fa-coins text-white text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800">Your AI Points</h2>
+                <p class="text-sm text-gray-600">You currently have <span class="font-bold text-purple-600">{{ user_points.balance }}</span> AI points</p>
+                <p class="text-xs text-gray-500">Generating a personal statement requires <span class="font-bold text-purple-600">{{ cv_analysis_points_cost }}</span> points</p>
+            </div>
+        </div>
+        <a href="{% url 'document_manager:purchase_points' %}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+            <i class="fas fa-plus-circle mr-2"></i>
+            Get More Points
+        </a>
+    </div>
+</div>
+
+
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
             <!-- Upload Section -->
@@ -101,26 +124,108 @@
             </div>
         </div>
 
-        <!-- Analysis Results Section (Initially Hidden) -->
+        <!-- Enhanced Analysis Results Section -->
         <div id="analysisResults" class="mt-8 hidden">
-            <div class="bg-white/70 backdrop-blur-lg rounded-xl shadow-lg border border-white border-opacity-20">
-                <div class="p-4 sm:p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">CV Analysis Results</h2>
+            <!-- Overall Assessment Card -->
+            <div class="bg-white/70 backdrop-blur-lg rounded-xl shadow-lg border border-white border-opacity-20 mb-6">
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">CV Analysis Results</h2>
                     
-                    <!-- Strength Score -->
-                    <div class="mb-6">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-medium text-gray-700">Overall Strength</span>
-                            <span class="text-sm font-medium text-blue-600" id="strengthScore">0%</span>
+                    <!-- Score Display -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="text-center">
+                            <div class="relative inline-flex items-center justify-center w-24 h-24 mb-4">
+                                <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="40" stroke="#e5e7eb" stroke-width="8" fill="none"/>
+                                    <circle id="strengthCircle" cx="50" cy="50" r="40" stroke="#3b82f6" stroke-width="8" 
+                                            fill="none" stroke-linecap="round" stroke-dasharray="251.2" 
+                                            stroke-dashoffset="251.2" class="transition-all duration-1000"/>
+                                </svg>
+                                <span id="strengthScore" class="absolute text-xl font-bold text-gray-900">0%</span>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900">Overall Strength</h3>
+                            <p id="readinessLevel" class="text-sm text-gray-600">Calculating...</p>
                         </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div class="bg-blue-600 h-2 rounded-full" id="strengthBar" style="width: 0%"></div>
+                        
+                        <div class="text-center">
+                            <div class="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900">Strengths Found</h3>
+                            <p id="strengthsCount" class="text-sm text-gray-600">0 identified</p>
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center">
+                                <i class="fas fa-exclamation-triangle text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900">Areas to Improve</h3>
+                            <p id="gapsCount" class="text-sm text-gray-600">0 identified</p>
                         </div>
                     </div>
 
-                    <!-- Improvement Suggestions -->
-                    <div class="space-y-6" id="suggestions">
-                        <!-- Suggestions will be dynamically added here -->
+                    <!-- Summary -->
+                    <div id="summarySection" class="bg-gray-50 rounded-lg p-6 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3">Executive Summary</h3>
+                        <p id="summaryText" class="text-gray-700 leading-relaxed"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Analysis Tabs -->
+            <div class="bg-white/70 backdrop-blur-lg rounded-xl shadow-lg border border-white border-opacity-20">
+                <div class="p-6">
+                    <!-- Tab Navigation -->
+                    <div class="border-b border-gray-200 mb-6">
+                        <nav class="-mb-px flex space-x-8">
+                            <button class="tab-button active py-2 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600" data-tab="strengths">
+                                Key Strengths
+                            </button>
+                            <button class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="gaps">
+                                Critical Gaps
+                            </button>
+                            <button class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="roadmap">
+                                Improvement Roadmap
+                            </button>
+                            <button class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="detailed">
+                                Detailed Analysis
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div id="strengthsTab" class="tab-content">
+                        <div id="strengthsList" class="space-y-4">
+                            <!-- Strengths will be populated here -->
+                        </div>
+                    </div>
+
+                    <div id="gapsTab" class="tab-content hidden">
+                        <div id="gapsList" class="space-y-4">
+                            <!-- Gaps will be populated here -->
+                        </div>
+                    </div>
+
+                    <div id="roadmapTab" class="tab-content hidden">
+                        <div id="roadmapContent" class="space-y-6">
+                            <!-- Roadmap will be populated here -->
+                        </div>
+                    </div>
+
+                    <div id="detailedTab" class="tab-content hidden">
+                        <div id="detailedAnalysis" class="space-y-6">
+                            <!-- Detailed analysis will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Items -->
+            <div class="bg-white/70 backdrop-blur-lg rounded-xl shadow-lg border border-white border-opacity-20 mt-6">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Immediate Action Items</h3>
+                    <div id="actionItems" class="space-y-3">
+                        <!-- Action items will be populated here -->
                     </div>
                 </div>
             </div>
@@ -149,6 +254,52 @@ document.addEventListener('DOMContentLoaded', function() {
     const analysisResults = document.getElementById('analysisResults');
     const submitText = document.getElementById('submitText');
     const loadingText = document.getElementById('loadingText');
+    const strengthCircle = document.getElementById('strengthCircle');
+    const strengthScore = document.getElementById('strengthScore');
+
+
+
+    // Tab functionality
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+
+    if (strengthCircle && strengthScore) {
+        // Get the value from the template
+        let strengthValue = parseInt(strengthScore.textContent.replace('%', ''));
+        
+        const dashArray = 251.2;
+        const dashOffset = dashArray - ((strengthValue / 100) * dashArray);
+        
+        // Set initial state
+        strengthCircle.style.strokeDashoffset = dashArray;
+        
+        // Trigger animation after a short delay
+        setTimeout(() => {
+            strengthCircle.style.strokeDashoffset = dashOffset;
+        }, 300);
+    }
+
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const tabName = button.getAttribute('data-tab');
+            
+            // Update button states
+            tabButtons.forEach(btn => {
+                btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            button.classList.add('active', 'border-blue-500', 'text-blue-600');
+            button.classList.remove('border-transparent', 'text-gray-500');
+            
+            // Update content visibility
+            tabContents.forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(tabName + 'Tab').classList.remove('hidden');
+        });
+    });
 
     // Drag and drop functionality
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -196,7 +347,6 @@ document.addEventListener('DOMContentLoaded', function() {
         fileNameDisplay.className = 'mt-2 text-sm text-gray-600 break-all';
         fileNameDisplay.textContent = `Selected file: ${fileName}`;
         
-        // Remove any existing file name display
         const existingDisplay = dropZone.querySelector('p:last-child');
         if (existingDisplay && existingDisplay.textContent.includes('Selected file:')) {
             existingDisplay.remove();
@@ -205,279 +355,311 @@ document.addEventListener('DOMContentLoaded', function() {
         dropZone.appendChild(fileNameDisplay);
     }
 
-// Update the form submission handler
 form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        
-        try {
-            // Show loading state
-            loadingOverlay.classList.remove('hidden');
-            loadingOverlay.classList.add('flex');
-            submitText.classList.add('hidden');
-            loadingText.classList.remove('hidden');
+    e.preventDefault();
+    
+    if (!fileInput.files[0]) {
+        showErrorMessage('Please select a CV file to analyze.');
+        return;
+    }
 
-            // Make API call to analyze CV
-            const response = await fetch('/documents/cv/analyze/', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                }
-            });
+    const formData = new FormData(this);
+    
+    // Add default values for required fields
+    formData.append('title', 'CV Analysis'); // Default title
+    formData.append('status', 'draft'); // Changed from 'pending' to 'draft'
+    
+    try {
+        loadingOverlay.classList.remove('hidden');
+        loadingOverlay.classList.add('flex');
+        submitText.classList.add('hidden');
+        loadingText.classList.remove('hidden');
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Analysis failed');
+        // Make sure this URL matches your actual endpoint
+        const response = await fetch('/documents/cv/analyze/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
             }
+        });
 
-            showAnalysisResults(data);
-
-        } catch (error) {
-            console.error('Error:', error);
-            // Show error message
-            Toastify({
-                text: error.message || "Error analyzing CV. Please try again.",
-                duration: 3000,
-                close: true,
-                gravity: "top",
-                position: "right",
-                backgroundColor: "#ef4444",
-            }).showToast();
-        } finally {
-            // Hide loading state
-            loadingOverlay.classList.add('hidden');
-            loadingOverlay.classList.remove('flex');
-            submitText.classList.remove('hidden');
-            loadingText.classList.add('hidden');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Analysis failed');
         }
-    });
 
-    function showAnalysisResults(results) {
+        const data = await response.json();
+        console.log('Analysis data received:', data);
+
+        showAnalysisResults(data);
+
+    } catch (error) {
+        console.error('Error:', error);
+        showErrorMessage(error.message || "Error analyzing CV. Please try again.");
+    } finally {
+        loadingOverlay.classList.add('hidden');
+        loadingOverlay.classList.remove('flex');
+        submitText.classList.remove('hidden');
+        loadingText.classList.add('hidden');
+    }
+});
+
+function showAnalysisResults(data) {
     analysisResults.classList.remove('hidden');
+    analysisResults.scrollIntoView({ behavior: 'smooth' });
+
+    // Get the analysis data from the correct location in the response
+    const analysis = data.analysis || data;
     
-    // Update strength score with animation
-    const strengthScore = document.getElementById('strengthScore');
-    const strengthBar = document.getElementById('strengthBar');
-    animateScore(0, results.strength_score, strengthScore, strengthBar);
-
-    // Add suggestions
-    const suggestions = document.getElementById('suggestions');
+    // Extract values with fallbacks
+    const strengthScore = analysis.strength_score || 70;
+    const readinessLevel = analysis.readiness_level || 'Needs Assessment';
+    const keyStrengths = analysis.key_strengths || [];
+    const criticalGaps = analysis.critical_gaps || [];
+    const summary = analysis.summary || 'Analysis completed successfully.';
     
-    // Start with the disclaimer
-    let disclaimerHTML = `
-        <div class="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <i class="fas fa-info-circle text-amber-400"></i>
-                </div>
-                <div class="ml-3">
-                    <h3 class="text-sm font-medium text-amber-800">Important Disclaimer</h3>
-                    <div class="mt-1 text-sm text-amber-700">
-                        <p>This AI-powered analysis is provided as a general guide only and should not be considered as definitive advice. The analysis:</p>
-                        <ul class="list-disc ml-5 mt-2">
-                            <li>Is based on AI interpretation and may not capture all nuances of your experience</li>
-                            <li>Should be used as a starting point for improvements, not as final validation</li>
-                            <li>Does not guarantee acceptance for the Tech Nation Visa</li>
-                            <li>Should be complemented with official Tech Nation guidelines and professional advice</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
+    console.log("Displaying strength score:", strengthScore);
 
-    // Add the disclaimer and analysis results
-    suggestions.innerHTML = disclaimerHTML + generateAnalysisHTML(results);
+    // Update score display with animation
+    animateScore(strengthScore);
+    
+    // Update readiness level
+    document.getElementById('readinessLevel').textContent = readinessLevel;
+    
+    // Update counts
+    document.getElementById('strengthsCount').textContent = `${keyStrengths.length} identified`;
+    document.getElementById('gapsCount').textContent = `${criticalGaps.length} identified`;
+    
+    // Update summary
+    document.getElementById('summaryText').textContent = summary;
+
+    // Populate tabs
+    populateStrengths(keyStrengths);
+    populateGaps(criticalGaps);
+    populateRoadmap(analysis.improvement_roadmap || {});
+    populateDetailedAnalysis(analysis.detailed_analysis || {});
+    populateActionItems(analysis.immediate_actions || []);
 }
 
-
-
-function generateAnalysisHTML(results) {
-    let html = '';
-
-    // Add summary if available
-    if (results.summary) {
-        html += `
-            <div class="bg-gray-50 p-4 rounded-lg mb-6">
-                <div class="text-sm text-gray-700">
-                    <h3 class="font-medium text-gray-900 mb-2">Summary Assessment</h3>
-                    ${results.summary}
-                </div>
-            </div>
-        `;
+    function animateScore(score) {
+    console.log("Animating score:", score);
+    const scoreElement = document.getElementById('strengthScore');
+    const circleElement = document.getElementById('strengthCircle');
+    
+    if (!scoreElement || !circleElement) {
+        console.error("Score elements not found in DOM");
+        return;
     }
-
-    // Technical Expertise Section
-    if (results.suggestions?.technical_expertise?.length > 0) {
-        html += generateSuggestionSection(
-            'Technical Expertise',
-            results.suggestions.technical_expertise,
-            'fa-lightbulb',
-            'yellow'
-        );
-    }
-
-    // Leadership Section
-    if (results.suggestions?.leadership?.length > 0) {
-        html += generateSuggestionSection(
-            'Leadership & Recognition',
-            results.suggestions.leadership,
-            'fa-star',
-            'blue'
-        );
-    }
-
-    // Innovation Section
-    if (results.suggestions?.innovation?.length > 0) {
-        html += generateSuggestionSection(
-            'Innovation & Impact',
-            results.suggestions.innovation,
-            'fa-rocket',
-            'green'
-        );
-    }
-
-    // Recognition Section
-    if (results.suggestions?.recognition?.length > 0) {
-        html += generateSuggestionSection(
-            'Professional Recognition',
-            results.suggestions.recognition,
-            'fa-award',
-            'purple'
-        );
-    }
-
-    // Missing Elements
-    if (results.missing_elements?.length > 0) {
-        html += `
-            <div class="bg-red-50 p-4 rounded-lg mt-6">
-                <div class="flex flex-col sm:flex-row">
-                    <div class="flex-shrink-0 mb-2 sm:mb-0">
-                        <i class="fas fa-exclamation-circle text-red-400"></i>
-                    </div>
-                    <div class="sm:ml-3">
-                        <h3 class="text-sm font-medium text-red-800">Missing Elements</h3>
-                        <div class="mt-2 text-sm text-red-700">
-                            <ul class="list-disc ml-5 mt-2">
-                                ${results.missing_elements.map(item => `<li>${item}</li>`).join('')}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // Formatting Recommendations
-    if (results.formatting_recommendations?.length > 0) {
-        html += `
-            <div class="bg-indigo-50 p-4 rounded-lg mt-6">
-                <div class="flex flex-col sm:flex-row">
-                    <div class="flex-shrink-0 mb-2 sm:mb-0">
-                        <i class="fas fa-file-alt text-indigo-400"></i>
-                    </div>
-                    <div class="sm:ml-3">
-                        <h3 class="text-sm font-medium text-indigo-800">Formatting Recommendations</h3>
-                        <div class="mt-2 text-sm text-indigo-700">
-                            <ul class="list-disc ml-5 mt-2">
-                                ${results.formatting_recommendations.map(item => `<li>${item}</li>`).join('')}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // If no sections were generated, show an error
-    if (!html) {
-        html = `
-            <div class="bg-red-50 p-4 rounded-lg">
-                <div class="flex flex-col sm:flex-row">
-                    <div class="flex-shrink-0 mb-2 sm:mb-0">
-                        <i class="fas fa-exclamation-circle text-red-400"></i>
-                    </div>
-                    <div class="sm:ml-3">
-                        <h3 class="text-sm font-medium text-red-800">Analysis Error</h3>
-                        <div class="mt-2 text-sm text-red-700">
-                            Unable to generate detailed analysis. Please try again or contact support if the issue persists.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    return html;
-}
-
-
-function generateSuggestionSection(title, suggestions, icon, color) {
-    return `
-        <div class="bg-${color}-50 p-4 rounded-lg mb-4">
-            <div class="flex flex-col sm:flex-row">
-                <div class="flex-shrink-0 mb-2 sm:mb-0">
-                    <i class="fas ${icon} text-${color}-400"></i>
-                </div>
-                <div class="sm:ml-3">
-                    <h3 class="text-sm font-medium text-${color}-800">${title}</h3>
-                    <div class="mt-2 text-sm text-${color}-700">
-                        <ul class="list-disc ml-5 mt-2">
-                            ${suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function animateScore(start, end, scoreElement, barElement) {
-    let current = start;
+    
+    const circumference = 251.2; // This matches your SVG's stroke-dasharray
+    
+    let currentScore = 0;
+    const increment = score / 50; // Animate over 50 steps
+    
+    // Set initial state
+    scoreElement.textContent = "0%";
+    circleElement.style.strokeDashoffset = circumference;
+    
     const interval = setInterval(() => {
-        if (current >= end) {
+        if (currentScore >= score) {
+            currentScore = score;
             clearInterval(interval);
         } else {
-            current++;
-            scoreElement.textContent = `${current}%`;
-            barElement.style.width = `${current}%`;
-            
-            // Update color based on score
-            if (current < 50) {
-                barElement.classList.add('bg-red-600');
-                barElement.classList.remove('bg-yellow-500', 'bg-green-500', 'bg-blue-600');
-            } else if (current < 70) {
-                barElement.classList.add('bg-yellow-500');
-                barElement.classList.remove('bg-red-600', 'bg-green-500', 'bg-blue-600');
-            } else if (current < 85) {
-                barElement.classList.add('bg-green-500');
-                barElement.classList.remove('bg-red-600', 'bg-yellow-500', 'bg-blue-600');
-            } else {
-                barElement.classList.add('bg-blue-600');
-                barElement.classList.remove('bg-red-600', 'bg-yellow-500', 'bg-green-500');
-            }
+            currentScore += increment;
+        }
+        
+        scoreElement.textContent = `${Math.round(currentScore)}%`;
+        
+        const offset = circumference - (currentScore / 100) * circumference;
+        circleElement.style.strokeDashoffset = offset;
+        
+        // Update color based on score
+        if (currentScore < 50) {
+            circleElement.style.stroke = '#ef4444'; // red
+        } else if (currentScore < 70) {
+            circleElement.style.stroke = '#f59e0b'; // amber
+        } else if (currentScore < 85) {
+            circleElement.style.stroke = '#10b981'; // green
+        } else {
+            circleElement.style.stroke = '#3b82f6'; // blue
         }
     }, 20);
 }
 
-// Helper function to get CSRF token
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
+
+    function populateStrengths(strengths) {
+        const container = document.getElementById('strengthsList');
+        container.innerHTML = '';
+        
+        strengths.forEach((strength, index) => {
+            const strengthCard = document.createElement('div');
+            strengthCard.className = 'bg-green-50 border border-green-200 rounded-lg p-4';
+            strengthCard.innerHTML = `
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-green-800">${escapeHtml(strength)}</p>
+                    </div>
+                </div>
+            `;
+            container.appendChild(strengthCard);
+        });
+    }
+
+    function populateGaps(gaps) {
+        const container = document.getElementById('gapsList');
+        container.innerHTML = '';
+        
+        gaps.forEach((gap, index) => {
+            const gapCard = document.createElement('div');
+            gapCard.className = 'bg-amber-50 border border-amber-200 rounded-lg p-4';
+            gapCard.innerHTML = `
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-amber-500 mt-1"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-amber-800">${escapeHtml(gap)}</p>
+                    </div>
+                </div>
+            `;
+            container.appendChild(gapCard);
+        });
+    }
+
+    function populateRoadmap(roadmap) {
+        const container = document.getElementById('roadmapContent');
+        container.innerHTML = '';
+        
+        const phases = ['immediate', 'short_term', 'long_term'];
+        const phaseNames = ['Immediate (0-3 months)', 'Short Term (3-12 months)', 'Long Term (1-2 years)'];
+        const phaseColors = ['red', 'amber', 'green'];
+        
+        phases.forEach((phase, index) => {
+            if (roadmap[phase] && roadmap[phase].length > 0) {
+                const phaseCard = document.createElement('div');
+                phaseCard.className = `bg-${phaseColors[index]}-50 border border-${phaseColors[index]}-200 rounded-lg p-6`;
+                
+                let actionsHTML = '';
+                roadmap[phase].forEach(action => {
+                    actionsHTML += `
+                        <li class="text-sm text-${phaseColors[index]}-800 mb-2">${escapeHtml(action)}</li>
+                    `;
+                });
+                
+                phaseCard.innerHTML = `
+                    <h4 class="text-lg font-semibold text-${phaseColors[index]}-900 mb-3">${phaseNames[index]}</h4>
+                    <ul class="list-disc ml-5">
+                        ${actionsHTML}
+                    </ul>
+                `;
+                container.appendChild(phaseCard);
+            }
+        });
+    }
+
+    function populateDetailedAnalysis(detailed) {
+        const container = document.getElementById('detailedAnalysis');
+        container.innerHTML = '';
+        
+        const sections = [
+            { key: 'technical_expertise', title: 'Technical Expertise', icon: 'fa-code', color: 'blue' },
+            { key: 'leadership_innovation', title: 'Leadership & Innovation', icon: 'fa-lightbulb', color: 'purple' },
+            { key: 'industry_recognition', title: 'Industry Recognition', icon: 'fa-award', color: 'yellow' },
+            { key: 'commercial_impact', title: 'Commercial Impact', icon: 'fa-chart-line', color: 'green' }
+        ];
+        
+        sections.forEach(section => {
+            if (detailed[section.key]) {
+                const sectionCard = document.createElement('div');
+                sectionCard.className = `bg-${section.color}-50 border border-${section.color}-200 rounded-lg p-6`;
+                sectionCard.innerHTML = `
+                    <div class="flex items-center mb-4">
+                        <i class="fas ${section.icon} text-${section.color}-600 mr-3"></i>
+                        <h4 class="text-lg font-semibold text-${section.color}-900">${section.title}</h4>
+                    </div>
+                    <div class="text-sm text-${section.color}-800">
+                        <p><strong>Current State:</strong> ${escapeHtml(detailed[section.key].current_state || 'Not assessed')}</p>
+                        <p class="mt-2"><strong>Recommendations:</strong> ${escapeHtml(detailed[section.key].recommendations || 'No specific recommendations')}</p>
+                        <p class="mt-2"><strong>Priority:</strong> ${escapeHtml(detailed[section.key].priority || 'Medium')}</p>
+                    </div>
+                `;
+                container.appendChild(sectionCard);
+            }
+        });
+    }
+
+    function populateActionItems(actions) {
+        const container = document.getElementById('actionItems');
+        container.innerHTML = '';
+        
+        if (actions.length === 0) {
+            container.innerHTML = '<p class="text-gray-600">No immediate action items identified.</p>';
+            return;
+        }
+        
+        actions.forEach((action, index) => {
+            const actionCard = document.createElement('div');
+            actionCard.className = 'bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start';
+            actionCard.innerHTML = `
+                <div class="flex-shrink-0">
+                    <div class="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        ${index + 1}
+                    </div>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-blue-800">${escapeHtml(action)}</p>
+                </div>
+            `;
+            container.appendChild(actionCard);
+        });
+    }
+
+    function showErrorMessage(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-md';
+        errorDiv.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span class="flex-1">${escapeHtml(message)}</span>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        document.body.appendChild(errorDiv);
+        
+        setTimeout(() => {
+            if (errorDiv.parentElement) {
+                errorDiv.remove();
+            }
+        }, 5000);
+    }
+
+    function escapeHtml(text) {
+        if (typeof text !== 'string') return text;
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
             }
         }
+        return cookieValue;
     }
-    return cookieValue;
-}
 });
 </script>
 {% endblock %}

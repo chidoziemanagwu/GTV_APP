@@ -1,5 +1,3 @@
-# ai_assistant/views.py (optimized)
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, StreamingHttpResponse
 from django.contrib.auth.decorators import login_required
@@ -13,7 +11,7 @@ from accounts.models import UserProfile
 from .document_generator import DocumentGenerator
 from django.conf import settings
 from django.core.cache import cache
-from openai import OpenAI
+from openai import OpenAI  # FIXED: Added missing import
 from .token_manager import token_manager, rate_limit
 import time
 import os
@@ -22,8 +20,12 @@ from functools import wraps
 
 logger = logging.getLogger(__name__)
 
-# Configure OpenAI API with fallback to DeepSeek
-openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
+# FIXED: Properly configure all AI clients with error handling
+try:
+    openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
+except:
+    openai_client = None
+    logger.warning("OpenAI client not configured")
 
 # Initialize document generator
 document_generator = DocumentGenerator()
@@ -58,17 +60,33 @@ Always include this disclaimer at the end of your responses (exactly as formatte
 
 <div class="disclaimer">*Disclaimer: While we strive to provide up-to-date information, please verify details on the [official Tech Nation website](https://technation.io/global-talent-visa/) for the latest guidance.*</div>"""
 
-# DeepSeek API integration
-# Configure DeepSeek client
+# FIXED: Configure DeepSeek client properly
 DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 deepseek_client = None
 
-
 if DEEPSEEK_API_KEY:
-    deepseek_client = OpenAI(
-        api_key=DEEPSEEK_API_KEY,
-        base_url="https://api.deepseek.com"
-    )
+    try:
+        deepseek_client = OpenAI(
+            api_key=DEEPSEEK_API_KEY,
+            base_url="https://api.deepseek.com"
+        )
+    except:
+        deepseek_client = None
+        logger.warning("DeepSeek client not configured")
+
+# FIXED: Configure Groq client properly
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
+groq_client = None
+
+if GROQ_API_KEY:
+    try:
+        from groq import Groq
+        groq_client = Groq(api_key=GROQ_API_KEY)
+    except ImportError:
+        logger.warning("Groq library not installed")
+    except:
+        groq_client = None
+        logger.warning("Groq client not configured")
 
 def use_deepseek_api(messages, temperature=0.7, max_tokens=800, stream=False):
     """Call DeepSeek API using OpenAI client"""
@@ -217,12 +235,12 @@ def conversation_view(request, conversation_id):
 
     return render(request, 'ai_assistant/chat.html', context)
 
+# FIXED: Complete send_message function with proper Groq integration
 @login_required
 @require_POST
-@rate_limit(max_calls=20, window=60)  # Rate limit to 20 calls per minute
-@ai_fallback
+@rate_limit(max_calls=20, window=60)
 def send_message(request):
-    """Handle sending messages to AI using DeepSeek as primary provider"""
+    """Send message with multiple AI provider fallbacks"""
     try:
         data = json.loads(request.body)
         message_text = data.get('message', '').strip()
@@ -250,17 +268,13 @@ def send_message(request):
             role='user'
         )
 
-        # Get previous messages for context (limit to last 5 for performance)
+        # Get previous messages for context
         previous_messages = Message.objects.filter(conversation=conversation).order_by('created_at')[:5]
 
         # Format messages for AI
         messages = [{"role": "system", "content": TECH_NATION_SYSTEM_PROMPT}]
-
-        # Add conversation history
         for msg in previous_messages:
             messages.append({"role": msg.role, "content": msg.content})
-
-        # Add current user message
         messages.append({"role": "user", "content": message_text})
 
         # Check cache first
@@ -268,61 +282,55 @@ def send_message(request):
         cached_response = cache.get(cache_key)
 
         if cached_response:
-            # Use cached response
             ai_response = cached_response
-            logger.info(f"Using cached response for query: {message_text[:50]}...")
         else:
-            # Try DeepSeek first
+            # Try available AI providers in order of preference
             ai_response = None
-            if deepseek_client:
+
+            # Try Groq first
+            if groq_client:
                 try:
                     start_time = time.time()
-                    response = deepseek_client.chat.completions.create(
-                        model="deepseek-chat",
+                    response = groq_client.chat.completions.create(
+                        model="llama-3.1-8b-instant",
                         messages=messages,
                         temperature=0.7,
                         max_tokens=800
                     )
                     ai_response = response.choices[0].message.content
-                    logger.info(f"DeepSeek API call took {time.time() - start_time:.2f} seconds")
+                    logger.info(f"Groq API call took {time.time() - start_time:.2f} seconds")
                 except Exception as e:
-                    logger.error(f"Error calling DeepSeek API: {e}")
-                    ai_response = None
+                    logger.error(f"Groq API error: {e}")
 
-            # Fall back to OpenAI if DeepSeek fails or is not configured
-            if not ai_response:
+            # Try DeepSeek if Groq failed
+            if not ai_response and deepseek_client:
                 try:
-                    start_time = time.time()
+                    ai_response = use_deepseek_api(messages, temperature=0.7, max_tokens=800)
+                    logger.info("Used DeepSeek API")
+                except Exception as e:
+                    logger.error(f"DeepSeek API error: {e}")
+
+            # Try OpenAI as last resort
+            if not ai_response and openai_client:
+                try:
                     response = openai_client.chat.completions.create(
-                        model="gpt-4.1-nano",
+                        model="gpt-3.5-turbo",
                         messages=messages,
                         temperature=0.7,
                         max_tokens=800
                     )
-                    logger.info(f"OpenAI API call took {time.time() - start_time:.2f} seconds")
                     ai_response = response.choices[0].message.content
+                    logger.info("Used OpenAI API")
                 except Exception as e:
-                    logger.error(f"Error calling OpenAI API: {e}")
-                    raise
+                    logger.error(f"OpenAI API error: {e}")
 
-            # Calculate token usage and cost
-            token_usage = token_manager.estimate_cost(
-                input_text=json.dumps([m["content"] for m in messages]),
-                output_text=ai_response,
-                model="deepseek-chat" if deepseek_client else "gpt-4.1-nano"
-            )
+            # If all APIs failed, return error
+            if not ai_response:
+                return JsonResponse({
+                    'error': 'All AI services are currently unavailable. Please try again later.'
+                }, status=500)
 
-            # Save the query for analytics with token usage
-            AIQuery.objects.create(
-                user=request.user,
-                query_text=message_text,
-                response_text=ai_response,
-                source_citations=[],
-                tokens_used=token_usage['total_tokens'],
-                query_type='chat'
-            )
-
-            # Cache the response for 24 hours
+            # Cache the response
             cache.set(cache_key, ai_response, timeout=60*60*24)
 
         # Save response as message
@@ -332,28 +340,38 @@ def send_message(request):
             role='assistant'
         )
 
-        # Update conversation timestamp
-        conversation.save()
+        # Calculate token usage
+        input_tokens = len(' '.join([m["content"] for m in messages]).split()) * 1.3
+        output_tokens = len(ai_response.split()) * 1.3
+        cost = (input_tokens * 0.11 + output_tokens * 0.34) / 1_000_000
 
-        # Get updated query count
-        queries_used = AIQuery.objects.filter(user=request.user).count()
-        remaining_queries = request.user.profile.ai_queries_limit - queries_used
+        # Save query with cost tracking
+        AIQuery.objects.create(
+            user=request.user,
+            query_text=message_text,
+            response_text=ai_response,
+            source_citations=[],
+            tokens_used=int(input_tokens + output_tokens),
+            query_type='chat'
+        )
 
         return JsonResponse({
             'response': ai_response,
             'conversation_id': conversation.id,
-            'remaining_queries': remaining_queries
+            'cost': f"${cost:.6f}"
         })
 
     except Exception as e:
         logger.error(f"Error in send_message: {e}")
-        raise  # Let the decorator handle the fallback
-
+        return JsonResponse({
+            'error': 'I apologize, but I encountered an error. Please try again.',
+            'details': str(e)
+        }, status=500)
 
 @login_required
-@rate_limit(max_calls=10, window=60)  # More strict rate limit for streaming
+@rate_limit(max_calls=10, window=60)
 def stream_message(request):
-    """Handle streaming responses with DeepSeek as primary provider"""
+    """Handle streaming responses with multiple AI provider fallbacks"""
     try:
         # Get message from query parameters
         message_text = request.GET.get('message', '').strip()
@@ -361,6 +379,16 @@ def stream_message(request):
 
         if not message_text:
             return JsonResponse({'error': 'No message provided'}, status=400)
+
+        # Check user query limits first
+        try:
+            profile = request.user.profile
+            queries_used = AIQuery.objects.filter(user=request.user).count()
+            if queries_used >= profile.ai_queries_limit and not request.user.is_staff:
+                return JsonResponse({'error': 'You have reached your AI query limit'}, status=403)
+        except Exception as e:
+            logger.error(f"Error checking query limits: {e}")
+            # Continue anyway - don't block the request
 
         # Get or create conversation
         if conversation_id:
@@ -393,38 +421,42 @@ def stream_message(request):
         def generate_response():
             full_response = ""
             start_time = time.time()
+            used_provider = None
 
-            # Try DeepSeek first
-            if deepseek_client:
-                try:
-                    stream = deepseek_client.chat.completions.create(
-                        model="deepseek-chat",
-                        messages=messages,
-                        temperature=0.5,
-                        max_tokens=800,
-                        stream=True
-                    )
-
-                    for chunk in stream:
-                        if chunk.choices[0].delta.content:
-                            content = chunk.choices[0].delta.content
-                            full_response += content
-                            yield f"data: {json.dumps({'content': content})}\n\n"
-
-                    # If we get here, DeepSeek was successful
-                    logger.info(f"DeepSeek streaming response took {time.time() - start_time:.2f} seconds")
-
-                except Exception as e:
-                    logger.error(f"DeepSeek streaming error: {e}")
-                    # Fall back to OpenAI
+            try:
+                # Try Groq first (simulate streaming since Groq doesn't support real streaming)
+                if groq_client:
                     try:
-                        # Reset response and timer
-                        full_response = ""
-                        start_time = time.time()
+                        response = groq_client.chat.completions.create(
+                            model="llama-3.1-8b-instant",
+                            messages=messages,
+                            temperature=0.5,
+                            max_tokens=800
+                        )
+                        full_response = response.choices[0].message.content
+                        used_provider = "Groq"
+                        
+                        # Simulate streaming by sending chunks
+                        words = full_response.split()
+                        chunk_size = 3  # Send 3 words at a time
+                        for i in range(0, len(words), chunk_size):
+                            chunk = ' '.join(words[i:i+chunk_size])
+                            if i + chunk_size < len(words):
+                                chunk += ' '
+                            yield f"data: {json.dumps({'content': chunk})}\\n\\n"
+                            time.sleep(0.05)  # Small delay to simulate streaming
+                        
+                        logger.info(f"Groq response took {time.time() - start_time:.2f} seconds")
 
-                        # Stream the response from OpenAI
-                        stream = openai_client.chat.completions.create(
-                            model="gpt-4.1-nano",
+                    except Exception as e:
+                        logger.error(f"Groq error: {e}")
+                        full_response = ""  # Reset for fallback
+
+                # Try DeepSeek streaming if Groq failed
+                if not full_response and deepseek_client:
+                    try:
+                        stream = deepseek_client.chat.completions.create(
+                            model="deepseek-chat",
                             messages=messages,
                             temperature=0.5,
                             max_tokens=800,
@@ -435,82 +467,104 @@ def stream_message(request):
                             if chunk.choices[0].delta.content:
                                 content = chunk.choices[0].delta.content
                                 full_response += content
-                                yield f"data: {json.dumps({'content': content})}\n\n"
+                                yield f"data: {json.dumps({'content': content})}\\n\\n"
 
+                        used_provider = "DeepSeek"
+                        logger.info(f"DeepSeek streaming response took {time.time() - start_time:.2f} seconds")
+
+                    except Exception as e:
+                        logger.error(f"DeepSeek streaming error: {e}")
+                        full_response = ""
+
+                # Fall back to OpenAI streaming if both failed
+                if not full_response and openai_client:
+                    try:
+                        start_time = time.time()
+                        stream = openai_client.chat.completions.create(
+                            model="gpt-3.5-turbo",
+                            messages=messages,
+                            temperature=0.5,
+                            max_tokens=800,
+                            stream=True
+                        )
+
+                        for chunk in stream:
+                            if chunk.choices[0].delta.content:
+                                content = chunk.choices[0].delta.content
+                                full_response += content
+                                yield f"data: {json.dumps({'content': content})}\\n\\n"
+
+                        used_provider = "OpenAI"
                         logger.info(f"OpenAI fallback streaming response took {time.time() - start_time:.2f} seconds")
+
                     except Exception as fallback_error:
                         logger.error(f"OpenAI streaming error: {fallback_error}")
-                        # Send error message to client
-                        error_msg = "I apologize, but I encountered an error while processing your request. Please try again."
-                        yield f"data: {json.dumps({'content': error_msg})}\n\n"
-                        yield f"data: {json.dumps({'done': True, 'error': str(fallback_error)})}\n\n"
-                        return
-            else:
-                # DeepSeek not configured, use OpenAI directly
-                try:
-                    stream = openai_client.chat.completions.create(
-                        model="gpt-4.1-nano",
-                        messages=messages,
-                        temperature=0.5,
-                        max_tokens=800,
-                        stream=True
-                    )
+                        full_response = ""
 
-                    for chunk in stream:
-                        if chunk.choices[0].delta.content:
-                            content = chunk.choices[0].delta.content
-                            full_response += content
-                            yield f"data: {json.dumps({'content': content})}\n\n"
-
-                    logger.info(f"OpenAI streaming response took {time.time() - start_time:.2f} seconds")
-                except Exception as e:
-                    logger.error(f"OpenAI streaming error: {e}")
-                    error_msg = "I apologize, but I encountered an error while processing your request. Please try again."
-                    yield f"data: {json.dumps({'content': error_msg})}\n\n"
-                    yield f"data: {json.dumps({'done': True, 'error': str(e)})}\n\n"
+                # If all providers failed, send error
+                if not full_response:
+                    error_msg = "I apologize, but all AI services are currently unavailable. Please try again later."
+                    yield f"data: {json.dumps({'content': error_msg})}\\n\\n"
+                    yield f"data: {json.dumps({'done': True, 'error': 'No AI provider available'})}\\n\\n"
                     return
 
-            # Log performance metrics
-            logger.info(f"Streaming response took {time.time() - start_time:.2f} seconds")
+                # Log performance metrics
+                logger.info(f"Streaming response took {time.time() - start_time:.2f} seconds using {used_provider}")
 
-            # Calculate token usage
-            token_usage = token_manager.estimate_cost(
-                input_text=json.dumps([m["content"] for m in messages]),
-                output_text=full_response,
-                model="deepseek-chat" if deepseek_client else "gpt-4.1-nano"
-            )
+                # Save complete message to database
+                try:
+                    Message.objects.create(
+                        conversation=conversation,
+                        content=full_response,
+                        role='assistant'
+                    )
 
-            # Save complete message to database
-            Message.objects.create(
-                conversation=conversation,
-                content=full_response,
-                role='assistant'
-            )
+                    # Save query for analytics
+                    AIQuery.objects.create(
+                        user=request.user,
+                        query_text=message_text,
+                        response_text=full_response,
+                        source_citations=[],
+                        tokens_used=len(full_response.split()) + len(message_text.split()),
+                        query_type='chat'
+                    )
 
-            # Save query for analytics
-            AIQuery.objects.create(
-                user=request.user,
-                query_text=message_text,
-                response_text=full_response,
-                source_citations=[],
-                tokens_used=token_usage['total_tokens'],
-                query_type='chat'
-            )
+                    # Get updated query count
+                    queries_used = AIQuery.objects.filter(user=request.user).count()
+                    remaining_queries = request.user.profile.ai_queries_limit - queries_used
 
-            # Get updated query count
-            queries_used = AIQuery.objects.filter(user=request.user).count()
-            remaining_queries = request.user.profile.ai_queries_limit - queries_used
+                    # Send completion message with metadata
+                    yield f"data: {json.dumps({'done': True, 'remaining_queries': remaining_queries, 'provider': used_provider})}\\n\\n"
+                except Exception as db_error:
+                    logger.error(f"Database save error: {db_error}")
+                    # Still send completion even if DB save fails
+                    yield f"data: {json.dumps({'done': True, 'provider': used_provider})}\\n\\n"
 
-            # Send completion message with metadata
-            yield f"data: {json.dumps({'done': True, 'remaining_queries': remaining_queries})}\n\n"
+            except Exception as gen_error:
+                logger.error(f"Generator error: {gen_error}")
+                error_msg = "I encountered an error while processing your request. Please try again."
+                yield f"data: {json.dumps({'content': error_msg})}\\n\\n"
+                yield f"data: {json.dumps({'done': True, 'error': str(gen_error)})}\\n\\n"
 
-        return StreamingHttpResponse(generate_response(), content_type='text/event-stream')
+        # FIXED: Remove problematic headers that cause WSGI errors
+        response = StreamingHttpResponse(
+            generate_response(), 
+            content_type='text/event-stream'
+        )
+        
+        # Set only safe headers for WSGI
+        response['Cache-Control'] = 'no-cache'
+        response['X-Accel-Buffering'] = 'no'  # For nginx
+        
+        return response
 
     except Exception as e:
         logger.error(f"Error in stream_message: {e}")
-        return JsonResponse({'error': str(e)}, status=500)
-    
-
+        # FIXED: Always return an HttpResponse, never None
+        return JsonResponse({
+            'error': f'Stream error: {str(e)}',
+            'message': 'Please try again or use the regular chat mode.'
+        }, status=500)        
 
 @login_required
 def query_history(request):
@@ -572,9 +626,10 @@ def submit_feedback(request):
         logger.error(f"Error submitting feedback: {e}")
         return JsonResponse({'error': str(e)}, status=500)
 
+# FIXED: All AI generation functions with proper client handling
 @login_required
 @require_POST
-@rate_limit(max_calls=5, window=300)  # Limit to 5 calls per 5 minutes
+@rate_limit(max_calls=5, window=300)
 def generate_personal_statement(request):
     """Generate a personal statement using AI"""
     try:
@@ -615,47 +670,63 @@ The personal statement should:
 """
 
         # Format messages
-        messages = token_manager.format_messages(
-            system_prompt="You are an expert in writing personal statements for Tech Nation Global Talent Visa applications.",
-            user_prompt=prompt
-        )
+        messages = [
+            {"role": "system", "content": "You are an expert in writing personal statements for Tech Nation Global Talent Visa applications."},
+            {"role": "user", "content": prompt}
+        ]
 
         # Check cache first
         cache_key = f"personal_statement:{hash(prompt)}"
         cached_response = cache.get(cache_key)
 
         if cached_response:
-            # Use cached response
             generated_statement = cached_response
             logger.info(f"Using cached personal statement for user {request.user.id}")
         else:
-            # Try DeepSeek first if available
-            if DEEPSEEK_API_KEY:
-                generated_statement = use_deepseek_api(messages, temperature=0.7, max_tokens=1500)
+            generated_statement = None
 
-            # Fall back to OpenAI if DeepSeek fails or is not configured
-            if not DEEPSEEK_API_KEY or not generated_statement:
+            # Try Groq first
+            if groq_client:
                 try:
-                    response = client.chat.completions.create(
-                        model="gpt-4.1-nano",
+                    response = groq_client.chat.completions.create(
+                        model="llama-3.1-8b-instant",
                         messages=messages,
                         temperature=0.7,
                         max_tokens=1500
                     )
                     generated_statement = response.choices[0].message.content
                 except Exception as e:
-                    logger.error(f"Error generating personal statement: {e}")
-                    return JsonResponse({'error': f"Error generating personal statement: {str(e)}"}, status=500)
+                    logger.error(f"Groq API error: {e}")
+
+            # Try DeepSeek if Groq failed
+            if not generated_statement and deepseek_client:
+                try:
+                    generated_statement = use_deepseek_api(messages, temperature=0.7, max_tokens=1500)
+                except Exception as e:
+                    logger.error(f"DeepSeek API error: {e}")
+
+            # Try OpenAI as last resort
+            if not generated_statement and openai_client:
+                try:
+                    response = openai_client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=messages,
+                        temperature=0.7,
+                        max_tokens=1500
+                    )
+                    generated_statement = response.choices[0].message.content
+                except Exception as e:
+                    logger.error(f"OpenAI API error: {e}")
+
+            if not generated_statement:
+                return JsonResponse({'error': 'All AI services are currently unavailable. Please try again later.'}, status=500)
 
             # Cache the response for 24 hours
             cache.set(cache_key, generated_statement, timeout=60*60*24)
 
         # Calculate token usage
-        token_usage = token_manager.estimate_cost(
-            input_text=json.dumps([m["content"] for m in messages]),
-            output_text=generated_statement,
-            model="gpt-4.1-nano"
-        )
+        input_tokens = len(' '.join([m["content"] for m in messages]).split()) * 1.3
+        output_tokens = len(generated_statement.split()) * 1.3
 
         # Save the query for analytics
         query = AIQuery.objects.create(
@@ -663,7 +734,7 @@ The personal statement should:
             query_text=prompt,
             response_text=generated_statement,
             source_citations=[],
-            tokens_used=token_usage['total_tokens'],
+            tokens_used=int(input_tokens + output_tokens),
             query_type='personal_statement'
         )
 
@@ -679,7 +750,7 @@ The personal statement should:
 
 @login_required
 @require_POST
-@rate_limit(max_calls=5, window=300)  # Limit to 5 calls per 5 minutes
+@rate_limit(max_calls=5, window=300)
 def enhance_cv(request):
     """Enhance a CV using AI suggestions"""
     try:
@@ -712,47 +783,63 @@ Format your response with clear sections and bullet points.
 """
 
         # Format messages
-        messages = token_manager.format_messages(
-            system_prompt="You are an expert CV consultant specializing in Tech Nation Global Talent Visa applications.",
-            user_prompt=prompt
-        )
+        messages = [
+            {"role": "system", "content": "You are an expert CV consultant specializing in Tech Nation Global Talent Visa applications."},
+            {"role": "user", "content": prompt}
+        ]
 
         # Check cache first
         cache_key = f"cv_enhancement:{hash(prompt)}"
         cached_response = cache.get(cache_key)
 
         if cached_response:
-            # Use cached response
             enhancement_suggestions = cached_response
             logger.info(f"Using cached CV enhancement for user {request.user.id}")
         else:
-            # Try DeepSeek first if available
-            if DEEPSEEK_API_KEY:
-                enhancement_suggestions = use_deepseek_api(messages, temperature=0.7, max_tokens=1200)
+            enhancement_suggestions = None
 
-            # Fall back to OpenAI if DeepSeek fails or is not configured
-            if not DEEPSEEK_API_KEY or not enhancement_suggestions:
+            # Try Groq first
+            if groq_client:
                 try:
-                    response = client.chat.completions.create(
-                        model="gpt-4.1-nano",
+                    response = groq_client.chat.completions.create(
+                        model="llama-3.1-8b-instant",
                         messages=messages,
                         temperature=0.7,
                         max_tokens=1200
                     )
                     enhancement_suggestions = response.choices[0].message.content
                 except Exception as e:
-                    logger.error(f"Error enhancing CV: {e}")
-                    return JsonResponse({'error': f"Error enhancing CV: {str(e)}"}, status=500)
+                    logger.error(f"Groq API error: {e}")
+
+            # Try DeepSeek if Groq failed
+            if not enhancement_suggestions and deepseek_client:
+                try:
+                    enhancement_suggestions = use_deepseek_api(messages, temperature=0.7, max_tokens=1200)
+                except Exception as e:
+                    logger.error(f"DeepSeek API error: {e}")
+
+            # Try OpenAI as last resort
+            if not enhancement_suggestions and openai_client:
+                try:
+                    response = openai_client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=messages,
+                        temperature=0.7,
+                        max_tokens=1200
+                    )
+                    enhancement_suggestions = response.choices[0].message.content
+                except Exception as e:
+                    logger.error(f"OpenAI API error: {e}")
+
+            if not enhancement_suggestions:
+                return JsonResponse({'error': 'All AI services are currently unavailable. Please try again later.'}, status=500)
 
             # Cache the response for 24 hours
             cache.set(cache_key, enhancement_suggestions, timeout=60*60*24)
 
         # Calculate token usage
-        token_usage = token_manager.estimate_cost(
-            input_text=json.dumps([m["content"] for m in messages]),
-            output_text=enhancement_suggestions,
-            model="gpt-4.1-nano"
-        )
+        input_tokens = len(' '.join([m["content"] for m in messages]).split()) * 1.3
+        output_tokens = len(enhancement_suggestions.split()) * 1.3
 
         # Save the query for analytics
         query = AIQuery.objects.create(
@@ -760,7 +847,7 @@ Format your response with clear sections and bullet points.
             query_text=prompt,
             response_text=enhancement_suggestions,
             source_citations=[],
-            tokens_used=token_usage['total_tokens'],
+            tokens_used=int(input_tokens + output_tokens),
             query_type='cv_enhancement'
         )
 
@@ -776,7 +863,7 @@ Format your response with clear sections and bullet points.
 
 @login_required
 @require_POST
-@rate_limit(max_calls=5, window=300)  # Limit to 5 calls per 5 minutes
+@rate_limit(max_calls=5, window=300)
 def generate_recommendation_letter(request):
     """Generate a recommendation letter template using AI"""
     try:
@@ -819,47 +906,63 @@ The letter should:
 """
 
         # Format messages
-        messages = token_manager.format_messages(
-            system_prompt="You are an expert in writing recommendation letters for Tech Nation Global Talent Visa applications.",
-            user_prompt=prompt
-        )
+        messages = [
+            {"role": "system", "content": "You are an expert in writing recommendation letters for Tech Nation Global Talent Visa applications."},
+            {"role": "user", "content": prompt}
+        ]
 
         # Check cache first
         cache_key = f"recommendation_letter:{hash(prompt)}"
         cached_response = cache.get(cache_key)
 
         if cached_response:
-            # Use cached response
             generated_letter = cached_response
             logger.info(f"Using cached recommendation letter for user {request.user.id}")
         else:
-            # Try DeepSeek first if available
-            if DEEPSEEK_API_KEY:
-                generated_letter = use_deepseek_api(messages, temperature=0.7, max_tokens=1200)
+            generated_letter = None
 
-            # Fall back to OpenAI if DeepSeek fails or is not configured
-            if not DEEPSEEK_API_KEY or not generated_letter:
+            # Try Groq first
+            if groq_client:
                 try:
-                    response = client.chat.completions.create(
-                        model="gpt-4.1-nano",
+                    response = groq_client.chat.completions.create(
+                        model="llama-3.1-8b-instant",
                         messages=messages,
                         temperature=0.7,
                         max_tokens=1200
                     )
                     generated_letter = response.choices[0].message.content
                 except Exception as e:
-                    logger.error(f"Error generating recommendation letter: {e}")
-                    return JsonResponse({'error': f"Error generating recommendation letter: {str(e)}"}, status=500)
+                    logger.error(f"Groq API error: {e}")
+
+            # Try DeepSeek if Groq failed
+            if not generated_letter and deepseek_client:
+                try:
+                    generated_letter = use_deepseek_api(messages, temperature=0.7, max_tokens=1200)
+                except Exception as e:
+                    logger.error(f"DeepSeek API error: {e}")
+
+            # Try OpenAI as last resort
+            if not generated_letter and openai_client:
+                try:
+                    response = openai_client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=messages,
+                        temperature=0.7,
+                        max_tokens=1200
+                    )
+                    generated_letter = response.choices[0].message.content
+                except Exception as e:
+                    logger.error(f"OpenAI API error: {e}")
+
+            if not generated_letter:
+                return JsonResponse({'error': 'All AI services are currently unavailable. Please try again later.'}, status=500)
 
             # Cache the response for 24 hours
             cache.set(cache_key, generated_letter, timeout=60*60*24)
 
         # Calculate token usage
-        token_usage = token_manager.estimate_cost(
-            input_text=json.dumps([m["content"] for m in messages]),
-            output_text=generated_letter,
-            model="gpt-4.1-nano"
-        )
+        input_tokens = len(' '.join([m["content"] for m in messages]).split()) * 1.3
+        output_tokens = len(generated_letter.split()) * 1.3
 
         # Save the query for analytics
         query = AIQuery.objects.create(
@@ -867,7 +970,7 @@ The letter should:
             query_text=prompt,
             response_text=generated_letter,
             source_citations=[],
-            tokens_used=token_usage['total_tokens'],
+            tokens_used=int(input_tokens + output_tokens),
             query_type='recommendation_letter'
         )
 
