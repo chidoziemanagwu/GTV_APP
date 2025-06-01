@@ -3,6 +3,7 @@ aiohttp==3.9.5
 anthropic==0.52.0
 asgiref==3.7.2
 beautifulsoup4==4.12.3
+bleach==6.2.0
 boto3==1.29.6
 celery==5.4.0
 channels==4.0.0
