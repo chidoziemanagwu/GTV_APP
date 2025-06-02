@@ -3,10 +3,31 @@ from django.shortcuts import redirect
 from django.contrib import messages
 from django.urls import reverse
 from django.http import JsonResponse, FileResponse
+
 from .models import UserPoints
 import logging
 
 logger = logging.getLogger(__name__)
+
+def get_referral_points(user):
+    """Helper function to get referral points for a user"""
+    try:
+        from referrals.models import ReferralCode, ReferralSignup
+        referral_code = ReferralCode.objects.filter(user=user).first()
+        if referral_code:
+            # Count successful referrals where points were awarded
+            successful_referrals = ReferralSignup.objects.filter(
+                referral_code=referral_code,
+                points_awarded=True,
+                has_been_rewarded=True
+            ).count()
+            # Each successful referral gives 3 points
+            return successful_referrals * 3
+        return 0
+    except Exception as e:
+        logger.error(f"Error getting referral points: {e}")
+        return 0
+
 
 # In points_utils.py
 def require_points(points_required):
@@ -37,7 +58,24 @@ def require_points(points_required):
                 except Exception as e:
                     logger.error(f"Error updating paid status: {str(e)}")
 
-                if user_points.balance < points_required:
+                # Check if user has enough AI points
+                if user_points.balance >= points_required:
+                    # User has enough AI points
+                    kwargs['points_required'] = points_required
+                    kwargs['use_referral_points'] = False
+                    return view_func(request, *args, **kwargs)
+                else:
+                    # Check if user has referral points
+                    try:
+                        referral_points = get_referral_points(request.user)
+                        if referral_points >= points_required:
+                            # User has enough referral points
+                            kwargs['points_required'] = points_required
+                            kwargs['use_referral_points'] = True
+                            return view_func(request, *args, **kwargs)
+                    except Exception as e:
+                        logger.warning(f"Failed to check referral points: {str(e)}")
+
                     # ALWAYS return JSON for POST requests (assuming they're AJAX)
                     if request.method == 'POST':
                         return JsonResponse({
@@ -51,10 +89,6 @@ def require_points(points_required):
                     messages.error(request, f'You need {points_required} AI points for this action. You currently have {user_points.balance} points.')
                     return redirect('document_manager:purchase_points')
 
-                # Add points_required to kwargs so the view can use it
-                kwargs['points_required'] = points_required
-                return view_func(request, *args, **kwargs)
-
             except UserPoints.DoesNotExist:
                 # Create user points record if it doesn't exist
                 UserPoints.objects.create(user=request.user, balance=0)
@@ -66,6 +100,17 @@ def require_points(points_required):
                     profile.save()
                 except Exception as e:
                     logger.error(f"Error updating paid status: {str(e)}")
+
+                # Check if user has referral points
+                try:
+                    referral_points = get_referral_points(request.user)
+                    if referral_points >= points_required:
+                        # User has enough referral points
+                        kwargs['points_required'] = points_required
+                        kwargs['use_referral_points'] = True
+                        return view_func(request, *args, **kwargs)
+                except Exception as e:
+                    logger.warning(f"Failed to check referral points: {str(e)}")
 
                 # ALWAYS return JSON for POST requests (assuming they're AJAX)
                 if request.method == 'POST':

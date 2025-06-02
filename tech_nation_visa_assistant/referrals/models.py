@@ -1,8 +1,9 @@
 from django.db import models
 from django.conf import settings
 import uuid
-from django.utils import timezone
+from django.utils import timezone as django_timezone
 import logging
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,8 @@ class ReferralCode(models.Model):
             f"Use my referral code {self.code} to get started. "
             f"{self.get_share_url()}"
         )
-
+    
+    
     def get_email_share_text(self):
         """Get the text for email sharing"""
         return {
@@ -61,9 +63,12 @@ class ReferralSignup(models.Model):
     referral_code = models.ForeignKey(ReferralCode, on_delete=models.CASCADE, related_name='signups')
     referred_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='referred_signups')
     ip_address = models.GenericIPAddressField(null=True, blank=True)
-    points_awarded = models.BooleanField(default=False)
+    points_awarded = models.BooleanField(default=False)  # This stays as is - indicates if points were ever awarded
     points_awarded_at = models.DateTimeField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
+    
+    # Add this new field to track if this referral has been used for points
+    has_been_rewarded = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ['referral_code', 'referred_user']
@@ -73,39 +78,50 @@ class ReferralSignup(models.Model):
 
     def award_points(self):
         """Award points to the referrer when a referred user makes a purchase"""
-        if not self.points_awarded:
+        # Only award points if this referral has never been rewarded before
+        if not self.has_been_rewarded:
             try:
-                # Mark as awarded
-                self.points_awarded = True
-                self.points_awarded_at = timezone.now()
-                self.save()
+                logger.info(f"Attempting to award points for referral {self.id}")
+                with transaction.atomic():
+                    # Mark as awarded and rewarded
+                    self.points_awarded = True
+                    self.has_been_rewarded = True  # Set this to True to prevent future rewards
+                    self.points_awarded_at = django_timezone.now()
+                    self.save()
+                    logger.info(f"Marked referral {self.id} as awarded")
 
-                # Update successful referrals count
-                self.referral_code.successful_referrals += 1
-                self.referral_code.save()
+                    # Update successful referrals count
+                    self.referral_code.successful_referrals += 1
+                    self.referral_code.save()
+                    logger.info(f"Updated successful referrals count for code {self.referral_code.code}")
 
-                # Award points to referrer
-                referrer = self.referral_code.user
+                    # Award points to referrer
+                    referrer = self.referral_code.user
+                    logger.info(f"Awarding points to referrer {referrer.username}")
 
-                # Update UserPoints
-                from document_manager.models import UserPoints
-                referrer_points, _ = UserPoints.objects.get_or_create(user=referrer)
-                referrer_points.add_points(3)  # Award 3 bonus points
+                    # We don't update UserPoints here anymore, as those are the main points
+                    # Instead, we only update the profile's referral points
 
-                # Also update profile directly as a backup
-                try:
-                    referrer.profile.ai_points += 3
-                    referrer.profile.lifetime_points += 3
-                    referrer.profile.save()
-                except Exception as e:
-                    logger.error(f"Error updating profile points: {e}")
+                    # Update profile directly with referral points
+                    try:
+                        # Only update the profile's referral-specific fields
+                        # Don't modify the main ai_points balance
+                        referrer.profile.is_paid_user = True
+                        referrer.profile.save()
+                        logger.info(f"Updated referrer profile status for {referrer.username}")
+                    except Exception as e:
+                        logger.error(f"Error updating profile: {e}")
+                        # Re-raise to trigger transaction rollback if profile update fails
+                        raise
 
-                logger.info(f"Awarded 3 referral points to {referrer.username} for {self.referred_user.username}'s purchase")
+                logger.info(f"Successfully awarded referral for {referrer.username} from {self.referred_user.username}'s purchase")
                 return True
             except Exception as e:
                 logger.error(f"Error awarding referral points: {e}")
                 return False
-        return False
+        else:
+            logger.info(f"This referral {self.id} has already been rewarded once. No additional points awarded.")
+            return False  
 
 
 class ReferralClick(models.Model):

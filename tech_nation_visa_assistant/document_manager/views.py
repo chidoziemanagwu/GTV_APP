@@ -6,7 +6,8 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
 from django.db import models
-from datetime import datetime, timezone
+from datetime import datetime, timedelta
+from django.utils import timezone as django_timezone
 import json
 import os
 import io
@@ -48,6 +49,27 @@ logger = logging.getLogger(__name__)
 
 # Create a document cache
 document_cache = {}
+
+def get_referral_points(user):
+    """Helper function to get referral points for a user"""
+    try:
+        from referrals.models import ReferralCode, ReferralSignup
+        referral_code = ReferralCode.objects.filter(user=user).first()
+        if referral_code:
+            # Count successful referrals where points were awarded
+            successful_referrals = ReferralSignup.objects.filter(
+                referral_code=referral_code,
+                points_awarded=True,
+                has_been_rewarded=True
+            ).count()
+            # Each successful referral gives 3 points
+            return successful_referrals * 3
+        return 0
+    except Exception as e:
+        logger.error(f"Error getting referral points: {e}")
+        return 0
+
+    
 
 
 class AIProvider:
@@ -849,6 +871,11 @@ def analyze_cv(request, *args, **kwargs):
     try:
         # Get points_required from kwargs (added by decorator)
         points_required = kwargs.get('points_required', 1)
+        use_referral_points = kwargs.get('use_referral_points', False)
+
+        # Initialize points_remaining and used_referral_points
+        points_remaining = 0
+        used_referral_points = use_referral_points
 
         # Get form data
         form_data = request.POST.copy()  # Make mutable
@@ -981,7 +1008,7 @@ def analyze_cv(request, *args, **kwargs):
         - Prioritize recommendations based on impact for the visa application
         """
 
-            # Generate analysis using AI
+        # Generate analysis using AI
         try:
             analysis_content = ai_provider.generate_content(prompt)
 
@@ -1071,6 +1098,32 @@ def analyze_cv(request, *args, **kwargs):
                             },
                             'immediate_actions': [item.get('item', '') for item in analysis.get('immediateActionItems', [])]
                         }
+
+                # Inside the analyze_cv function where referral points are used:
+                if use_referral_points:
+                    # Use referral points - calculate from successful referrals
+                    from referrals.models import ReferralCode, ReferralSignup
+                    referral_code = ReferralCode.objects.filter(user=request.user).first()
+                    if referral_code:
+                        successful_referrals = referral_code.signups.filter(points_awarded=True).count()
+
+                        # Deduct points by marking one successful referral as used
+                        if successful_referrals > 0:
+                            # Mark one successful referral as used
+                            successful_signup = referral_code.signups.filter(points_awarded=True).first()
+                            if successful_signup:
+                                successful_signup.points_awarded = False  # Mark as used
+                                successful_signup.save()
+
+                        # Calculate remaining points
+                        remaining_successful_referrals = referral_code.signups.filter(points_awarded=True).count()
+                        points_remaining = remaining_successful_referrals * 3
+                else:
+                    # Use regular AI points
+                    user_points = UserPoints.objects.get(user=request.user)
+                    user_points.use_points(points_required)
+                    points_remaining = user_points.balance
+
             except json.JSONDecodeError as e:
                 logger.warning(f"JSON parsing failed: {str(e)}")
 
@@ -1111,15 +1164,37 @@ def analyze_cv(request, *args, **kwargs):
                     'immediate_actions': extract_points_from_text(analysis_content, ['action item', 'action', 'recommend', 'should', 'must', 'priority'])
                 }
 
-            # Deduct points after successful analysis
-            user_points = UserPoints.objects.get(user=request.user)
-            user_points.use_points(points_required)
+                # Deduct points after successful analysis
+                if use_referral_points:
+                    # Use referral points - calculate from successful referrals
+                    from referrals.models import ReferralCode, ReferralSignup
+                    referral_code = ReferralCode.objects.filter(user=request.user).first()
+                    if referral_code:
+                        successful_referrals = referral_code.signups.filter(points_awarded=True).count()
+
+                        # Deduct points by marking one successful referral as used
+                        if successful_referrals > 0:
+                            # Mark one successful referral as used
+                            successful_signup = referral_code.signups.filter(points_awarded=True).first()
+                            if successful_signup:
+                                successful_signup.points_awarded = False
+                                successful_signup.save()
+
+                        # Calculate remaining points
+                        remaining_successful_referrals = referral_code.signups.filter(points_awarded=True).count()
+                        points_remaining = remaining_successful_referrals * 3
+                else:
+                    # Use regular AI points
+                    user_points = UserPoints.objects.get(user=request.user)
+                    user_points.use_points(points_required)
+                    points_remaining = user_points.balance
 
             return JsonResponse({
                 'success': True,
                 'analysis': analysis_data,
                 'points_used': points_required,
-                'points_remaining': user_points.balance
+                'points_remaining': points_remaining,
+                'used_referral_points': used_referral_points
             })
 
         except Exception as e:
@@ -1135,11 +1210,57 @@ def analyze_cv(request, *args, **kwargs):
             'error': 'An unexpected error occurred. Please try again.',
             'error_type': 'server_error'
         }, status=500)
+
+
+def extract_section_value(text, section, subsection):
+    """Extract a specific subsection value from text"""
+    import re
     
+    # Try to find the section and subsection
+    pattern = rf"(?i){section}.*?{subsection}[:\s]+(.*?)(?:\n\n|\n[A-Z]|$)"
+    match = re.search(pattern, text, re.DOTALL)
+    
+    if match:
+        return match.group(1).strip()
+    
+    # Fallback: try to find just the subsection
+    pattern = rf"(?i){subsection}[:\s]+(.*?)(?:\n\n|\n[A-Z]|$)"
+    match = re.search(pattern, text, re.DOTALL)
+    
+    if match:
+        return match.group(1).strip()
+    
+    # Second fallback: look for keywords
+    if section.lower() == "technical expertise" and subsection.lower() == "current state":
+        return extract_text_around_keywords(text, ["technical", "expertise", "skills", "abilities"])
+    elif section.lower() == "leadership" and subsection.lower() == "current state":
+        return extract_text_around_keywords(text, ["leadership", "management", "team", "leading"])
+    elif section.lower() == "recognition" and subsection.lower() == "current state":
+        return extract_text_around_keywords(text, ["recognition", "awards", "achievements", "acknowledged"])
+    elif section.lower() == "commercial impact" and subsection.lower() == "current state":
+        return extract_text_around_keywords(text, ["commercial", "impact", "business", "revenue", "growth"])
+    
+    # Default values based on section/subsection
+    if subsection.lower() == "priority":
+        return "Medium"
+    elif subsection.lower() == "recommendations":
+        return f"Improve your {section.lower()} with targeted actions."
+    elif subsection.lower() == "current state":
+        return f"Your {section.lower()} needs further development."
+    
+    return "Not available"
 
-
-
-
+def extract_text_around_keywords(text, keywords, context_chars=100):
+    """Extract text around keywords"""
+    import re
+    
+    for keyword in keywords:
+        pattern = rf"(?i)(.{{0,{context_chars}}}{keyword}.{{0,{context_chars}}})"
+        match = re.search(pattern, text)
+        if match:
+            return match.group(1).strip()
+    
+    return "Not available"
 
 
 def extract_strength_score(text):
@@ -1804,6 +1925,9 @@ def personal_statement_builder(request):
     # Get user points
     user_points, created = UserPoints.objects.get_or_create(user=request.user)
 
+    # Get referral points using the helper function
+    referral_points = get_referral_points(request.user)
+
     # Get Tech Nation requirements
     requirements = get_tech_nation_requirements('digital_technology')
 
@@ -1827,12 +1951,14 @@ def personal_statement_builder(request):
             ('digital_technology', 'Digital Technology'),
             ('data_science_ai', 'Data Science & AI'),
         ],
-        'user_points': user_points,  # Add this line
-        'personal_statement_points_cost': 3  # Assuming 3 is the cost
+        'user_points': user_points,
+        'referral_points': referral_points,
+        'total_available_points': user_points.balance + referral_points,
+        'personal_statement_points_cost': 3,
+        'cv_analysis_points_cost': 1
     }
 
     return render(request, 'document_manager/personal_statement_builder.html', context)
-
 
 @login_required
 @require_points(3)  # Costs 3 points to generate a personal statement
@@ -1843,6 +1969,7 @@ def generate_personal_statement(request, *args, **kwargs):
     try:
         # Get points_required from kwargs (added by decorator)
         points_required = kwargs.get('points_required', 3)
+        use_referral_points = kwargs.get('use_referral_points', False)
 
         # IMPORTANT CHANGE: Use request.POST and request.FILES instead of request.body
         cv_file = request.FILES.get('cv_file')
@@ -1880,6 +2007,9 @@ def generate_personal_statement(request, *args, **kwargs):
         # Store document ID in cache
         cache.set(f"task_document_{task_id}", document.id, 3600)
 
+        # Store whether to use referral points in cache
+        cache.set(f"task_use_referral_points_{task_id}", use_referral_points, 3600)
+
         # Start background processing
         DocumentProcessor.process_in_background(
             generate_document_task,
@@ -1890,8 +2020,27 @@ def generate_personal_statement(request, *args, **kwargs):
         )
 
         # Deduct points after successful generation initiation
-        user_points = UserPoints.objects.get(user=request.user)
-        user_points.use_points(points_required)
+        if use_referral_points:
+            # Use referral points - calculate from successful referrals
+            from referrals.models import ReferralCode, ReferralSignup
+            referral_code = ReferralCode.objects.get(user=request.user)
+            successful_referrals = referral_code.signups.filter(points_awarded=True).count()
+
+            # Deduct points by marking successful referrals as used
+            points_to_deduct = points_required
+            for i in range(min(points_to_deduct, successful_referrals)):
+                successful_signup = referral_code.signups.filter(points_awarded=True).first()
+                successful_signup.points_awarded = False
+                successful_signup.save()
+
+            # Calculate remaining points
+            remaining_successful_referrals = referral_code.signups.filter(points_awarded=True).count()
+            points_remaining = remaining_successful_referrals * 3
+        else:
+            # Use regular AI points
+            user_points = UserPoints.objects.get(user=request.user)
+            user_points.use_points(points_required)
+            points_remaining = user_points.balance
 
         return JsonResponse({
             'success': True,
@@ -1899,7 +2048,8 @@ def generate_personal_statement(request, *args, **kwargs):
             'document_id': document.id,
             'task_id': task_id,
             'points_used': points_required,
-            'points_remaining': user_points.balance
+            'points_remaining': points_remaining,
+            'used_referral_points': use_referral_points
         })
 
     except Exception as e:
@@ -1908,6 +2058,9 @@ def generate_personal_statement(request, *args, **kwargs):
             'error': 'An unexpected error occurred. Please try again or contact support if the problem persists.',
             'error_type': 'server_error'
         }, status=500)
+
+
+
 
 
 
@@ -1951,6 +2104,9 @@ def check_generation_status(request, task_id):
             'status': 'error',
             'error': str(e)
         }, status=500)
+
+
+        
 
 @login_required
 @require_http_methods(["POST"])
@@ -2864,99 +3020,86 @@ def purchase_points(request):
 
 @csrf_exempt
 def stripe_webhook(request):
-    """Handle Stripe webhook events"""
     payload = request.body
     sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
 
+    logger.info("Received Stripe webhook")
+
     try:
-        # Get the webhook secret from your environment variables
         webhook_secret = settings.STRIPE_WEBHOOK_SECRET
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        logger.info(f"Stripe event type: {event['type']}")
     except ValueError as e:
-        # Invalid payload
         logger.error(f"Invalid Stripe payload: {str(e)}")
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError as e:
-        # Invalid signature
         logger.error(f"Invalid Stripe signature: {str(e)}")
         return HttpResponse(status=400)
 
-    # Handle the event
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
+    # Handle both checkout.session.completed and payment_intent.succeeded events
+    if event['type'] in ['checkout.session.completed', 'payment_intent.succeeded']:
+        logger.info(f"Processing {event['type']} event")
 
-        # Get the transaction ID from the client_reference_id
-        transaction_id = session.get('client_reference_id')
-        if not transaction_id:
-            logger.error("No transaction ID in Stripe session")
-            return HttpResponse(status=400)
-
-        try:
-            # Get the transaction
-            transaction = PointsTransaction.objects.get(id=transaction_id)
-            user = transaction.user
-
-            # Update transaction status
-            transaction.payment_status = 'completed'
-            transaction.stripe_payment_intent_id = session.get('payment_intent')
-            transaction.save()
-
-            # Add points to user
-            user_points, created = UserPoints.objects.get_or_create(user=user)
-            user_points.add_points(transaction.points)
-
-            # Update user status to paid
-            profile = user.profile
-            profile.is_paid_user = True
-            profile.save()
-
-            logger.info(f"Updated user {user.username} to paid status")
-
-            logger.info(f"Payment completed for transaction {transaction_id}. Added {transaction.points} points to user {user.username}")
-
-            # Check if this is the user's first purchase and handle referral bonus
-            payment_count = PointsTransaction.objects.filter(
-                user=user,
-                payment_status='completed'
-            ).count()
-
-            if payment_count == 1:  # This is their first purchase
+        # Extract customer info based on event type
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object']
+            customer_email = session.get('customer_details', {}).get('email')
+        else:  # payment_intent.succeeded
+            payment_intent = event['data']['object']
+            # Try to get customer email from metadata or customer object
+            customer_email = None
+            if 'metadata' in payment_intent and 'email' in payment_intent['metadata']:
+                customer_email = payment_intent['metadata']['email']
+            elif 'customer' in payment_intent:
                 try:
-                    # Find if this user was referred by someone
-                    from referrals.models import ReferralSignup
-                    referral = ReferralSignup.objects.get(referred_user=user)
-
-                    if not referral.points_awarded:  # Only award points once
-                        # Get the referrer
-                        referrer = referral.referral_code.user
-
-                        # Award bonus points to the referrer
-                        referrer_points, _ = UserPoints.objects.get_or_create(user=referrer)
-                        referrer_points.add_points(3)  # Award 3 bonus points
-
-                        # Mark the referral as converted with points awarded
-                        referral.points_awarded = True
-                        referral.points_awarded_at = timezone.now()
-                        referral.save()
-
-                        logger.info(f"Awarded 3 referral points to {referrer.username} for {user.username}'s first purchase")
-                except ReferralSignup.DoesNotExist:
-                    # User wasn't referred
-                    logger.info(f"User {user.username} made first purchase but wasn't referred")
+                    customer = stripe.Customer.retrieve(payment_intent['customer'])
+                    customer_email = customer.get('email')
                 except Exception as e:
-                    logger.error(f"Error processing referral bonus: {str(e)}")
+                    logger.error(f"Error retrieving customer: {str(e)}")
 
-        except PointsTransaction.DoesNotExist:
-            logger.error(f"Transaction {transaction_id} not found")
-            return HttpResponse(status=404)
-        except Exception as e:
-            logger.error(f"Error processing payment: {str(e)}")
-            return HttpResponse(status=500)
+        logger.info(f"Customer email from event: {customer_email}")
+
+        if customer_email:
+            try:
+                # Find the user by email
+                user = User.objects.get(email=customer_email)
+                logger.info(f"Found user: {user.username}")
+
+                # Process referral if exists
+                from referrals.models import ReferralSignup
+                referral = ReferralSignup.objects.filter(referred_user=user).first()
+
+                if referral:
+                    logger.info(f"Found referral for user {user.username}")
+                    logger.info(f"Referral points_awarded status: {referral.points_awarded}")
+
+                    # Check if this is their first payment
+                    payment_count = PointsTransaction.objects.filter(
+                        user=user,
+                        payment_status='completed'
+                    ).count()
+
+                    logger.info(f"User has {payment_count} completed payments")
+
+                    # Award points if this is their first payment and points not already awarded
+                    if payment_count > 0 and not referral.points_awarded:
+                        if referral.award_points():
+                            logger.info(f"Successfully awarded points for referral {referral.id}")
+                        else:
+                            logger.info(f"Failed to award points for referral {referral.id}")
+                else:
+                    logger.info(f"No referral found for user {user.username}")
+
+            except User.DoesNotExist:
+                logger.error(f"User with email {customer_email} not found")
+            except Exception as e:
+                logger.error(f"Error processing referral: {str(e)}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
+    else:
+        logger.info(f"Ignoring event: {event['type']}")
 
     return HttpResponse(status=200)
-
-
-
 
 
 
@@ -3163,7 +3306,7 @@ def check_pending_payments(request):
     for transaction in pending_transactions:
         try:
             # Skip if the transaction is too old (more than 24 hours)
-            if timezone.now() - transaction.created_at > timezone.timedelta(hours=24):
+            if django_timezone.now() - transaction.created_at > django_timezone.timedelta(hours=24):
                 continue
 
             # Verify payment status with Stripe
@@ -3235,7 +3378,7 @@ def process_payment(request, package_id):
             user_points, created = UserPoints.objects.get_or_create(user=request.user)
 
             # Log before adding points
-            logger.info(f"Before adding points: User {request.user.username} has {user_points.balance} points")
+            logger.info(f"Before adding points: User {request.user.email} has {user_points.balance} points")
 
             # Add points to user's account
             user_points.add_points(package.points)
@@ -3245,10 +3388,10 @@ def process_payment(request, package_id):
             profile.is_paid_user = True
             profile.save()
 
-            logger.info(f"Updated user {request.user.username} to paid status")
+            logger.info(f"Updated user {request.user.email} to paid status")
 
             # Log after adding points
-            logger.info(f"After adding points: User {request.user.username} has {user_points.balance} points")
+            logger.info(f"After adding points: User {request.user.email} has {user_points.balance} points")
 
             # Create a transaction record
             transaction = PointsTransaction.objects.create(
@@ -3262,37 +3405,28 @@ def process_payment(request, package_id):
 
             logger.info(f"Created payment record with ID: {transaction.id}")
 
-            # Check if this is the user's first purchase and handle referral bonus
-            payment_count = PointsTransaction.objects.filter(
-                user=request.user,
-                payment_status='completed'
-            ).count()
+            # Process referral bonus using the proper award_points method
+            logger.info(f"Checking for referrals to process after payment for user: {request.user.email}")
+            try:
+                # Find if this user was referred by someone
+                from referrals.models import ReferralSignup
+                referral = ReferralSignup.objects.filter(referred_user=request.user).first()
 
-            if payment_count == 1:  # This is their first purchase
-                try:
-                    # Find if this user was referred by someone
-                    from referrals.models import ReferralSignup
-                    referral = ReferralSignup.objects.get(referred_user=request.user)
+                if referral:
+                    logger.info(f"Found referral for user {request.user.email}, referrer: {referral.referral_code.user.email}")
+                    logger.info(f"Referral points_awarded status: {referral.points_awarded}")
 
-                    if not referral.points_awarded:  # Only award points once
-                        # Get the referrer
-                        referrer = referral.referral_code.user
-
-                        # Award bonus points to the referrer
-                        referrer_points, _ = UserPoints.objects.get_or_create(user=referrer)
-                        referrer_points.add_points(3)  # Award 3 bonus points
-
-                        # Mark the referral as converted with points awarded
-                        referral.points_awarded = True
-                        referral.points_awarded_at = timezone.now()
-                        referral.save()
-
-                        logger.info(f"Awarded 3 referral points to {referrer.username} for {request.user.username}'s first purchase")
-                except ReferralSignup.DoesNotExist:
-                    # User wasn't referred
-                    logger.info(f"User {request.user.username} made first purchase but wasn't referred")
-                except Exception as e:
-                    logger.error(f"Error processing referral bonus: {str(e)}")
+                    # Use the award_points method to handle all the logic
+                    if referral.award_points():
+                        logger.info(f"Successfully awarded points for referral {referral.id}")
+                    else:
+                        logger.info(f"Failed to award points for referral {referral.id} - may have been awarded previously")
+                else:
+                    logger.info(f"No referral found for user {request.user.email}")
+            except Exception as e:
+                logger.error(f"Error processing referral bonus: {str(e)}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
 
             # Redirect to success page with transaction ID
             return redirect('document_manager:payment_success', transaction_id=transaction.id)
@@ -3312,8 +3446,6 @@ def process_payment(request, package_id):
         logger.error(f"Exception in payment processing: {str(e)}")
         messages.error(request, "An error occurred during payment processing.")
         return redirect('document_manager:payment_failed')
-
-
 
 
 

@@ -19,7 +19,7 @@ from accounts.utils import verify_recaptcha, is_disposable_email, rate_limit_sig
 logger = logging.getLogger(__name__)
 
 @login_required
-@cache_page(60 * 15)  # Cache for 15 minutes
+# @cache_page(60 * 15)  # Cache for 15 minutes
 def share_link(request):
     """View for sharing referral links - optimized with caching"""
     try:
@@ -73,6 +73,7 @@ def share_link(request):
             'total_referrals': total_referrals,
             'paying_customers_count': paying_customers_count,
             'total_points': total_points,
+            'referrals': referral_code.signups.select_related('referred_user').order_by('-timestamp'),
         }
 
         return render(request, 'referrals/share.html', context)

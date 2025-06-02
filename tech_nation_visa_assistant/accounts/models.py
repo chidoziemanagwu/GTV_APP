@@ -318,11 +318,28 @@ def create_user_profile(sender, instance, created, **kwargs):
         try:
             UserProfile.objects.get(user=instance)
         except UserProfile.DoesNotExist:
-            UserProfile.objects.create(user=instance)
+            # Create profile with initial 3 AI points
+            profile = UserProfile.objects.create(
+                user=instance,
+                ai_points=3,  # Give 3 free points to new users
+                ai_queries_limit=5  # Set the default query limit
+            )
+
+            # Log this activity
+            Activity.objects.create(
+                user=instance,
+                type='notification',
+                description='Welcome! You received 3 free AI points.'
+            )
 
         # Create referral code for new users
         instance.create_referral_code()
 
+
+
+
+
+        
 @receiver(post_save, sender=User)
 def update_user_profile(sender, instance, **kwargs):
     """Update the UserProfile when the User is updated"""

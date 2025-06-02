@@ -156,7 +156,13 @@
                 <div class="space-y-3">
                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <span class="text-sm text-gray-600">Account Type</span>
-                        <span class="font-medium text-gray-800 text-truncate ml-2">{{ user.account_type|title }}</span>
+                        {% if profile.is_paid_user %}
+    <!-- Show paid user content -->
+    <span class=" bg-green-500 rounded p-1 ">Premium User</span>
+{% else %}
+    <!-- Show free user content -->
+    <span class="rounded p-1  bg-yellow-500">Free User</span>
+{% endif %}
                     </div>
                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <span class="text-sm text-gray-600">Visa Path</span>
@@ -188,21 +194,24 @@
                         </a>
                     </div>
 
-                    <!-- Referral Points Card - UPDATED -->
+                    <!-- Referral Free Uses Card - UPDATED -->
                     <div class="p-4 bg-pink-50 rounded-lg border border-pink-100">
                         <div class="flex items-center mb-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-pink-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h10v7h-2l-1 2H8l-1-2H5V5z" clip-rule="evenodd" />
                             </svg>
-                            <h3 class="font-semibold text-pink-800">Referral Points</h3>
+                            <h3 class="font-semibold text-pink-800">Referral Rewards</h3>
                         </div>
                         <div class="flex items-center justify-between mb-3">
-                            <span class="text-sm text-gray-600">Available Points</span>
-                            <span class="font-medium text-pink-700">{{ total_points_earned|default:"0" }}</span>
+                            <span class="text-sm text-gray-600">Free Uses Available</span>
+                            <span class="font-medium text-pink-700">{{ referral_free_uses|default:"0" }}</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mb-3">
+                            Each successful referral = 1 free use
                         </div>
                         <a href="{% url 'referrals:share' %}" class="w-full inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-pink-500 to-pink-400 text-white rounded-lg hover:from-pink-600 hover:to-pink-500 transition duration-150 shadow-sm">
                             <i class="fas fa-share-alt mr-2"></i>
-                            Share & Earn Points
+                            Share & Earn More
                         </a>
                     </div>
                 </div>

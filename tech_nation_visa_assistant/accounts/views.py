@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import User, UserProfile
 from .forms import AssessmentForm, ProfileUpdateForm
-from document_manager.models import Document  # Update this import
+from document_manager.models import Document, UserPoints  # Update this import
 from referrals.models import ReferralSignup
 from django.db.models import F
 from accounts.email_utils import send_email, send_welcome_email  # If you're using the new anymail version
@@ -233,6 +233,9 @@ def dashboard(request):
     # Get user profile or create if it doesn't exist
     profile, created = UserProfile.objects.get_or_create(user=request.user)
 
+    if request.user.profile.ai_points == 3 and request.user.date_joined > (timezone.now() - timezone.timedelta(minutes=5)):
+        messages.success(request, "Welcome! You've received 3 free AI points to get started.")
+    
     # Get user's current stage
     stage = request.user.application_stage
 
@@ -367,6 +370,14 @@ def dashboard(request):
                 'priority': 'high'
             })
 
+    # Get user points
+    try:
+        user_points = UserPoints.objects.get(user=request.user)
+        ai_points = user_points.balance
+    except UserPoints.DoesNotExist:
+        user_points = UserPoints.objects.create(user=request.user, balance=0)
+        ai_points = 0
+
     context = {
         'profile': profile,
         'stage': stage,
@@ -381,6 +392,7 @@ def dashboard(request):
         'document_preparation_status': document_preparation_status,
         'document_progress': document_progress,
         'submission_ready': has_chosen_personal_statement,  # New variable for template
+        'user_points': ai_points,  # Add AI points to context
     }
 
     # Calculate referral points
@@ -403,6 +415,7 @@ def dashboard(request):
                 'referral_points': referral_points,  # Add this explicitly for the template
                 'total_points_earned': referral_points,  # Keep this for backward compatibility
                 'paying_customers_count': paying_referrals.count(),
+                'total_available_points': ai_points + referral_points,  # Add total available points
             })
         else:
             # Create a referral code if one doesn't exist
@@ -414,6 +427,7 @@ def dashboard(request):
                 'referral_points': 0,  # Add this explicitly for the template
                 'total_points_earned': 0,
                 'paying_customers_count': 0,
+                'total_available_points': ai_points,  # Just AI points if no referral points
             })
     except Exception as e:
         import logging
@@ -424,6 +438,7 @@ def dashboard(request):
             'referral_points': 0,
             'total_points_earned': 0,
             'paying_customers_count': 0,
+            'total_available_points': ai_points,  # Just AI points if error with referrals
         })
 
     return render(request, 'accounts/dashboard.html', context)
@@ -587,6 +602,8 @@ def profile(request):
         'profile': profile,
         'remaining_queries': profile.ai_queries_limit - profile.ai_queries_used if hasattr(profile, 'ai_queries_used') else 0,
         'user_points': user_points.balance if user_points else 0,
+        'is_premium': profile.is_paid_user,  # Add this to context
+        'premium_since': profile.paid_user_since if hasattr(profile, 'paid_user_since') else None,  # Add this if you track when they became premium
     }
 
     return render(request, 'accounts/profile.html', context)
