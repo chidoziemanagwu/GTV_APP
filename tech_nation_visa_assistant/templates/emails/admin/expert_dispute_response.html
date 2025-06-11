@@ -1,0 +1,47 @@
+<!-- templates/emails/admin/expert_dispute_response.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Expert Response to Dispute</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f8f9fa; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { background-color: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; }
+        .button { display: inline-block; background-color: #007bff; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Expert Response to Dispute</h1>
+        </div>
+        <div class="content">
+            <p>An expert has responded to a dispute in the system.</p>
+            
+            <p><strong>Dispute ID:</strong> #{{ dispute.id }}</p>
+            <p><strong>Booking ID:</strong> #{{ dispute.booking.id }}</p>
+            <p><strong>Expert:</strong> {{ dispute.expert_name }} ({{ dispute.expert_email }})</p>
+            <p><strong>Response Time:</strong> {{ dispute.expert_response_at|date:"F j, Y, g:i a" }}</p>
+            
+            <p><strong>Expert's Response:</strong></p>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
+                {{ dispute.expert_response }}
+            </div>
+            
+            {% if dispute.expert_evidence_file %}
+            <p><strong>Evidence File:</strong> The expert has uploaded evidence. Please check the admin panel to view it.</p>
+            {% endif %}
+            
+            <p style="text-align: center; margin-top: 30px;">
+                <a href="{{ admin_url }}/consultations/disputes/" class="button">Review Dispute</a>
+            </p>
+        </div>
+        <div class="footer">
+            <p>This is an automated email. Please do not reply to this message.</p>
+        </div>
+    </div>
+</body>
+</html>

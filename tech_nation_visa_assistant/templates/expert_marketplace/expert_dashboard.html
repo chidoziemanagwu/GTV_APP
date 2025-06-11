@@ -1,0 +1,184 @@
+{% extends "expert_marketplace/expert_base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block expert_title %}{{ page_title|default:"Expert Dashboard" }} - {% if expert %}{{ expert.full_name }}{% endif %}{% endblock %}
+
+{% block expert_content %}
+<div class="bg-slate-100 dark:bg-slate-900 min-h-screen py-8 md:py-12">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+
+        {% if messages %}
+            <div class="mb-8 space-y-4">
+            {% for message in messages %}
+                <div class="flex items-start p-4 rounded-lg shadow-lg border-l-4
+                    {% if message.tags == 'success' %} bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-800/30 dark:text-emerald-200 dark:border-emerald-500 {% endif %}
+                    {% if message.tags == 'error' %} bg-rose-50 border-rose-500 text-rose-700 dark:bg-rose-800/30 dark:text-rose-200 dark:border-rose-500 {% endif %}
+                    {% if message.tags == 'warning' %} bg-amber-50 border-amber-500 text-amber-700 dark:bg-amber-800/30 dark:text-amber-200 dark:border-amber-500 {% endif %}
+                    {% if message.tags == 'info' %} bg-sky-50 border-sky-500 text-sky-700 dark:bg-sky-800/30 dark:text-sky-200 dark:border-sky-500 {% endif %}"
+                     role="alert">
+                    <span class="text-xl mr-3 mt-0.5">
+                        {% if message.tags == 'success' %}<i class="fas fa-check-circle"></i>{% endif %}
+                        {% if message.tags == 'error' %}<i class="fas fa-shield-alt"></i>{% endif %} {# Changed error icon #}
+                        {% if message.tags == 'warning' %}<i class="fas fa-exclamation-triangle"></i>{% endif %}
+                        {% if message.tags == 'info' %}<i class="fas fa-bell"></i>{% endif %} {# Changed info icon #}
+                    </span>
+                    <span class="text-sm font-medium">{{ message }}</span>
+                </div>
+            {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="mb-10">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-800 dark:text-white">
+                {{ page_title|default:"Expert Dashboard" }}
+            </h1>
+            <p class="mt-3 text-lg text-slate-600 dark:text-slate-400">
+                Welcome back, <strong class="text-sky-600 dark:text-sky-400">{{ expert.full_name }}</strong>!
+                {% if expert.get_expertise_display %}
+                    <span class="ml-2 inline-block bg-sky-100 text-sky-700 dark:bg-sky-700 dark:text-sky-200 px-3 py-1 rounded-full text-xs font-semibold tracking-wide">{{ expert.get_expertise_display }}</span>
+                {% endif %}
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-10">
+            <!-- Profile Summary Card -->
+            <div class="bg-blue-500 rounded-xl shadow-2xl p-6 text-white transform transition-all hover:scale-[1.03] hover:shadow-sky-400/50">
+                <div class="flex items-center mb-4">
+                    <span class="p-3 bg-white/20 rounded-full mr-4">
+                        <i class="fas fa-user-astronaut fa-lg text-white"></i>
+                    </span>
+                    <h5 class="text-xl font-bold">Profile Snapshot</h5>
+                </div>
+                <div class="space-y-2.5 text-sm opacity-90">
+                    <p><i class="fas fa-envelope w-5 mr-2 opacity-70"></i><strong>Email:</strong> {{ expert.email }}</p>
+                    <p><i class="fas fa-layer-group w-5 mr-2 opacity-70"></i><strong>Tier:</strong> <span class="bg-white/25 text-xs font-bold px-2 py-0.5 rounded-full">{{ expert.get_tier_display }}</span></p>
+                    <p><i class="fas fa-star-half-alt w-5 mr-2 opacity-70"></i><strong>Rating:</strong> {{ expert.rating|default_if_none:"N/A" }}</p>
+                    <p><i class="fas fa-coins w-5 mr-2 opacity-70"></i><strong>Total Earnings:</strong> £{{ expert.total_earnings|default:0|floatformat:2|intcomma }}</p>
+                    <p><i class="fas fa-wallet w-5 mr-2 opacity-70"></i><strong>Pending Payout:</strong> £{{ expert.pending_payout|default:0|floatformat:2|intcomma }}</p>
+                </div>
+                <a href="{% url 'expert_marketplace:expert_profile_settings' %}" class="mt-6 block w-full py-2.5 text-sm font-semibold text-center text-blue-600 bg-white rounded-lg hover:bg-slate-100 focus:ring-4 focus:outline-none focus:ring-sky-200 dark:text-sky-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:focus:ring-sky-600 transition-colors duration-150">
+                    <i class="fas fa-pencil-alt mr-1.5"></i> Edit Profile
+                </a>
+            </div>
+
+            <!-- Quick Links Card -->
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl p-6 transform transition-all hover:scale-[1.03] hover:shadow-slate-300/50 dark:hover:shadow-black/50">
+                <div class="flex items-center mb-4 text-slate-700 dark:text-slate-200">
+                    <span class="p-3 bg-sky-100 dark:bg-sky-700/50 rounded-full mr-4">
+                        <i class="fas fa-route fa-lg text-sky-500 dark:text-sky-400"></i>
+                    </span>
+                    <h5 class="text-xl font-bold">Quick Navigation</h5>
+                </div>
+                <div class="space-y-2">
+                    {% with link_base_class="group flex items-center justify-between py-2.5 px-3.5 rounded-lg transition-all duration-150 text-sm font-medium" icon_class="w-5 mr-2.5 text-base" %}
+                    <a href="{% url 'expert_marketplace:expert_upcoming_consultations' %}" class="{{ link_base_class }} text-slate-600 hover:bg-sky-50 hover:text-sky-700 dark:text-slate-300 dark:hover:bg-sky-700/30 dark:hover:text-sky-300">
+                        <span class="flex items-center"><i class="far fa-calendar-alt {{ icon_class }} text-sky-500/70 group-hover:text-sky-600"></i>Upcoming Consultations</span>
+                        <i class="fas fa-chevron-right text-xs text-slate-400 group-hover:text-sky-500"></i>
+                    </a>
+                    <a href="{% url 'expert_marketplace:expert_past_consultations' %}" class="{{ link_base_class }} text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-slate-300 dark:hover:bg-emerald-700/30 dark:hover:text-emerald-300">
+                        <span class="flex items-center"><i class="fas fa-history {{ icon_class }} text-emerald-500/70 group-hover:text-emerald-600"></i>Past Consultations</span>
+                        <i class="fas fa-chevron-right text-xs text-slate-400 group-hover:text-emerald-500"></i>
+                    </a>
+                    <a href="{% url 'expert_marketplace:expert_earnings' %}" class="{{ link_base_class }} text-slate-600 hover:bg-purple-50 hover:text-purple-700 dark:text-slate-300 dark:hover:bg-purple-700/30 dark:hover:text-purple-300">
+                        <span class="flex items-center"><i class="fas fa-chart-line {{ icon_class }} text-purple-500/70 group-hover:text-purple-600"></i>View Earnings</span>
+                        <i class="fas fa-chevron-right text-xs text-slate-400 group-hover:text-purple-500"></i>
+                    </a>
+                    {% endwith %}
+                </div>
+            </div>
+
+            <!-- Need Help? Card -->
+            <div class="bg-yellow-500 rounded-xl shadow-2xl p-6 text-white transform transition-all hover:scale-[1.03] hover:shadow-orange-400/50">
+                <div class="flex items-center mb-4">
+                     <span class="p-3 bg-white/20 rounded-full mr-4">
+                        <i class="fas fa-life-ring fa-lg text-white"></i>
+                    </span>
+                    <h5 class="text-xl font-bold">Need Assistance?</h5>
+                </div>
+                <p class="text-sm opacity-90 mb-5">Got questions or facing a hurdle? Our support squad is ready to help you out!</p>
+                <a href="{% url 'expert_marketplace:expert_support' %}" class="block w-full py-2.5 text-sm font-semibold text-center text-yellow-700 bg-white rounded-lg hover:bg-amber-50 focus:ring-4 focus:outline-none focus:ring-amber-200 dark:text-orange-700 dark:bg-orange-100 dark:hover:bg-orange-200 dark:focus:ring-orange-500 transition-colors duration-150">
+                    <i class="fas fa-headset mr-1.5"></i> Contact Support
+                </a>
+            </div>
+        </div>
+
+        <!-- Upcoming Confirmed Bookings -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl mb-10">
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50 rounded-t-xl">
+                <h5 class="text-lg font-semibold text-slate-700 dark:text-slate-200 flex items-center">
+                    <i class="far fa-calendar-check text-xl mr-3 text-sky-500 dark:text-sky-400"></i> Upcoming Bookings
+                </h5>
+            </div>
+            {% if upcoming_bookings %}
+                <ul class="divide-y divide-slate-200 dark:divide-slate-700">
+                    {% for booking in upcoming_bookings %}
+                        <li class="p-4 sm:p-5 hover:bg-slate-50/70 dark:hover:bg-slate-700/40 transition-colors duration-150">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                <div class="flex-grow">
+                                    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ booking.scheduled_date|date:"l, F j, Y" }} at {{ booking.scheduled_time|time:"g:i A" }}</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                        Client: <strong class="text-slate-600 dark:text-slate-300">{{ booking.name|default:booking.user.get_full_name|default:"Client" }}</strong>
+                                        {% if booking.get_expertise_needed_display %}
+                                        <span class="ml-1.5 text-xs bg-sky-100 text-sky-700 dark:bg-sky-700 dark:text-sky-200 px-1.5 py-0.5 rounded-full font-medium">{{ booking.get_expertise_needed_display }}</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <a href="{% url 'expert_marketplace:booking_detail' booking.id %}" class="shrink-0 inline-flex items-center px-3 py-1.5 text-xs font-semibold text-center text-white bg-sky-500 hover:bg-sky-600 focus:ring-4 focus:outline-none focus:ring-sky-300 dark:bg-sky-600 dark:hover:bg-sky-700 dark:focus:ring-sky-800 rounded-md shadow-md hover:shadow-lg transition-all duration-150">
+                                    View Details <i class="fas fa-arrow-right ml-1 text-xs"></i>
+                                </a>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="p-6 sm:p-8 text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 mb-4 bg-sky-100 dark:bg-sky-700/50 rounded-full">
+                        <i class="fas fa-coffee fa-2x text-sky-500 dark:text-sky-400"></i>
+                    </div>
+                    <p class="text-slate-700 dark:text-slate-300 text-lg font-semibold">All clear for now!</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">No upcoming bookings. Time for a coffee?</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Recently Completed Bookings -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl">
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50 rounded-t-xl">
+                <h5 class="text-lg font-semibold text-slate-700 dark:text-slate-200 flex items-center">
+                    <i class="fas fa-medal text-xl mr-3 text-purple-500 dark:text-purple-400"></i> Recently Completed
+                </h5>
+            </div>
+            {% if recent_completed_bookings %}
+                <ul class="divide-y divide-slate-200 dark:divide-slate-700">
+                    {% for booking in recent_completed_bookings %}
+                         <li class="p-4 sm:p-5 hover:bg-slate-50/70 dark:hover:bg-slate-700/40 transition-colors duration-150">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                <div class="flex-grow">
+                                    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ booking.completed_at|date:"l, F j, Y" }}</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                        Client: <strong class="text-slate-600 dark:text-slate-300">{{ booking.name|default:booking.user.get_full_name|default:"Client" }}</strong>
+                                    </p>
+                                    {# MODIFIED LINE BELOW #}
+                                    <p class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">Fee Earned: £{{ booking.actual_earning|default:0|floatformat:2|intcomma }}</p>
+                                </div>
+                                <a href="{% url 'expert_marketplace:booking_detail' booking.id %}" class="shrink-0 inline-flex items-center px-2.5 py-1 text-xs font-semibold text-center text-slate-600 bg-slate-100 hover:bg-slate-200 focus:ring-4 focus:outline-none focus:ring-slate-200 dark:text-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 dark:focus:ring-slate-600 rounded-md shadow hover:shadow-md transition-all duration-150">
+                                    View Details <i class="fas fa-arrow-right ml-1 text-xs"></i>
+                                </a>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                 <div class="p-6 sm:p-8 text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 mb-4 bg-purple-100 dark:bg-purple-700/50 rounded-full">
+                        <i class="fas fa-box-open fa-2x text-purple-500 dark:text-purple-400"></i>
+                    </div>
+                    <p class="text-slate-700 dark:text-slate-300 text-lg font-semibold">No completed bookings yet.</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Your awesome work will show up here!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock expert_content %}

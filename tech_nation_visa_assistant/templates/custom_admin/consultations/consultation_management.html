@@ -1,0 +1,1455 @@
+{% extends 'custom_admin/base.html' %}
+{% load static %}
+
+{% block title %}Consultation Management{% endblock %}
+
+{% block extra_head %}
+<script>
+  // Suppress Tailwind CDN warnings
+  window.TAILWIND_MODE = 'build'
+  window.TAILWIND_DISABLE_TOUCH = true
+</script>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+    .stats-card {
+        transition: all 0.3s ease;
+    }
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(243, 244, 246, 0.5);
+    }
+    /* Add these styles to your CSS file */
+.tab-active {
+    color: #2563eb; /* blue-600 */
+    border-bottom-color: #2563eb; /* blue-600 */
+    font-weight: 600;
+}
+
+.tab-inactive {
+    color: #6b7280; /* gray-500 */
+    border-bottom-color: transparent;
+}
+.tab-inactive:hover {
+    color: #4b5563; /* gray-600 */
+    border-bottom-color: #d1d5db; /* gray-300 */
+}
+
+
+.tab-content {
+    display: block;
+}
+
+.tab-content.hidden {
+    display: none;
+}
+
+/* Status badge styles */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.status-badge-pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-badge-confirmed {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.status-badge-completed {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.status-badge-cancelled {
+    background-color: #fee2e2;
+    color: #b91c1c;
+}
+
+/* Notification container */
+#notification-container {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1050; /* Ensure it's above modals (Flowbite modals are z-50) */
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: calc(100% - 2rem);
+    max-width: 400px;
+}
+.notification-item {
+    opacity: 0;
+    transform: translateX(100%);
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+.notification-item.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800 mt-4">Consultation Management</h1>
+        <nav class="flex" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li class="inline-flex items-center">
+                    <a href="{% url 'custom_admin:dashboard' %}" class="text-gray-700 hover:text-blue-600">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                        </svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li aria-current="page">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="ml-1 text-gray-500 md:ml-2 font-medium">Consultations</span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="stats-card bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-md overflow-hidden">
+            <div class="p-5 text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h5 class="text-2xl font-bold mb-1">{{ total_bookings }}</h5>
+                        <div class="text-sm opacity-80">Total Bookings</div>
+                    </div>
+                    <div class="text-4xl opacity-80"><i class="fas fa-calendar-check"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="stats-card bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg shadow-md overflow-hidden">
+            <div class="p-5 text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h5 class="text-2xl font-bold mb-1">{{ pending_assignment }}</h5>
+                        <div class="text-sm opacity-80">Awaiting Assignment</div>
+                    </div>
+                    <div class="text-4xl opacity-80"><i class="fas fa-user-clock"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="stats-card bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow-md overflow-hidden">
+            <div class="p-5 text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h5 class="text-2xl font-bold mb-1">{{ completed_bookings }}</h5>
+                        <div class="text-sm opacity-80">Completed Consultations</div>
+                    </div>
+                    <div class="text-4xl opacity-80"><i class="fas fa-check-circle"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="stats-card bg-gradient-to-r from-red-500 to-red-600 rounded-lg shadow-md overflow-hidden">
+            <div class="p-5 text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h5 class="text-2xl font-bold mb-1">{{ disputes_count|default:"0" }}</h5>
+                        <div class="text-sm opacity-80">Active Disputes</div>
+                    </div>
+                    <div class="text-4xl opacity-80"><i class="fas fa-exclamation-triangle"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 mb-6">
+        <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" role="tablist">
+            <li class="mr-2" role="presentation">
+                <button class="inline-block p-4 tab-active" id="tab-bookings-btn" data-tabs-target="#content-bookings" type="button" role="tab" aria-controls="content-bookings" aria-selected="true">Bookings</button>
+            </li>
+            <li class="mr-2" role="presentation">
+                <button class="inline-block p-4 tab-inactive" id="tab-disputes-btn" data-tabs-target="#content-disputes" type="button" role="tab" aria-controls="content-disputes" aria-selected="false">Disputes</button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Tab Content: Bookings -->
+    <div id="content-bookings" role="tabpanel" aria-labelledby="tab-bookings-btn" class="tab-content">
+        <!-- Filters and Search -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+            <div class="border-b border-gray-200 px-4 py-3 bg-gray-50">
+                <div class="flex items-center">
+                    <i class="fas fa-filter text-blue-500 mr-2"></i>
+                    <h3 class="text-lg font-semibold text-gray-800">Filters</h3>
+                </div>
+            </div>
+            <div class="p-5">
+                <form method="get" id="filter-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+                    <div class="lg:col-span-2">
+                        <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                        <input type="text" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" id="search" name="search" value="{{ request.GET.search }}" placeholder="Name, Email, Expert...">
+                    </div>
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" id="status" name="status">
+                            <option value="">All Statuses</option>
+                            {% for status_code, status_name in status_choices %}
+                            <option value="{{ status_code }}" {% if request.GET.status == status_code %}selected{% endif %}>{{ status_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="expertise" class="block text-sm font-medium text-gray-700 mb-1">Expertise</label>
+                        <select class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" id="expertise" name="expertise">
+                            <option value="">All Expertise</option>
+                            {% for expertise_code, expertise_name in expertise_choices %}
+                            <option value="{{ expertise_code }}" {% if request.GET.expertise == expertise_code %}selected{% endif %}>{{ expertise_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="date_from" class="block text-sm font-medium text-gray-700 mb-1">Date From</label>
+                        <input type="date" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" id="date_from" name="date_from" value="{{ request.GET.date_from }}">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 w-full transition-colors duration-200">
+                            <i class="fas fa-search mr-2"></i>Filter
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Bookings Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+            <div class="border-b border-gray-200 px-4 py-3 bg-gray-50">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center">
+                        <i class="fas fa-table text-blue-500 mr-2"></i>
+                        <h3 class="text-lg font-semibold text-gray-800">Consultations</h3>
+                    </div>
+                    <button type="button" id="refresh-table" onclick="window.location.reload();" class="text-blue-600 bg-blue-100 hover:bg-blue-200 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 transition-colors duration-200">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="p-5">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 table-hover" id="bookingsTable">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expert</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expertise</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for booking in page_obj %}
+                            <tr class="hover:bg-gray-50" data-booking-id="{{ booking.id }}">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ booking.id }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if booking.user %}
+                                        <div class="text-sm font-medium text-gray-900">{{ booking.user.get_full_name|default:booking.user.email }}</div>
+                                    {% else %}
+                                        <div class="text-sm font-medium text-gray-900">{{ booking.name }}</div>
+                                        <div class="text-sm text-gray-500">{{ booking.email }}</div>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if booking.expert %}
+                                        <div class="text-sm font-medium text-gray-900">{{ booking.expert.full_name }}</div>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            Unassigned
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if booking.scheduled_date %}
+                                        <div class="text-sm text-gray-900">{{ booking.scheduled_date|date:"M d, Y" }}</div>
+                                        {% if booking.scheduled_time %}
+                                            <div class="text-sm text-gray-500">{{ booking.scheduled_time|time:"g:i A" }}</div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-sm text-gray-500">Not scheduled</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if booking.expertise_needed %}
+                                        <div class="text-sm text-gray-900">{{ booking.get_expertise_needed_display }}</div>
+                                    {% else %}
+                                        <span class="text-sm text-gray-500">Not specified</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if booking.status == 'pending_payment' %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            Pending Payment
+                                        </span>
+                                    {% elif booking.status == 'awaiting_assignment' %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            Awaiting Assignment
+                                        </span>
+                                    {% elif booking.status == 'confirmed' %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            Confirmed
+                                        </span>
+                                    {% elif booking.status == 'completed' %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Completed
+                                        </span>
+                                    {% elif booking.status == 'cancelled' %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            Cancelled
+                                        </span>
+                                    {% elif booking.status == 'refunded' %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                            Refunded
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            {{ booking.get_status_display }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">£{{ booking.consultation_fee|floatformat:2 }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <div class="flex space-x-2">
+                                        <button type="button" class="view-booking text-blue-600 hover:text-blue-900" data-booking-id="{{ booking.id }}">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        {% if booking.status == 'awaiting_assignment' %}
+                                        <button type="button" class="assign-expert-table-btn text-green-600 hover:text-green-900" data-modal-toggle="assignExpertModal" data-booking-id="{{ booking.id }}">
+                                            <i class="fas fa-user-plus"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">No bookings found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% include 'custom_admin/partials/pagination.html' with page_obj=page_obj %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Content: Disputes -->
+    <div id="content-disputes" role="tabpanel" aria-labelledby="tab-disputes-btn" class="tab-content hidden">
+        <!-- Filters and Search -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+            <div class="border-b border-gray-200 px-4 py-3 bg-gray-50">
+                <div class="flex items-center">
+                    <i class="fas fa-filter text-blue-500 mr-2"></i>
+                    <h3 class="text-lg font-semibold text-gray-800">Filters</h3>
+                </div>
+            </div>
+            <div class="p-5">
+                <form method="get" id="dispute-filter-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label for="dispute-search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                        <input type="text" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" id="dispute-search" name="dispute_search" value="{{ request.GET.dispute_search }}" placeholder="Client, Expert, ID...">
+                    </div>
+                    <div>
+                        <label for="dispute-status-filter" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" id="dispute-status-filter" name="dispute_status">
+                            <option value="">All Statuses</option>
+                            <option value="pending" {% if request.GET.dispute_status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="expert_responded" {% if request.GET.dispute_status == 'expert_responded' %}selected{% endif %}>Expert Responded</option>
+                            <option value="investigating" {% if request.GET.dispute_status == 'investigating' %}selected{% endif %}>Investigating</option>
+                            <option value="resolved" {% if request.GET.dispute_status == 'resolved' %}selected{% endif %}>Resolved</option>
+                            <option value="rejected" {% if request.GET.dispute_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="dispute-type-filter" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                        <select class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" id="dispute-type-filter" name="dispute_type">
+                            <option value="">All Types</option>
+                            <option value="no_show" {% if request.GET.dispute_type == 'no_show' %}selected{% endif %}>Expert No-Show</option>
+                            <option value="quality" {% if request.GET.dispute_type == 'quality' %}selected{% endif %}>Quality Issue</option>
+                            <option value="technical" {% if request.GET.dispute_type == 'technical' %}selected{% endif %}>Technical Issue</option>
+                            <option value="other" {% if request.GET.dispute_type == 'other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 w-full transition-colors duration-200">
+                            <i class="fas fa-search mr-2"></i>Filter
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Disputes Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+            <div class="border-b border-gray-200 px-4 py-3 bg-gray-50">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-blue-500 mr-2"></i>
+                        <h3 class="text-lg font-semibold text-gray-800">Disputes</h3>
+                    </div>
+                    <button type="button" id="refresh-disputes" onclick="window.location.reload();" class="text-blue-600 bg-blue-100 hover:bg-blue-200 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 transition-colors duration-200">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="p-5">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 table-hover" id="disputesTable">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expert</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for dispute in disputes_page_obj %} {# Assuming you pass disputes_page_obj for disputes pagination #}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ dispute.id }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <button type="button" class="text-blue-600 hover:underline view-booking" data-booking-id="{{ dispute.booking.id }}">
+                                        #{{ dispute.booking.id }}
+                                    </button>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">{{ dispute.booking.user.get_full_name|default:dispute.booking.name }}</div>
+                                    <div class="text-sm text-gray-500">{{ dispute.booking.user.email|default:dispute.booking.email }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if dispute.booking.expert %}
+                                    <div class="text-sm font-medium text-gray-900">{{ dispute.booking.expert.full_name }}</div>
+                                    <div class="text-sm text-gray-500">{{ dispute.booking.expert.email }}</div>
+                                    {% else %}
+                                    <span class="text-sm text-gray-500 italic">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                        {% if dispute.dispute_type == 'no_show' %}bg-red-100 text-red-800{% elif dispute.dispute_type == 'quality' %}bg-orange-100 text-orange-800{% elif dispute.dispute_type == 'technical' %}bg-blue-100 text-blue-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ dispute.get_dispute_type_display }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                        {% if dispute.status == 'pending' %}bg-yellow-100 text-yellow-800{% elif dispute.status == 'expert_responded' %}bg-blue-100 text-blue-800{% elif dispute.status == 'investigating' %}bg-purple-100 text-purple-800{% elif dispute.status == 'resolved' %}bg-green-100 text-green-800{% elif dispute.status == 'rejected' %}bg-red-100 text-red-800{% endif %}">
+                                        {{ dispute.get_status_display }}
+                                    </span>
+                                </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ dispute.reported_at|date:"M d, Y" }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-2">
+                                    <button type="button" class="view-dispute text-blue-600 hover:text-blue-900" data-dispute-id="{{ dispute.id }}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <!-- Action buttons removed from table, handled in modal -->
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">No disputes found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+             <!-- Pagination for Disputes -->
+            {% if disputes_page_obj.has_other_pages %}
+                {% include 'custom_admin/partials/pagination.html' with page_obj=disputes_page_obj param_prefix='dispute_' %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Unified Modal for Booking Details, Refunds, and Disputes -->
+<div id="unifiedModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
+    <div class="relative w-full max-w-5xl max-h-full">
+        <div class="relative bg-white rounded-lg shadow">
+            <div class="flex items-center justify-between p-4 border-b rounded-t">
+                <h3 class="text-xl font-semibold text-gray-900" id="unified-modal-title">
+                    Booking Details
+                </h3>
+                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center" data-modal-hide="unifiedModal">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+            
+            <!-- Tabs for the unified modal -->
+            <div class="border-b border-gray-200">
+                <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="unified-modal-tabs" role="tablist">
+                    <li class="mr-2" role="presentation">
+                        <button class="inline-block p-4 tab-active" id="modal-tab-booking-details-btn" data-tabs-target="#modal-booking-details-section" type="button" role="tab" aria-controls="modal-booking-details-section" aria-selected="true">Booking Details</button>
+                    </li>
+                    <!-- Refund tab is removed for simplification, handled via dispute resolution -->
+                    <!-- <li class="mr-2" role="presentation">
+                        <button class="inline-block p-4 tab-inactive" id="modal-tab-refund-btn" data-tabs-target="#modal-refund-section" type="button" role="tab" aria-controls="modal-refund-section" aria-selected="false">Refund Management</button>
+                    </li> -->
+                    <li class="mr-2" role="presentation">
+                        <button class="inline-block p-4 tab-inactive" id="modal-tab-dispute-btn" data-tabs-target="#modal-dispute-section" type="button" role="tab" aria-controls="modal-dispute-section" aria-selected="false">Dispute Management</button>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Booking Details Section -->
+            <div id="modal-booking-details-section" role="tabpanel" aria-labelledby="modal-tab-booking-details-btn" class="tab-content p-6 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Booking Information</h4>
+                        <div class="space-y-3">
+                            <div><p class="text-sm text-gray-500">ID</p><p class="text-base font-medium text-gray-900" id="booking-id"></p></div>
+                            <div><p class="text-sm text-gray-500">Status</p><p class="text-base font-medium" id="booking-status"></p></div>
+                            <div><p class="text-sm text-gray-500">Created</p><p class="text-base font-medium text-gray-900" id="booking-created"></p></div>
+                            <div><p class="text-sm text-gray-500">Scheduled Date & Time</p><p class="text-base font-medium text-gray-900" id="booking-datetime"></p></div>
+                            <div><p class="text-sm text-gray-500">Expertise Needed</p><p class="text-base font-medium text-gray-900" id="booking-expertise"></p></div>
+                            <div><p class="text-sm text-gray-500">Consultation Fee</p><p class="text-base font-medium text-gray-900" id="booking-fee"></p></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Client Information</h4>
+                        <div class="space-y-3">
+                            <div><p class="text-sm text-gray-500">Name</p><p class="text-base font-medium text-gray-900" id="client-name"></p></div>
+                            <div><p class="text-sm text-gray-500">Email</p><p class="text-base font-medium text-gray-900" id="client-email"></p></div>
+                            <div><p class="text-sm text-gray-500">Phone</p><p class="text-base font-medium text-gray-900" id="client-phone"></p></div>
+                        </div>
+                        
+                        <h4 class="text-sm font-medium text-gray-500 mt-6 mb-2">Expert Information</h4>
+                        <div class="space-y-3" id="expert-info-container">
+                            <div><p class="text-sm text-gray-500">Name</p><p class="text-base font-medium text-gray-900" id="expert-name"></p></div>
+                            <div><p class="text-sm text-gray-500">Email</p><p class="text-base font-medium text-gray-900" id="expert-email"></p></div>
+                            <div><p class="text-sm text-gray-500">Expertise</p><p class="text-base font-medium text-gray-900" id="expert-expertise-display"></p></div>
+                        </div>
+                        <div id="no-expert-container" class="hidden">
+                            <p class="text-sm text-gray-500 italic">No expert assigned yet</p>
+                            <button type="button" class="mt-2 text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5" id="assign-expert-modal-btn" data-modal-toggle="assignExpertModal">
+                                <i class="fas fa-user-plus mr-2"></i>Assign Expert
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="text-sm font-medium text-gray-500 mb-2">Additional Information</h4>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-900" id="booking-notes"></p>
+                    </div>
+                </div>
+                
+                <div id="payment-info-container" class="hidden">
+                    <h4 class="text-sm font-medium text-gray-500 mb-2">Payment Information</h4>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><p class="text-sm text-gray-500">Payment Status</p><p class="text-base font-medium" id="payment-status"></p></div>
+                            <div><p class="text-sm text-gray-500">Payment Method</p><p class="text-base font-medium text-gray-900" id="payment-method"></p></div>
+                            <div><p class="text-sm text-gray-500">Transaction ID</p><p class="text-base font-medium text-gray-900" id="transaction-id"></p></div>
+                            <div><p class="text-sm text-gray-500">Payment Date</p><p class="text-base font-medium text-gray-900" id="payment-date"></p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Refund Management Section (Kept hidden, can be removed if not needed) -->
+            <div id="modal-refund-section" role="tabpanel" aria-labelledby="modal-tab-refund-btn" class="hidden tab-content p-6 space-y-6">
+                <p class="text-gray-700">Refunds are managed as part of the dispute resolution process. Please go to the "Dispute Management" tab.</p>
+                <!-- Original refund form content can be placed here if a separate refund path is ever reinstated -->
+            </div>
+            
+            <!-- Dispute Management Section -->
+            <div id="modal-dispute-section" role="tabpanel" aria-labelledby="modal-tab-dispute-btn" class="hidden tab-content p-6 space-y-6">
+              <div id="no-dispute-message-container" class="hidden text-center py-8">
+                    <i class="fas fa-inbox fa-3x text-gray-400 mb-3"></i>
+                    <p class="text-lg text-gray-600">No dispute has been filed for this booking.</p>
+                    <p class="text-sm text-gray-500 mt-2">If there's an issue, you can create one below.</p>
+                </div>
+
+
+               
+                <div id="dispute-details-container" class="hidden"> <!-- Shown if dispute exists -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500 mb-2">Dispute Information</h4>
+                            <div class="space-y-3">
+                                <div><p class="text-sm text-gray-500">ID</p><p class="text-base font-medium text-gray-900" id="dispute-id"></p></div>
+                                <div><p class="text-sm text-gray-500">Status</p><p class="text-base font-medium" id="dispute-status"></p></div>
+                                <div><p class="text-sm text-gray-500">Created</p><p class="text-base font-medium text-gray-900" id="dispute-created"></p></div>
+                                <div><p class="text-sm text-gray-500">Type</p><p class="text-base font-medium text-gray-900" id="dispute-type"></p></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mt-4 mb-2">Client's Complaint</h4>
+                        <div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm text-gray-900" id="dispute-client-complaint"></p></div>
+                    </div>
+                    
+                    <div id="expert-response-container" class="hidden mt-4">
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Expert's Response</h4>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-sm text-gray-900" id="dispute-expert-response"></p>
+                            <div id="dispute-expert-evidence" class="mt-3"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="dispute-resolution-details-container" class="hidden mt-4"> <!-- Renamed from dispute-resolution-container -->
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Resolution Details</h4>
+                        <div class="bg-gray-50 p-4 rounded-lg space-y-3">
+                            <div><p class="text-sm text-gray-500">Resolution Date</p><p class="text-base font-medium text-gray-900" id="dispute-resolved-at"></p></div>
+                            <div><p class="text-sm text-gray-500">Resolution Notes</p><p class="text-sm text-gray-900" id="dispute-resolution-notes"></p></div>
+                            <div id="resolved-refund-info-container" class="hidden"> <!-- Renamed from refund-info-container -->
+                                <p class="text-sm text-gray-500">Refund Amount</p><p class="text-base font-medium text-gray-900" id="dispute-refund-amount"></p>
+                                <p class="text-sm text-gray-500 mt-1">Refund Status</p><p class="text-base font-medium" id="dispute-refund-status"></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between mt-6" id="dispute-action-buttons">
+                        <div>
+                            <button type="button" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 hidden" id="investigate-dispute-btn">
+                                <i class="fas fa-search mr-2"></i>Mark as Investigating
+                            </button>
+                        </div>
+                        <div>
+                            <button type="button" class="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 hidden" id="resolve-dispute-btn">
+                                <i class="fas fa-check mr-2"></i>Resolve/Refund
+                            </button>
+                            <button type="button" class="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 hidden" id="reject-dispute-btn">
+                                <i class="fas fa-times mr-2"></i>Reject Dispute
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="create-dispute-container" class="hidden"> <!-- Shown if no dispute exists for booking -->
+                  
+                </div>
+                
+                <!-- Dispute Resolution Form (shown when Resolve or Reject is clicked) -->
+                <div id="dispute-resolution-form-container" class="hidden mt-6">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">Resolve Dispute</h4>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <form id="dispute-resolution-form" class="space-y-4">
+                            <input type="hidden" id="resolution-dispute-id" name="dispute_id">
+                            <input type="hidden" id="resolution-action-type" name="resolution_action_type"> <!-- 'resolve' or 'reject' -->
+                            <div>
+                                <label for="resolution-refund-amount" class="block text-sm font-medium text-gray-700 mb-1">Refund Amount (£)</label>
+                                <input type="number" step="0.01" min="0" id="resolution-refund-amount" name="refund_amount" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                                <div class="mt-2 flex items-center space-x-2">
+                                    <button type="button" class="resolution-refund-percent-btn text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded" data-percent="100">100%</button>
+                                    <button type="button" class="resolution-refund-percent-btn text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded" data-percent="50">50%</button>
+                                    <button type="button" class="resolution-refund-percent-btn text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded" data-percent="0">0% (No Refund)</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="resolution-notes" class="block text-sm font-medium text-gray-700 mb-1">Resolution Notes</label>
+                                <textarea id="resolution-notes" name="resolution_notes" rows="3" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Explain the resolution..." required></textarea>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 focus:ring-blue-500" id="notify-parties" name="notify_parties" checked>
+                                <label for="notify-parties" class="ml-2 text-sm font-medium text-gray-700">Notify parties about the resolution</label>
+                            </div>
+                            <div class="flex justify-end space-x-2">
+                                <button type="button" id="cancel-resolution-btn" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10">Cancel</button>
+                                <button type="submit" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">
+                                    <i class="fas fa-check mr-2"></i>Confirm Resolution
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Expert Modal -->
+<div id="assignExpertModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
+    <div class="relative w-full max-w-2xl max-h-full">
+        <div class="relative bg-white rounded-lg shadow">
+            <div class="flex items-center justify-between p-4 border-b rounded-t">
+                <h3 class="text-xl font-semibold text-gray-900">
+                    Assign Expert to Booking #<span id="assign-expert-modal-booking-id"></span>
+                </h3>
+                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center" data-modal-hide="assignExpertModal">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+            <form id="assignExpertForm">
+                <div class="p-6 space-y-6">
+                    <input type="hidden" id="assign-expert-booking-id-input" name="booking_id">
+                    <div>
+                        <label for="expert-filter" class="block text-sm font-medium text-gray-700 mb-1">Filter Experts</label>
+                        <div class="flex space-x-2">
+                            <input type="text" id="expert-filter-input" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Search by name or expertise...">
+                            <button type="button" id="filter-experts-btn" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-y-auto max-h-60 border rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Select</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expert</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expertise</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tier</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="experts-list-tbody">
+                                <!-- Experts will be populated here by JS -->
+                                <tr><td colspan="4" class="text-center p-4 text-gray-500">Loading experts...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <label for="assignment-notes" class="block text-sm font-medium text-gray-700 mb-1">Assignment Notes (Optional)</label>
+                        <textarea id="assignment-notes" name="assignment_notes" rows="3" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Add any notes for the expert..."></textarea>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 focus:ring-blue-500" id="notify-expert-checkbox" name="notify_expert" checked>
+                        <label for="notify-expert-checkbox" class="ml-2 text-sm font-medium text-gray-700">Notify expert about the assignment</label>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end p-6 space-x-2 border-t border-gray-200 rounded-b">
+                    <button type="button" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10" data-modal-hide="assignExpertModal">
+                        Cancel
+                    </button>
+                    <button type="submit" class="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5">
+                        <i class="fas fa-user-check mr-2"></i>Assign Expert
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Container (will be created by JS if not present) -->
+<div id="notification-container"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- JQuery (optional, if you need it for other things, but Flowbite doesn't strictly require it) -->
+<!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
+<!-- Flowbite JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Global Variables & Instances ---
+    const CSRF_TOKEN = getCookie('csrftoken');
+    let unifiedModalInstance; // Will be initialized after DOM is ready
+    let assignExpertModalInstance; // Will be initialized after DOM is ready
+    let currentOpenBookingIdForModal = null; // To help refresh modal if open
+
+    const URLS = {
+        bookingDetails: "{% url 'custom_admin:booking_details_api' 0 %}",
+        disputeDetails: "{% url 'custom_admin:dispute_details' 0 %}",
+        disputeByBooking: "{% url 'custom_admin:get_dispute_by_booking_api' 0 %}",
+        availableExperts: "{% url 'custom_admin:available_experts_api' 0 %}", // Added '0' placeholder
+        resolveDispute: "{% url 'custom_admin:resolve_dispute' 0 %}",
+        updateDisputeStatus: "{% url 'custom_admin:update_dispute_status' 0 %}",
+        assignExpert: "{% url 'custom_admin:assign_expert' 0 %}"      // Added this for assign expert
+    };
+
+        // --- Define Custom Modal Options for z-index ---
+    const customModalOptions = {
+        // placement: 'center-center', // Flowbite's default
+        // backdrop: 'dynamic', // Flowbite's default
+        backdropClasses: 'bg-gray-900/50 dark:bg-gray-900/80 fixed inset-0 z-[1030]', // MODIFIED: Higher z-index for backdrop
+        // closable: true, // Flowbite's default
+        // onHide: () => {},
+        // onShow: () => {},
+        // onToggle: () => {},
+    };
+
+const unifiedModalEl = document.getElementById('unifiedModal');
+    if (unifiedModalEl) {
+        unifiedModalEl.classList.remove('z-40'); // Ensure old class is gone if missed in HTML
+        unifiedModalEl.classList.add('z-[1040]');   // MODIFIED: Higher z-index for the modal dialog itself
+        unifiedModalInstance = new Modal(unifiedModalEl, customModalOptions); // Pass custom options
+    }
+
+    const assignExpertModalEl = document.getElementById('assignExpertModal');
+    if (assignExpertModalEl) {
+        assignExpertModalEl.classList.remove('z-50'); // Ensure old class is gone if missed in HTML
+        assignExpertModalEl.classList.add('z-[1040]');    // MODIFIED: Higher z-index for the modal dialog itself
+        assignExpertModalInstance = new Modal(assignExpertModalEl, customModalOptions); // Pass custom options
+    }
+
+    // --- UTILITY/HELPER FUNCTIONS (Defined First) ---
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true };
+        try {
+            return new Date(dateString).toLocaleString('en-GB', options);
+        } catch (e) {
+            return dateString; // Fallback
+        }
+    }
+
+    function formatTime(timeString) {
+        if (!timeString || !timeString.includes(':')) return 'N/A';
+        const [hours, minutes] = timeString.split(':');
+        const date = new Date(1970, 0, 1, parseInt(hours), parseInt(minutes));
+        return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+    
+    function getStatusColor(statusKey) {
+        const colors = {
+            'pending_payment': 'text-gray-600', 'awaiting_assignment': 'text-yellow-600',
+            'confirmed': 'text-blue-600', 'completed': 'text-green-600',
+            'cancelled': 'text-red-600', 'refunded': 'text-purple-600',
+            'default': 'text-gray-700'
+        };
+        return colors[statusKey] || colors['default'];
+    }
+
+    function getDisputeStatusColor(statusKey) {
+        const colors = {
+            'pending': 'text-yellow-600', 'expert_responded': 'text-blue-600',
+            'investigating': 'text-purple-600', 'resolved': 'text-green-600',
+            'rejected': 'text-red-600', 'default': 'text-gray-700'
+        };
+        return colors[statusKey] || colors['default'];
+    }
+
+    function showNotification(message, type = 'info') {
+        const container = document.getElementById('notification-container') || createNotifContainer();
+        const notification = document.createElement('div');
+        notification.classList.add('notification-item', 'p-3', 'rounded-lg', 'shadow-md', 'flex', 'items-center', 'max-w-md', 'border-l-4', 'mb-2');
+        
+        const typeClasses = {
+            success: 'bg-green-100 text-green-800 border-green-500',
+            error: 'bg-red-100 text-red-800 border-red-500',
+            info: 'bg-blue-100 text-blue-800 border-blue-500'
+        };
+        const iconClasses = {
+            success: 'fa-check-circle text-green-500',
+            error: 'fa-exclamation-circle text-red-500',
+            info: 'fa-info-circle text-blue-500'
+        };
+        
+        notification.classList.add(...(typeClasses[type] || typeClasses.info).split(' '));
+        notification.innerHTML = `<i class="fas ${iconClasses[type] || iconClasses.info} mr-3"></i><span class="flex-1">${message}</span>`;
+        
+        container.appendChild(notification);
+        
+        // Trigger animation
+        requestAnimationFrame(() => {
+            notification.classList.add('show');
+        });
+
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300); // Remove after fade out
+        }, 5000);
+    }
+
+    function createNotifContainer() {
+        let container = document.getElementById('notification-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'notification-container';
+            document.body.appendChild(container);
+        }
+        return container;
+    }
+    
+    async function handleResponse(response) {
+        if (!response.ok) {
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch (e) {
+                errorData = { error: `HTTP error! Status: ${response.status} - ${response.statusText}` };
+            }
+            throw new Error(errorData.error || errorData.detail || 'An unknown network error occurred.');
+        }
+        const data = await response.json();
+        // Some of your API views might not wrap successful responses in a `data` object or have a `success` flag.
+        // Adjust this if necessary based on your API's actual success response structure.
+        if (data.success === false) { // Explicitly check for success: false
+             throw new Error(data.error || 'The server reported an error.');
+        }
+        return data; // Return the whole data object
+    }
+
+    function handleFetchError(error, context = 'API') {
+        console.error(`${context} Error:`, error);
+        showNotification(error.message || 'An unexpected error occurred.', 'error');
+    }
+
+    // --- MODAL POPULATION FUNCTIONS ---
+    function populateBookingDetails(booking) {
+        if (!booking) {
+            console.error("populateBookingDetails called with null booking");
+            return;
+        }
+        currentOpenBookingIdForModal = booking.id; // Store current booking ID
+
+        setText('unified-modal-title', `Details for Booking #${booking.id}`);
+        setText('booking-id', booking.id);
+        
+        const statusEl = document.getElementById('booking-status');
+        if (statusEl) {
+            statusEl.textContent = booking.status_display || 'N/A';
+            statusEl.className = 'text-base font-medium ' + getStatusColor(booking.status);
+        }
+
+        setText('booking-created', formatDate(booking.created_at));
+        const scheduledDateTime = booking.scheduled_date ? 
+            `${new Date(booking.scheduled_date).toLocaleDateString('en-GB', {day: 'numeric', month: 'short', year: 'numeric'})} ${booking.scheduled_time ? formatTime(booking.scheduled_time) : ''}`.trim() 
+            : 'Not scheduled';
+        setText('booking-datetime', scheduledDateTime);
+        setText('booking-expertise', booking.expertise_needed_display || 'N/A');
+        setText('booking-fee', booking.consultation_fee !== null ? `£${parseFloat(booking.consultation_fee).toFixed(2)}` : 'N/A');
+        setText('booking-notes', booking.additional_notes || 'No additional notes provided.');
+
+        setText('client-name', booking.user ? (booking.user.full_name || booking.user.email) : (booking.name || 'N/A'));
+        setText('client-email', booking.user ? booking.user.email : (booking.email || 'N/A'));
+        setText('client-phone', booking.user ? (booking.user.phone || 'N/A') : (booking.phone || 'N/A'));
+
+        const expertInfoContainer = document.getElementById('expert-info-container');
+        const noExpertContainer = document.getElementById('no-expert-container');
+        const assignExpertModalBtn = document.getElementById('assign-expert-modal-btn');
+
+        if (booking.expert) {
+            expertInfoContainer.classList.remove('hidden');
+            noExpertContainer.classList.add('hidden');
+            setText('expert-name', booking.expert.full_name);
+            setText('expert-email', booking.expert.email);
+            setText('expert-expertise-display', booking.expert.expertise_display || 'N/A'); // Corrected ID
+        } else {
+            expertInfoContainer.classList.add('hidden');
+            noExpertContainer.classList.remove('hidden');
+            if (assignExpertModalBtn) {
+                assignExpertModalBtn.dataset.bookingId = booking.id; // Set booking ID for the button
+            }
+        }
+        
+        const paymentInfoContainer = document.getElementById('payment-info-container');
+        if (booking.payment_info) {
+            paymentInfoContainer.classList.remove('hidden');
+            setText('payment-status', booking.payment_info.status_display || 'N/A');
+            setText('payment-method', booking.payment_info.method || 'N/A');
+            setText('transaction-id', booking.payment_info.transaction_id || 'N/A');
+            setText('payment-date', booking.payment_info.date ? formatDate(booking.payment_info.date) : 'N/A');
+        } else {
+            paymentInfoContainer.classList.add('hidden');
+        }
+    }
+
+    function populateDisputeDetails(dispute) {
+        const disputeDetailsContainer = document.getElementById('dispute-details-container');
+        const createDisputeContainer = document.getElementById('create-dispute-container');
+        const noDisputeMessageContainer = document.getElementById('no-dispute-message-container'); // Get the new container
+        const resolutionFormContainer = document.getElementById('dispute-resolution-form-container');
+
+        if (!dispute) { // No dispute exists for this booking
+            disputeDetailsContainer.classList.add('hidden');
+            createDisputeContainer.classList.remove('hidden'); // Show create form
+            noDisputeMessageContainer.classList.remove('hidden'); // Show "No dispute" message
+            resolutionFormContainer.classList.add('hidden');
+            
+            if (currentOpenBookingIdForModal) {
+                document.getElementById('create-dispute-booking-id').value = currentOpenBookingIdForModal;
+            }
+            return;
+        }
+
+        // If dispute exists, hide the "no dispute" message and create form, show details
+        noDisputeMessageContainer.classList.add('hidden');
+        createDisputeContainer.classList.add('hidden'); // Hide create form if viewing existing dispute
+        disputeDetailsContainer.classList.remove('hidden');
+        
+        // Ensure resolution form is hidden initially when viewing an existing dispute, unless actions lead to it
+        resolutionFormContainer.classList.add('hidden'); 
+
+        setText('dispute-id', dispute.id);
+        const statusEl = document.getElementById('dispute-status');
+        if (statusEl) {
+            statusEl.textContent = dispute.status_display || 'N/A';
+            statusEl.className = 'text-base font-medium ' + getDisputeStatusColor(dispute.status);
+        }
+        setText('dispute-created', formatDate(dispute.reported_at));
+        setText('dispute-type', dispute.type_display || 'N/A');
+        setText('dispute-client-complaint', dispute.reason || 'No details provided.');
+        
+        const expertResponseContainer = document.getElementById('expert-response-container');
+        if (dispute.expert_response) {
+            setText('dispute-expert-response', dispute.expert_response);
+            expertResponseContainer.classList.remove('hidden');
+        } else {
+            setText('dispute-expert-response', 'No response from expert yet.');
+            expertResponseContainer.classList.remove('hidden'); // Show container with message
+        }
+        // TODO: Populate expert evidence: document.getElementById('dispute-expert-evidence')
+
+        const resolutionDetailsContainer = document.getElementById('dispute-resolution-details-container');
+        const resolvedRefundInfoContainer = document.getElementById('resolved-refund-info-container');
+        if (dispute.status === 'resolved' || dispute.status === 'rejected') {
+            setText('dispute-resolved-at', dispute.resolved_at ? formatDate(dispute.resolved_at) : 'N/A');
+            setText('dispute-resolution-notes', dispute.resolution_notes || 'N/A');
+            if (dispute.status === 'resolved' && dispute.refund_amount !== null && parseFloat(dispute.refund_amount) > 0) {
+                setText('dispute-refund-amount', `£${parseFloat(dispute.refund_amount).toFixed(2)}`);
+                setText('dispute-refund-status', dispute.refund_processed ? 'Processed' : 'Pending Processing');
+                resolvedRefundInfoContainer.classList.remove('hidden');
+            } else {
+                resolvedRefundInfoContainer.classList.add('hidden');
+            }
+            resolutionDetailsContainer.classList.remove('hidden');
+            document.getElementById('dispute-action-buttons').classList.add('hidden'); // Hide action buttons
+            resolutionFormContainer.classList.add('hidden'); // Hide resolution form as well
+        } else {
+            resolutionDetailsContainer.classList.add('hidden');
+            document.getElementById('dispute-action-buttons').classList.remove('hidden'); // Show action buttons
+            // Control visibility of action buttons
+            const investigateBtn = document.getElementById('investigate-dispute-btn');
+            const resolveBtn = document.getElementById('resolve-dispute-btn');
+            const rejectBtn = document.getElementById('reject-dispute-btn');
+
+            investigateBtn.classList.add('hidden'); resolveBtn.classList.add('hidden'); rejectBtn.classList.add('hidden');
+            
+            if (dispute.status === 'pending' || dispute.status === 'expert_responded') {
+                investigateBtn.classList.remove('hidden'); resolveBtn.classList.remove('hidden'); rejectBtn.classList.remove('hidden');
+            } else if (dispute.status === 'investigating') {
+                resolveBtn.classList.remove('hidden'); rejectBtn.classList.remove('hidden');
+            }
+            investigateBtn.dataset.disputeId = dispute.id;
+            resolveBtn.dataset.disputeId = dispute.id; resolveBtn.dataset.bookingFee = dispute.booking_consultation_fee || 0; 
+            rejectBtn.dataset.disputeId = dispute.id;
+            resolutionFormContainer.classList.add('hidden'); // Ensure resolution form is hidden initially
+        }
+    }
+
+    function setText(elementId, text) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = text;
+        } else {
+            console.warn(`Element with ID ${elementId} not found for setText.`);
+        }
+    }
+
+
+    // --- DATA FETCHING FUNCTIONS ---
+    function fetchBookingDetails(bookingId) {
+        if (!unifiedModalInstance) return;
+        unifiedModalInstance.show(); // Show modal before loading
+        setText('unified-modal-title', 'Loading Booking Details...'); // Loading state
+        // Hide all content sections initially
+        document.getElementById('modal-booking-details-section').classList.add('hidden');
+        document.getElementById('modal-dispute-section').classList.add('hidden');
+
+        const url = URLS.bookingDetails.replace('/0/', `/${bookingId}/`);
+        fetch(url, { headers: {'X-CSRFToken': CSRF_TOKEN} })
+            .then(handleResponse)
+            .then(data => { // Assuming data IS the booking object from your booking_details_api
+                populateBookingDetails(data.booking); // data.booking if your API wraps it
+                document.getElementById('modal-booking-details-section').classList.remove('hidden');
+                switchModalTab('modal-tab-booking-details-btn'); // Activate booking details tab
+                // After populating booking, check for its dispute
+                fetchDisputeByBooking(bookingId);
+            })
+            .catch(err => {
+                handleFetchError(err, 'Booking Details Fetch');
+                unifiedModalInstance.hide();
+            });
+    }
+    
+    function fetchDisputeByBooking(bookingId) {
+        // This function is called after booking details are loaded.
+        // It populates the dispute tab or shows the create dispute form.
+        const url = URLS.disputeByBooking.replace('/0/', `/${bookingId}/`);
+        fetch(url, { headers: {'X-CSRFToken': CSRF_TOKEN} })
+            .then(response => { // Don't use global handleResponse for this one, 404 is okay
+                if (response.status === 404) return { success: false, dispute: null }; // No dispute found
+                if (!response.ok) throw new Error(`Failed to fetch dispute: ${response.statusText}`);
+                return response.json();
+            })
+            .then(data => {
+                if (data.success && data.dispute) {
+                    populateDisputeDetails(data.dispute);
+                } else {
+                    populateDisputeDetails(null); // Show create form
+                }
+            })
+            .catch(err => {
+                console.error("Error fetching dispute by booking:", err);
+                populateDisputeDetails(null); // Fallback to create form on error
+                // Optionally show a less intrusive error for this specific fetch
+                // showNotification("Could not check for existing dispute.", "error");
+            });
+    }
+
+    function fetchDisputeDetailsAndBooking(disputeId) { // When clicking view dispute from disputes table
+        if (!unifiedModalInstance) return;
+        unifiedModalInstance.show();
+        setText('unified-modal-title', 'Loading Dispute Details...');
+        document.getElementById('modal-booking-details-section').classList.add('hidden');
+        document.getElementById('modal-dispute-section').classList.add('hidden');
+
+        const url = URLS.disputeDetails.replace('/0/', `/${disputeId}/`);
+        fetch(url, { headers: {'X-CSRFToken': CSRF_TOKEN} })
+            .then(handleResponse)
+            .then(data => { // Assuming API returns { booking: {...}, dispute: {...} }
+                populateBookingDetails(data.booking);
+                populateDisputeDetails(data.dispute);
+                document.getElementById('modal-dispute-section').classList.remove('hidden');
+                switchModalTab('modal-tab-dispute-btn'); // Activate dispute tab
+            })
+            .catch(err => {
+                handleFetchError(err, 'Dispute Details Fetch');
+                unifiedModalInstance.hide();
+            });
+    }
+    
+    function fetchAvailableExperts(bookingId, searchTerm = '') {
+        const tbody = document.getElementById('experts-list-tbody');
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading experts...</td></tr>';
+        
+        // Correctly construct the URL by replacing the placeholder
+        let baseUrl = URLS.availableExperts.replace('/0/', `/${bookingId}/`);
+        let finalUrl = baseUrl;
+        if (searchTerm) {
+            finalUrl += `?search=${encodeURIComponent(searchTerm)}`;
+        }
+
+        fetch(finalUrl, { headers: {'X-CSRFToken': CSRF_TOKEN} })
+            .then(handleResponse)
+            .then(data => { // Assuming data is { experts: [...] } or just [...]
+                const experts = data.experts || data; // Adjust based on API response
+                tbody.innerHTML = ''; // Clear loading row
+                if (experts.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-gray-500">No experts found.</td></tr>';
+                    return;
+                }
+                experts.forEach(expert => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <input type="radio" name="selected_expert" value="${expert.id}" class="form-radio h-4 w-4 text-blue-600">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${expert.full_name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${expert.expertise_display}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${expert.tier_display || 'N/A'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => {
+                handleFetchError(err, 'Fetch Available Experts');
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-red-500">Error loading experts.</td></tr>';
+            });
+    }
+
+    // Main page tabs
+    const mainTabButtons = {
+        bookings: document.getElementById('tab-bookings-btn'),
+        disputes: document.getElementById('tab-disputes-btn'),
+    };
+    const mainTabContents = {
+        bookings: document.getElementById('content-bookings'),
+        disputes: document.getElementById('content-disputes'),
+    };
+
+    Object.keys(mainTabButtons).forEach(key => {
+        if (mainTabButtons[key]) {
+            mainTabButtons[key].addEventListener('click', () => {
+                Object.values(mainTabButtons).forEach(btn => btn.classList.replace('tab-active', 'tab-inactive'));
+                Object.values(mainTabContents).forEach(content => content.classList.add('hidden'));
+                mainTabButtons[key].classList.replace('tab-inactive', 'tab-active');
+                mainTabContents[key].classList.remove('hidden');
+            });
+        }
+    });
+
+    // Unified Modal tabs
+    const modalTabButtons = {
+        'modal-tab-booking-details-btn': document.getElementById('modal-tab-booking-details-btn'),
+        'modal-tab-dispute-btn': document.getElementById('modal-tab-dispute-btn'),
+    };
+    const modalTabContents = {
+        'modal-tab-booking-details-btn': document.getElementById('modal-booking-details-section'),
+        'modal-tab-dispute-btn': document.getElementById('modal-dispute-section'),
+    };
+
+    function switchModalTab(activeTabId) {
+        Object.keys(modalTabButtons).forEach(tabId => {
+            if (modalTabButtons[tabId]) {
+                modalTabButtons[tabId].classList.replace('tab-active', 'tab-inactive');
+                modalTabButtons[tabId].setAttribute('aria-selected', 'false');
+            }
+            if (modalTabContents[tabId]) {
+                 modalTabContents[tabId].classList.add('hidden');
+            }
+        });
+        if (modalTabButtons[activeTabId]) {
+            modalTabButtons[activeTabId].classList.replace('tab-inactive', 'tab-active');
+            modalTabButtons[activeTabId].setAttribute('aria-selected', 'true');
+        }
+        if (modalTabContents[activeTabId]) {
+            modalTabContents[activeTabId].classList.remove('hidden');
+        }
+    }
+
+    Object.keys(modalTabButtons).forEach(tabId => {
+        if (modalTabButtons[tabId]) {
+            modalTabButtons[tabId].addEventListener('click', (e) => {
+                e.preventDefault();
+                switchModalTab(tabId);
+            });
+        }
+    });
+
+
+    // --- EVENT LISTENERS FOR PAGE BUTTONS ---
+    document.querySelectorAll('.view-booking').forEach(button => {
+        button.addEventListener('click', function() {
+            fetchBookingDetails(this.dataset.bookingId);
+        });
+    });
+
+    document.querySelectorAll('.view-dispute').forEach(button => {
+        button.addEventListener('click', function() {
+            fetchDisputeDetailsAndBooking(this.dataset.disputeId);
+        });
+    });
+    
+    // Assign Expert button in Bookings Table
+    document.querySelectorAll('.assign-expert-table-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const bookingId = this.dataset.bookingId;
+            document.getElementById('assign-expert-modal-booking-id').textContent = bookingId;
+            document.getElementById('assign-expert-booking-id-input').value = bookingId;
+            fetchAvailableExperts(bookingId); // Load experts for this booking
+            // assignExpertModalInstance.show(); // Flowbite handles this via data-modal-toggle
+        });
+    });
+
+    // --- EVENT LISTENERS FOR UNIFIED MODAL BUTTONS ---
+    // Assign Expert button inside Unified Modal (Booking Details Tab)
+    const assignExpertModalBtn = document.getElementById('assign-expert-modal-btn');
+    if (assignExpertModalBtn) {
+        assignExpertModalBtn.addEventListener('click', function() {
+            const bookingId = this.dataset.bookingId; // Should be set by populateBookingDetails
+            if (bookingId) {
+                document.getElementById('assign-expert-modal-booking-id').textContent = bookingId;
+                document.getElementById('assign-expert-booking-id-input').value = bookingId;
+                fetchAvailableExperts(bookingId);
+                // unifiedModalInstance.hide(); // Hide current modal first
+                // assignExpertModalInstance.show(); // Then show assign expert modal
+                // data-modal-toggle on the button itself will handle showing assignExpertModal
+            } else {
+                showNotification("Booking ID not found to assign expert.", "error");
+            }
+        });
+    }
+
+    // Dispute Action Buttons (Investigate, Resolve, Reject)
+    const investigateBtn = document.getElementById('investigate-dispute-btn');
+    if (investigateBtn) {
+        investigateBtn.addEventListener('click', function() {
+            const disputeId = this.dataset.disputeId;
+            fetch(URLS.updateDisputeStatus.replace('/0/', `/${disputeId}/`), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+                body: JSON.stringify({ status: 'investigating' })
+            })
+            .then(handleResponse)
+            .then(data => {
+                showNotification('Dispute marked as investigating.', 'success');
+                if (data.dispute) populateDisputeDetails(data.dispute); // API should return updated dispute
+            })
+            .catch(err => handleFetchError(err, 'Investigate Dispute'));
+        });
+    }
+
+    const resolveDisputeBtn = document.getElementById('resolve-dispute-btn');
+    if (resolveDisputeBtn) {
+        resolveDisputeBtn.addEventListener('click', function() {
+            const disputeId = this.dataset.disputeId;
+            const bookingFee = this.dataset.bookingFee || '0';
+            document.getElementById('resolution-dispute-id').value = disputeId;
+            document.getElementById('resolution-action-type').value = 'resolved';
+            document.getElementById('resolution-refund-amount').value = parseFloat(bookingFee).toFixed(2); // Prefill with booking fee
+            document.getElementById('dispute-resolution-form-container').classList.remove('hidden');
+            document.getElementById('dispute-action-buttons').classList.add('hidden');
+        });
+    }
+
+    const rejectDisputeBtn = document.getElementById('reject-dispute-btn');
+    if (rejectDisputeBtn) {
+        rejectDisputeBtn.addEventListener('click', function() {
+            const disputeId = this.dataset.disputeId;
+            document.getElementById('resolution-dispute-id').value = disputeId;
+            document.getElementById('resolution-action-type').value = 'rejected';
+            document.getElementById('resolution-refund-amount').value = '0.00'; // No refund for rejection
+            document.getElementById('resolution-refund-amount').readOnly = true; // Make it readonly for rejection
+            document.getElementById('dispute-resolution-form-container').classList.remove('hidden');
+            document.getElementById('dispute-action-buttons').classList.add('hidden');
+        });
+    }
+    
+    // Cancel Dispute Resolution Form
+    const cancelResolutionBtn = document.getElementById('cancel-resolution-btn');
+    if (cancelResolutionBtn) {
+        cancelResolutionBtn.addEventListener('click', function() {
+            document.getElementById('dispute-resolution-form-container').classList.add('hidden');
+            document.getElementById('dispute-action-buttons').classList.remove('hidden'); // Show action buttons again
+            document.getElementById('resolution-refund-amount').readOnly = false; // Reset readonly
+        });
+    }
+    
+    // Refund Percentage Buttons in Resolution Form
+    document.querySelectorAll('.resolution-refund-percent-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const percent = parseFloat(this.dataset.percent);
+            const bookingFeeText = document.getElementById('booking-fee').textContent; // Get from booking details tab
+            const bookingFee = parseFloat(bookingFeeText.replace('£', ''));
+            if (!isNaN(bookingFee)) {
+                const refundAmount = (bookingFee * percent / 100).toFixed(2);
+                document.getElementById('resolution-refund-amount').value = refundAmount;
+            }
+        });
+    });
+
+    const assignExpertForm = document.getElementById('assignExpertForm');
+    if (assignExpertForm) {
+        assignExpertForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries()); // booking_id is in data from hidden input 'assign-expert-booking-id-input'
+            const selectedExpertRadio = this.querySelector('input[name="selected_expert"]:checked');
+            if (!selectedExpertRadio) {
+                showNotification("Please select an expert.", "error");
+                return;
+            }
+            data.expert_id = selectedExpertRadio.value; // Add expert_id to data
+
+            // Correctly construct the URL by replacing the placeholder
+            const url = URLS.assignExpert.replace('/0/', `/${data.booking_id}/`);
+
+            fetch(url, { // Use the constructed URL
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+                body: JSON.stringify(data)
+            })
+            .then(handleResponse)
+            .then(responseData => {
+                showNotification(responseData.message || 'Expert assigned successfully.', 'success');
+                if (assignExpertModalInstance) assignExpertModalInstance.hide();
+                if (unifiedModalInstance && !unifiedModalEl.classList.contains('hidden') && currentOpenBookingIdForModal === data.booking_id) {
+                    fetchBookingDetails(data.booking_id);
+                }
+                setTimeout(() => window.location.reload(), 1500);
+            })
+            .catch(err => handleFetchError(err, 'Assign Expert'));
+        });
+    }
+
+
+
+    // Filter Experts button in Assign Expert Modal
+    const filterExpertsBtn = document.getElementById('filter-experts-btn');
+    if (filterExpertsBtn) {
+        filterExpertsBtn.addEventListener('click', function() {
+            const searchTerm = document.getElementById('expert-filter-input').value;
+            const bookingId = document.getElementById('assign-expert-booking-id-input').value;
+            fetchAvailableExperts(bookingId, searchTerm);
+        });
+    }
+     document.getElementById('expert-filter-input')?.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            filterExpertsBtn.click();
+        }
+    });
+
+
+
+    // Dispute Resolution Form
+    const disputeResolutionForm = document.getElementById('dispute-resolution-form');
+    if (disputeResolutionForm) {
+        disputeResolutionForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            const disputeId = data.dispute_id;
+
+            fetch(URLS.resolveDispute.replace('/0/', `/${disputeId}/`), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+                body: JSON.stringify(data)
+            })
+            .then(handleResponse)
+            .then(responseData => {
+                showNotification(responseData.message || 'Dispute resolved successfully.', 'success');
+                document.getElementById('dispute-resolution-form-container').classList.add('hidden');
+                if (responseData.dispute) {
+                    populateDisputeDetails(responseData.dispute); // Refresh with resolved state
+                } else if (currentOpenBookingIdForModal) { // Fallback if dispute object not returned
+                    fetchDisputeByBooking(currentOpenBookingIdForModal);
+                }
+                // TODO: More targeted table row update
+                 setTimeout(() => window.location.reload(), 1500);
+            })
+            .catch(err => handleFetchError(err, 'Resolve/Reject Dispute'));
+        });
+    }
+
+}); // End of DOMContentLoaded
+</script>
+{% endblock %}

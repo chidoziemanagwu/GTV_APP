@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import User, UserProfile
+from .models import ContactMessage, User, UserProfile
 from .forms import AssessmentForm, ProfileUpdateForm
 from document_manager.models import Document, UserPoints  # Update this import
 from referrals.models import ReferralSignup
@@ -12,7 +12,7 @@ from django.http import HttpResponseRedirect
 # Update these imports to use the models from expert_marketplace
 from expert_marketplace.models import Booking as ExpertSession  # Use Booking instead of ExpertSession
 from .models import AIConversation, User, UserProfile, Activity
-
+from document_manager.models import award_referral_points as process_referral_reward_on_payment
 
 from django.http import JsonResponse
 from django.utils import timezone
@@ -25,7 +25,9 @@ from .utils import verify_recaptcha, is_disposable_email, rate_limit_signup
 from django.urls import reverse
 from allauth.socialaccount.models import SocialAccount
 from django.core.exceptions import ValidationError
+import logging
 
+logger = logging.getLogger(__name__)
 
 
 # accounts/views.py
@@ -216,12 +218,12 @@ def award_referral_points(user):
         print(f"Error awarding referral points: {e}")
 
 
-def handle_payment_success(request, user):
-    """Handle successful payment and award referral points"""
-    # Your existing payment success logic...
+def handle_payment_success(request, user): # user is the one who paid
+    # ... (Your existing payment success logic...)
 
-    # Award referral points
-    award_referral_points(user)
+    # Award referral reward (free use to referrer)
+    logger.info(f"Calling process_referral_reward_on_payment for user: {user.email}")
+    process_referral_reward_on_payment(user)
 
 def home(request):
     """Landing page view"""
@@ -230,158 +232,127 @@ def home(request):
 @login_required
 def dashboard(request):
     """User dashboard view"""
-    # Get user profile or create if it doesn't exist
     profile, created = UserProfile.objects.get_or_create(user=request.user)
 
-    if request.user.profile.ai_points == 3 and request.user.date_joined > (timezone.now() - timezone.timedelta(minutes=5)):
+    # Welcome message logic (ensure profile.ai_points is the intended field)
+    if hasattr(request.user, 'profile') and hasattr(profile, 'ai_points') and \
+       profile.ai_points == 3 and \
+       request.user.date_joined > (timezone.now() - timezone.timedelta(minutes=5)):
         messages.success(request, "Welcome! You've received 3 free AI points to get started.")
-    
-    # Get user's current stage
-    stage = request.user.application_stage
 
-    # Get next steps based on user's stage
-    next_steps = get_next_steps(request.user)
+    stage = getattr(request.user, 'application_stage', 'assessment') # Default stage if not set
+    next_steps_list = get_next_steps(request.user) # Renamed to avoid conflict
 
-    # Check if user has a chosen personal statement
     has_chosen_personal_statement = Document.objects.filter(
         user=request.user,
         document_type='personal_statement',
         is_chosen=True
     ).exists()
 
-    # Get document counts from document_status in UserProfile
     total_documents = len(profile.document_status.keys()) if profile.document_status else 0
-    completed_documents = sum(1 for status in profile.document_status.values()
-                            if status == 'completed') if profile.document_status else 0
+    completed_documents = sum(1 for status_val in profile.document_status.values()
+                            if status_val == 'completed') if profile.document_status else 0
 
-    # Check if AI assistant has been used
     ai_assistant_used = False
     try:
         ai_assistant_used = AIConversation.objects.filter(user=request.user).exists()
-    except:
-        # AIConversation model might not exist or there's an error
+    except Exception as e:
+        logger.warning(f"Could not check AIConversation: {e}")
         pass
 
-    # Calculate progress percentage
-    if has_chosen_personal_statement:
-        # If user has chosen a personal statement, set progress to 100%
-        progress_percentage = 100
-        # Update application stage if needed
-        if request.user.application_stage in ['assessment', 'document_preparation']:
-            request.user.application_stage = 'submission_ready'
-            request.user.save()
-    else:
-        # Normal progress calculation
-        progress_percentage = 30  # Start with assessment done
-        if total_documents > 0:
-            doc_percentage = (completed_documents / total_documents) * 40
-            progress_percentage += doc_percentage
-
-        if ai_assistant_used:
-            progress_percentage += 10
-
-    # Round to nearest integer
+    progress_percentage = 0
+    if hasattr(request.user, 'application_stage'):
+        if has_chosen_personal_statement:
+            progress_percentage = 100
+            if request.user.application_stage in ['assessment', 'document_preparation']:
+                request.user.application_stage = 'submission_ready'
+                request.user.save(update_fields=['application_stage'])
+        else:
+            progress_percentage = 30
+            if total_documents > 0:
+                doc_percentage = (completed_documents / total_documents) * 40
+                progress_percentage += doc_percentage
+            if ai_assistant_used:
+                progress_percentage += 10
     progress_percentage = min(100, int(round(progress_percentage)))
 
-    # Calculate document preparation status
+    document_preparation_status = 'not_started'
+    document_progress = 0
     if has_chosen_personal_statement:
         document_preparation_status = 'completed'
         document_progress = 100
     elif total_documents > 0 or ai_assistant_used:
         document_preparation_status = 'in_progress'
         document_progress = int((completed_documents / max(1, total_documents)) * 100)
-    else:
-        document_preparation_status = 'not_started'
-        document_progress = 0
 
-    # Get recent activities
+    activities_page = []
     try:
         activities = Activity.objects.filter(user=request.user).order_by('-created_at')
-
-        # Paginate activities
-        paginator = Paginator(activities, 5)  # Show 5 activities per page
+        paginator = Paginator(activities, 5)
         page_number = request.GET.get('page')
         activities_page = paginator.get_page(page_number)
-    except:
-        # If Activity model doesn't exist yet or there's an error, use sample activities
-        activities_page = []
-
-        # Add sample activities if no real ones exist
-        if not activities_page:
-            # Get AI conversations
-            try:
-                ai_conversations = AIConversation.objects.filter(user=request.user).order_by('-created_at')[:3]
-            except:
-                ai_conversations = []
-
-            # Create sample activities list
-            sample_activities = []
-
-            # Add assessment activity if completed
-            if profile.assessment_completed:
-                sample_activities.append({
-                    'type': 'assessment',
-                    'description': 'Assessment completed',
-                    'created_at': profile.updated_at
-                })
-
-            # Add AI conversation activities
+    except Exception as e:
+        logger.warning(f"Could not fetch real activities: {e}. Using sample activities.")
+        # Fallback to sample activities logic (as you had)
+        sample_activities = []
+        if hasattr(profile, 'assessment_completed') and profile.assessment_completed:
+             sample_activities.append({
+                'type': 'assessment', 'description': 'Assessment completed',
+                'created_at': getattr(profile, 'updated_at', timezone.now())
+            })
+        try:
+            ai_conversations = AIConversation.objects.filter(user=request.user).order_by('-created_at')[:3]
             for conv in ai_conversations:
                 sample_activities.append({
-                    'type': 'ai',
-                    'description': f'AI Assistant query: "{conv.query[:30]}..."',
+                    'type': 'ai', 'description': f'AI Assistant query: "{conv.query[:30]}..."',
                     'created_at': conv.created_at
                 })
+        except Exception: pass
+        
+        if profile.document_status:
+            for doc_type, status_val in profile.document_status.items():
+                if status_val == 'completed':
+                    doc_name = doc_type.replace('_', ' ').title()
+                    sample_activities.append({
+                        'type': 'document', 'description': f'{doc_name} completed',
+                        'created_at': timezone.now() - timezone.timedelta(days=1)
+                    })
+                    break
+        if has_chosen_personal_statement:
+            sample_activities.append({
+                'type': 'document', 'description': 'Personal statement chosen for submission',
+                'created_at': timezone.now() - timezone.timedelta(hours=2)
+            })
+        activities_page = sorted(sample_activities, key=lambda x: x['created_at'], reverse=True)
 
-            # Add document activity if any documents exist
-            if profile.document_status:
-                for doc_type, status in profile.document_status.items():
-                    if status == 'completed':
-                        doc_name = doc_type.replace('_', ' ').title()
-                        sample_activities.append({
-                            'type': 'document',
-                            'description': f'{doc_name} completed',
-                            'created_at': timezone.now() - timezone.timedelta(days=1)
-                        })
-                        break
 
-            # Add personal statement chosen activity if applicable
-            if has_chosen_personal_statement:
-                sample_activities.append({
-                    'type': 'document',
-                    'description': 'Personal statement chosen for submission',
-                    'created_at': timezone.now() - timezone.timedelta(hours=2)
-                })
-
-            # Sort by created_at
-            activities_page = sorted(sample_activities, key=lambda x: x['created_at'], reverse=True)
-
-    # Update next steps based on chosen personal statement
-    if has_chosen_personal_statement and next_steps:
-        # Filter out any steps related to creating personal statements
-        next_steps = [step for step in next_steps if 'personal statement' not in step['title'].lower()]
-
-        # Add submission step if not already present
-        submission_step_exists = any('submit' in step['title'].lower() for step in next_steps)
+    if has_chosen_personal_statement and next_steps_list:
+        next_steps_list = [step for step in next_steps_list if 'personal statement' not in step['title'].lower()]
+        submission_step_exists = any('submit' in step['title'].lower() for step in next_steps_list)
         if not submission_step_exists:
-            next_steps.insert(0, {
+            next_steps_list.insert(0, {
                 'title': 'Submit Your Application',
                 'description': 'Your documents are ready. Submit your application on the UK government website.',
                 'priority': 'high'
             })
 
-    # Get user points
+    # Get user points (UserPoints model instance)
+    user_points_instance = None # Initialize
+    ai_points_balance = 0 # Initialize
     try:
-        user_points = UserPoints.objects.get(user=request.user)
-        ai_points = user_points.balance
+        # This 'user_points' variable will hold the UserPoints OBJECT
+        user_points_instance = UserPoints.objects.get(user=request.user)
+        ai_points_balance = user_points_instance.balance # Get balance from the object
     except UserPoints.DoesNotExist:
-        user_points = UserPoints.objects.create(user=request.user, balance=0)
-        ai_points = 0
+        # Create the UserPoints OBJECT if it doesn't exist
+        user_points_instance = UserPoints.objects.create(user=request.user, balance=0)
+        ai_points_balance = user_points_instance.balance # Should be 0 or model default
 
+    # Initial context
     context = {
         'profile': profile,
         'stage': stage,
-        'next_steps': next_steps,
+        'next_steps': next_steps_list, # Use the renamed variable
         'activities': activities_page,
         'now': timezone.now(),
         'total_documents': total_documents,
@@ -391,58 +362,46 @@ def dashboard(request):
         'has_chosen_personal_statement': has_chosen_personal_statement,
         'document_preparation_status': document_preparation_status,
         'document_progress': document_progress,
-        'submission_ready': has_chosen_personal_statement,  # New variable for template
-        'user_points': ai_points,  # Add AI points to context
+        'submission_ready': has_chosen_personal_statement,
+        'user_points': user_points_instance,  # CORRECTED: Pass the UserPoints INSTANCE
+        'available_free_uses': getattr(profile, 'available_free_uses', 0),
     }
 
-    # Calculate referral points
-    referral_points = 0
+    # Calculate referral points and update context
+    referral_points_balance = 0
     try:
-        from referrals.models import ReferralCode, ReferralSignup
-        referral_code = ReferralCode.objects.filter(user=request.user).first()
-        if referral_code:
-            # Get referral stats
-            referral_signups = referral_code.signups.all()
-            paying_referrals = referral_signups.filter(points_awarded=True)
+        from referrals.models import ReferralCode, ReferralSignup # Keep import local if preferred
+        referral_code_obj = ReferralCode.objects.filter(user=request.user).first() # Renamed
+        if not referral_code_obj:
+            referral_code_obj = ReferralCode.objects.create(user=request.user)
 
-            # Calculate total points (3 per paying customer)
-            referral_points = paying_referrals.count() * 3
+        referral_signups = referral_code_obj.signups.all()
+        paying_referrals = referral_signups.filter(has_been_rewarded=True) # Or points_awarded=True
+        referral_points_balance = paying_referrals.count() * 3
 
-            context.update({
-                'referral_code': referral_code,
-                'total_referrals': referral_signups.count(),
-                'paying_referrals': paying_referrals.count(),
-                'referral_points': referral_points,  # Add this explicitly for the template
-                'total_points_earned': referral_points,  # Keep this for backward compatibility
-                'paying_customers_count': paying_referrals.count(),
-                'total_available_points': ai_points + referral_points,  # Add total available points
-            })
-        else:
-            # Create a referral code if one doesn't exist
-            referral_code = ReferralCode.objects.create(user=request.user)
-            context.update({
-                'referral_code': referral_code,
-                'total_referrals': 0,
-                'paying_referrals': 0,
-                'referral_points': 0,  # Add this explicitly for the template
-                'total_points_earned': 0,
-                'paying_customers_count': 0,
-                'total_available_points': ai_points,  # Just AI points if no referral points
-            })
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error calculating referral points: {e}")
-        # Set default values if there's an error
         context.update({
-            'referral_points': 0,
-            'total_points_earned': 0,
-            'paying_customers_count': 0,
-            'total_available_points': ai_points,  # Just AI points if error with referrals
+            'referral_code': referral_code_obj, # Pass the object
+            'total_referrals': referral_signups.count(),
+            'successful_referrals_count': paying_referrals.count(),
+            'referral_points': referral_points_balance,
+            'total_available_points': ai_points_balance + referral_points_balance,
+        })
+    except ImportError:
+        logger.error("Referral app not found or models not available.")
+        context.update({
+            'referral_code': None, 'total_referrals': 0,
+            'successful_referrals_count': 0, 'referral_points': 0,
+            'total_available_points': ai_points_balance,
+        })
+    except Exception as e:
+        logger.error(f"Error calculating referral points: {e}")
+        context.update({
+            'referral_code': None, 'total_referrals': 0,
+            'successful_referrals_count': 0, 'referral_points': 0,
+            'total_available_points': ai_points_balance,
         })
 
     return render(request, 'accounts/dashboard.html', context)
-
 
 
 
@@ -467,13 +426,21 @@ def contact(request):
         message = request.POST.get('message')
 
         try:
+            # Save message to database
+            ContactMessage.objects.create(
+                name=name,
+                email=email,
+                subject=subject,
+                message=message
+            )
+            
             # Send notification email to admin
             admin_email = settings.ADMIN_EMAIL
 
             # Send to admin
             send_email(
                 subject=f"Contact Form: {subject}",
-                template_name="emails/contact/admin_notification.html",  # Updated path
+                template_name="emails/contact/admin_notification.html",
                 context={
                     'name': name,
                     'email': email,
@@ -486,7 +453,7 @@ def contact(request):
             # Send confirmation to user
             send_email(
                 subject="We've received your message",
-                template_name="emails/contact/confirmation.html",  # Updated path
+                template_name="emails/contact/confirmation.html",
                 context={
                     'name': name,
                 },
@@ -499,9 +466,6 @@ def contact(request):
             messages.error(request, f'There was an error sending your message: {str(e)}')
 
     return render(request, 'accounts/contact.html')
-
-
-
 
 
 
@@ -933,3 +897,5 @@ def generate_reference_number(user):
 
 def terms_privacy(request):
     return render(request, 'legal/terms_privacy.html')
+
+    

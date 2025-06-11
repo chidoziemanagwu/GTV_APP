@@ -7,7 +7,9 @@ from django.contrib.auth import views as auth_views
 from document_manager.views import stripe_webhook  # Import the webhook view directly
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin-panel/', include('custom_admin.urls')),
+    
+    path('django-admin/', admin.site.urls),
 
     # Password Reset URLs (place these before allauth.urls)
     path('password-reset/',

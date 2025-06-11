@@ -1,0 +1,281 @@
+{% extends "custom_admin/base.html" %}
+{% load static %}
+
+{% block title %}Contact Messages Dashboard{% endblock %}
+
+{% block content %}
+<div class="container px-6 mx-auto">
+    <h2 class="text-2xl font-semibold text-gray-700 mb-6">
+        Contact Messages Dashboard
+    </h2>
+
+    <!-- Stats Cards -->
+    <div class="grid gap-6 mb-8 md:grid-cols-2 xl:grid-cols-4">
+        <!-- Total Messages -->
+        <div class="flex items-center p-4 bg-white rounded-lg shadow-xs">
+            <div class="p-3 mr-4 text-blue-500 bg-blue-100 rounded-full">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"></path>
+                    <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"></path>
+                </svg>
+            </div>
+            <div>
+                <p class="mb-2 text-sm font-medium text-gray-600">
+                    Total Messages
+                </p>
+                <p class="text-lg font-semibold text-gray-700">
+                    {{ total_messages }}
+                </p>
+            </div>
+        </div>
+
+        <!-- New Messages -->
+        <div class="flex items-center p-4 bg-white rounded-lg shadow-xs">
+            <div class="p-3 mr-4 text-red-500 bg-red-100 rounded-full">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+            </div>
+            <div>
+                <p class="mb-2 text-sm font-medium text-gray-600">
+                    New Messages
+                </p>
+                <p class="text-lg font-semibold text-gray-700">
+                    {{ new_messages }}
+                </p>
+            </div>
+        </div>
+
+        <!-- In Progress -->
+        <div class="flex items-center p-4 bg-white rounded-lg shadow-xs">
+            <div class="p-3 mr-4 text-orange-500 bg-orange-100 rounded-full">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"></path>
+                    <path d="M10 4a1 1 0 011 1v4.586l2.707 2.707a1 1 0 01-1.414 1.414l-3-3A1 1 0 019 10V5a1 1 0 011-1z"></path>
+                </svg>
+            </div>
+            <div>
+                <p class="mb-2 text-sm font-medium text-gray-600">
+                    In Progress
+                </p>
+                <p class="text-lg font-semibold text-gray-700">
+                    {{ in_progress_messages }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Resolved -->
+        <div class="flex items-center p-4 bg-white rounded-lg shadow-xs">
+            <div class="p-3 mr-4 text-green-500 bg-green-100 rounded-full">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+            </div>
+            <div>
+                <p class="mb-2 text-sm font-medium text-gray-600">
+                    Resolved
+                </p>
+                <p class="text-lg font-semibold text-gray-700">
+                    {{ resolved_messages }} ({{ resolution_rate|floatformat:1 }}%)
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Actions -->
+    <div class="flex flex-col md:flex-row justify-between mb-6 gap-4">
+        <!-- Search Form -->
+        <div class="flex-1">
+            <form method="GET" class="flex gap-2">
+                <div class="relative flex-1">
+                    <input type="text" name="search" value="{{ search_query }}" 
+                           class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none"
+                           placeholder="Search by name, email, or subject">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3">
+                        <svg class="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- Date filters -->
+                <input type="date" name="date_from" value="{{ date_from }}" 
+                       class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none"
+                       placeholder="From Date">
+                       
+                <input type="date" name="date_to" value="{{ date_to }}" 
+                       class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none"
+                       placeholder="To Date">
+                
+                <!-- Status filter -->
+                <select name="status" 
+                        class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none">
+                    <option value="" {% if not status_filter %}selected{% endif %}>All Statuses</option>
+                    <option value="new" {% if status_filter == 'new' %}selected{% endif %}>New</option>
+                    <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="resolved" {% if status_filter == 'resolved' %}selected{% endif %}>Resolved</option>
+                    <option value="closed" {% if status_filter == 'closed' %}selected{% endif %}>Closed</option>
+                </select>
+                
+                <button type="submit" class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none">
+                    Filter
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Messages Table -->
+    <div class="w-full overflow-hidden rounded-lg shadow-xs">
+        <div class="w-full overflow-x-auto">
+            <table class="w-full whitespace-no-wrap">
+                <thead>
+                    <tr class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b bg-gray-50">
+                        <th class="px-4 py-3">Name</th>
+                        <th class="px-4 py-3">Email</th>
+                        <th class="px-4 py-3">Subject</th>
+                        <th class="px-4 py-3">Date</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y">
+                    {% for message in page_obj %}
+                    <tr class="text-gray-700">
+                        <td class="px-4 py-3 text-sm">
+                            {{ message.name }}
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            <a href="mailto:{{ message.email }}" class="text-blue-600 hover:underline">
+                                {{ message.email }}
+                            </a>
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            {{ message.subject }}
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            {{ message.created_at|date:"M d, Y H:i" }}
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            {% if message.status == 'new' %}
+                                <span class="px-2 py-1 font-semibold leading-tight text-red-700 bg-red-100 rounded-full">
+                                    New
+                                </span>
+                            {% elif message.status == 'in_progress' %}
+                                <span class="px-2 py-1 font-semibold leading-tight text-orange-700 bg-orange-100 rounded-full">
+                                    In Progress
+                                </span>
+                            {% elif message.status == 'resolved' %}
+                                <span class="px-2 py-1 font-semibold leading-tight text-green-700 bg-green-100 rounded-full">
+                                    Resolved
+                                </span>
+                            {% elif message.status == 'closed' %}
+                                <span class="px-2 py-1 font-semibold leading-tight text-gray-700 bg-gray-100 rounded-full">
+                                    Closed
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            <a href="{% url 'custom_admin:contact_message_detail' message_id=message.id %}" 
+                               class="px-3 py-1 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-md active:bg-purple-600 hover:bg-purple-700 focus:outline-none">
+                                View
+                            </a>
+                            
+                            <div class="inline-block relative">
+                                <select 
+                                    onchange="updateMessageStatus(this, {{ message.id }})"
+                                    class="px-3 py-1 text-sm font-medium leading-5 text-gray-700 transition-colors duration-150 bg-white border border-gray-300 rounded-md focus:outline-none">
+                                    <option value="">Change Status</option>
+                                    <option value="new" {% if message.status == 'new' %}disabled{% endif %}>New</option>
+                                    <option value="in_progress" {% if message.status == 'in_progress' %}disabled{% endif %}>In Progress</option>
+                                    <option value="resolved" {% if message.status == 'resolved' %}disabled{% endif %}>Resolved</option>
+                                    <option value="closed" {% if message.status == 'closed' %}disabled{% endif %}>Closed</option>
+                                </select>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr class="text-gray-700">
+                        <td colspan="6" class="px-4 py-3 text-sm text-center">
+                            No messages found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="px-4 py-3 text-xs font-semibold tracking-wide text-gray-500 uppercase border-t bg-gray-50">
+            <div class="flex items-center justify-between">
+                <span class="flex items-center">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+                </span>
+                <div class="flex items-center space-x-2">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="px-3 py-1 rounded-md rounded-l-lg focus:outline-none">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                            <path d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" fill-rule="evenodd"></path>
+                        </svg>
+                    </a>
+                    {% endif %}
+
+                    {% for i in page_obj.paginator.page_range %}
+                        {% if page_obj.number == i %}
+                        <span class="px-3 py-1 text-white transition-colors duration-150 bg-purple-600 border border-r-0 border-purple-600 rounded-md focus:outline-none">
+                            {{ i }}
+                        </span>
+                        {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                        <a href="?page={{ i }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="px-3 py-1 rounded-md focus:outline-none">
+                            {{ i }}
+                        </a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="px-3 py-1 rounded-md rounded-r-lg focus:outline-none">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                            <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" fill-rule="evenodd"></path>
+                        </svg>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function updateMessageStatus(selectElement, messageId) {
+        const status = selectElement.value;
+        if (!status) return;
+        
+        // Reset the select element
+        selectElement.value = '';
+        
+        // Send AJAX request to update status
+        fetch(`/admin-panel/contacts/${messageId}/update-status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: `status=${status}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload the page to show updated status
+                window.location.reload();
+            } else {
+                alert('Error updating status: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating status. Please try again.');
+        });
+    }
+</script>
+{% endblock %}

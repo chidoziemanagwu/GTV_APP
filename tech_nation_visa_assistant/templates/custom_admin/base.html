@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TalentDocs Admin{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Flowbite CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.css" rel="stylesheet" />
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        .sidebar-transition {
+            transition: all 0.3s ease-in-out;
+        }
+        
+        .admin-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .card-hover {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50">
+    <!-- Sidebar -->
+    <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg sidebar-transition transform -translate-x-full lg:translate-x-0">
+        <div class="flex items-center justify-center h-16 bg-gradient-to-r from-blue-600 to-purple-600">
+            <h1 class="text-xl font-bold text-white">TalentDocs Admin</h1>
+        </div>
+        
+        <nav class="mt-8">
+            <div class="px-4 space-y-2">
+                <!-- Dashboard -->
+                <a href="{% url 'custom_admin:dashboard' %}" 
+                   class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors {% if request.resolver_match.url_name == 'dashboard' %}bg-blue-50 text-blue-600 border-r-2 border-blue-600{% endif %}">
+                    <i class="fas fa-tachometer-alt mr-3"></i>
+                    Dashboard
+                </a>
+                
+                <!-- User Management -->
+                <a href="{% url 'custom_admin:user_management' %}" 
+                   class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors {% if request.resolver_match.url_name == 'user_management' %}bg-blue-50 text-blue-600 border-r-2 border-blue-600{% endif %}">
+                    <i class="fas fa-users mr-3"></i>
+                    User Management
+                </a>
+                
+                <!-- Analytics -->
+                <a href="{% url 'custom_admin:analytics' %}" 
+                   class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors {% if request.resolver_match.url_name == 'analytics' %}bg-blue-50 text-blue-600 border-r-2 border-blue-600{% endif %}">
+                    <i class="fas fa-chart-bar mr-3"></i>
+                    Analytics
+                </a>
+                
+                <!-- Experts -->
+                <a href="{% url 'custom_admin:expert_management' %}" 
+                   class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors {% if request.resolver_match.url_name == 'expert_management' %}bg-blue-50 text-blue-600 border-r-2 border-blue-600{% endif %}">
+                    <i class="fas fa-user-tie mr-3"></i> <!-- Changed icon -->
+                    Experts
+                </a>
+                
+                <!-- Referrals -->
+                <a href="{% url 'custom_admin:referral_dashboard' %}" 
+                   class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors {% if request.resolver_match.url_name == 'referral_dashboard' %}bg-blue-50 text-blue-600 border-r-2 border-blue-600{% endif %}">
+                    <i class="fas fa-share-alt mr-3"></i>
+                    Referrals
+                </a>
+            
+                <!-- Consultation Management -->
+                <a href="{% url 'custom_admin:consultation_management' %}" 
+                   class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors {% if request.resolver_match.url_name == 'consultation_management' %}bg-blue-50 text-blue-600 border-r-2 border-blue-600{% endif %}">
+                    <i class="fas fa-calendar-check mr-3"></i> <!-- Changed icon -->
+                    Consultations
+                </a>
+
+                <!-- Payout Management (NEW LINK) -->
+                <a href="{% url 'custom_admin:payout_management' %}"
+                   class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors {% if request.resolver_match.url_name == 'payout_management' %}bg-blue-50 text-blue-600 border-r-2 border-blue-600{% endif %}">
+                    <i class="fas fa-hand-holding-usd mr-3"></i>
+                    Payout Management
+                </a>
+
+                <!-- Contact Form Management -->
+                <a href="{% url 'custom_admin:contact_messages_dashboard' %}" 
+                   class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors {% if request.resolver_match.url_name == 'contact_messages_dashboard' %}bg-blue-50 text-blue-600 border-r-2 border-blue-600{% endif %}">
+                    <i class="fas fa-envelope-open-text mr-3"></i> <!-- Changed icon -->
+                    Contact Messages
+                </a>
+                
+                <!-- Settings -->
+                <div class="pt-4 mt-4 border-t border-gray-200">
+                    
+                    <a href="{% url 'custom_admin:activity_logs' %}" 
+                       class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors {% if request.resolver_match.url_name == 'activity_logs' %}bg-blue-50 text-blue-600 border-r-2 border-blue-600{% endif %}">
+                        <i class="fas fa-history mr-3"></i>
+                        Activity Logs
+                    </a> 
+                    
+                </div>
+            </div>
+        </nav>
+    </div>
+    
+    <!-- Sidebar overlay for mobile -->
+    <div id="sidebar-overlay" class="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden hidden"></div>
+    
+    <!-- Main content -->
+    <div class="lg:ml-64">
+        <!-- Top navigation -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center">
+                    <button id="sidebar-toggle" class="lg:hidden text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    
+                    <div class="ml-4 lg:ml-0">
+                        <h2 class="text-xl font-semibold text-gray-800">
+                            {% block page_title %}Dashboard{% endblock %}
+                        </h2>
+                        <p class="text-sm text-gray-600">
+                            {% block page_description %}Welcome to the admin panel{% endblock %}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+             
+                    <!-- User menu -->
+                    <div class="relative">
+                        <button id="user-menu-button" class="flex items-center space-x-3 text-gray-700 hover:text-gray-900">
+                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                                <span class="text-white text-sm font-medium">
+                                    {{ request.user.first_name|first|default:request.user.email|first|upper }}
+                                </span>
+                            </div>
+                            <div class="hidden md:block text-left">
+                                <div class="text-sm font-medium">{{ request.user.first_name }} {{ request.user.last_name }}</div>
+                                <div class="text-xs text-gray-500">{{ request.admin_user.get_role_display }}</div>
+                            </div>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        
+                        <!-- Dropdown menu -->
+                        <div id="user-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-user mr-2"></i>Profile
+                            </a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-cog mr-2"></i>Settings
+                            </a>
+                            <div class="border-t border-gray-100"></div>
+                            <a href="{% url 'custom_admin:logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Page content -->
+        <main class="p-6">
+            <!-- Messages -->
+            {% if messages %}
+                <div class="mb-6">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} bg-{% if message.tags == 'error' %}red{% elif message.tags == 'success' %}green{% elif message.tags == 'warning' %}yellow{% else %}blue{% endif %}-100 border border-{% if message.tags == 'error' %}red{% elif message.tags == 'success' %}green{% elif message.tags == 'warning' %}yellow{% else %}blue{% endif %}-400 text-{% if message.tags == 'error' %}red{% elif message.tags == 'success' %}green{% elif message.tags == 'warning' %}yellow{% else %}blue{% endif %}-700 px-4 py-3 rounded mb-4">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    
+    <!-- Flowbite JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script>
+        // Sidebar toggle
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+            sidebarOverlay.classList.toggle('hidden');
+        });
+        
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.add('-translate-x-full');
+            sidebarOverlay.classList.add('hidden');
+        });
+        
+        // User menu toggle
+        const userMenuButton = document.getElementById('user-menu-button');
+        const userMenu = document.getElementById('user-menu');
+        
+        userMenuButton.addEventListener('click', () => {
+            userMenu.classList.toggle('hidden');
+        });
+        
+        // Close user menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!userMenuButton.contains(e.target) && !userMenu.contains(e.target)) {
+                userMenu.classList.add('hidden');
+            }
+        });
+        
+        // Auto-hide alerts after 5 seconds
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                alert.style.transition = 'opacity 0.5s ease-out';
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 500);
+            });
+        }, 5000);
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

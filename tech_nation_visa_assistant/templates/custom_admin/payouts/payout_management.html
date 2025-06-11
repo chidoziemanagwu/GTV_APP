@@ -1,0 +1,366 @@
+{% extends "custom_admin/base.html" %}
+{% load humanize %}
+
+{% block title %}Payout Management - TalentDocs Admin{% endblock %}
+
+{% block page_title %}Payout Management{% endblock %}
+{% block page_description %}Oversee and manage expert earnings and bonus payouts.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tab-active {
+        border-color: #4f46e5; /* indigo-600 */
+        color: #4f46e5;
+        font-weight: 600;
+    }
+    .table th, .table td {
+        padding: 0.75rem;
+        vertical-align: middle;
+    }
+    .status-pending { background-color: #fef3c7; color: #92400e; } /* amber */
+    .status-paid { background-color: #d1fae5; color: #065f46; } /* green */
+    .status-failed { background-color: #fee2e2; color: #991b1b; } /* red */
+    .status-cancelled { background-color: #e5e7eb; color: #4b5563; } /* gray */
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow card-hover">
+            <h3 class="text-lg font-semibold text-gray-700">Overall Pending Payout</h3>
+            <p class="text-3xl font-bold text-indigo-600 mt-2">£{{ stats.overall_pending_payout|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow card-hover">
+            <h3 class="text-lg font-semibold text-gray-700">Pending Earnings</h3>
+            <p class="text-2xl font-bold text-amber-600 mt-2">£{{ stats.total_pending_earnings|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow card-hover">
+            <h3 class="text-lg font-semibold text-gray-700">Pending Bonuses</h3>
+            <p class="text-2xl font-bold text-amber-600 mt-2">£{{ stats.total_pending_bonuses|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow card-hover">
+            <h3 class="text-lg font-semibold text-gray-700">Total Paid Earnings</h3>
+            <p class="text-2xl font-bold text-green-600 mt-2">£{{ stats.total_paid_earnings|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow card-hover">
+            <h3 class="text-lg font-semibold text-gray-700">Total Paid Bonuses</h3>
+            <p class="text-2xl font-bold text-green-600 mt-2">£{{ stats.total_paid_bonuses|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow card-hover">
+            <h3 class="text-lg font-semibold text-gray-700">Failed Payouts</h3>
+            <p class="text-2xl font-bold text-red-600 mt-2">{{ stats.total_failed_earnings|add:stats.total_failed_bonuses }}</p>
+            <p class="text-xs text-gray-500">(Earnings: {{ stats.total_failed_earnings }}, Bonuses: {{ stats.total_failed_bonuses }})</p>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="mb-4 border-b border-gray-200">
+        <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="payoutTabs" data-tabs-toggle="#payoutTabsContent" role="tablist">
+            <li class="mr-2" role="presentation">
+                <button class="inline-block p-4 border-b-2 rounded-t-lg" id="earnings-tab" data-tabs-target="#earnings" type="button" role="tab" aria-controls="earnings" aria-selected="true">Expert Earnings</button>
+            </li>
+            <li class="mr-2" role="presentation">
+                <button class="inline-block p-4 border-b-2 rounded-t-lg hover:text-gray-600 hover:border-gray-300" id="bonuses-tab" data-tabs-target="#bonuses" type="button" role="tab" aria-controls="bonuses" aria-selected="false">Expert Bonuses</button>
+            </li>
+        </ul>
+    </div>
+
+<div id="payoutTabsContent">
+        <!-- Earnings Tab -->
+        <div class="hidden p-4 rounded-lg bg-gray-50" id="earnings" role="tabpanel" aria-labelledby="earnings-tab">
+            <!-- ... (Earnings filter form) ... -->
+            <div class="overflow-x-auto bg-white rounded-lg shadow">
+                <table class="min-w-full divide-y divide-gray-200 table">
+                    <!-- ... (thead) ... -->
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for earning in earnings_page_obj %}
+                        <tr>
+                            <td>{{ earning.id }}</td>
+                            <td>
+                                {% if earning.expert and earning.expert.user %}
+                                    {{ earning.expert.user.get_full_name|default:earning.expert.user.email }}
+                                    <br><small class="text-gray-500">{{ earning.expert.user.email }}</small>
+                                {% elif earning.expert %}
+                                    Expert ID: {{ earning.expert.id }} <br><small class="text-red-500">(User not linked)</small>
+                                {% else %}
+                                    <span class="text-red-500">N/A (Expert not linked)</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if earning.booking %}
+                                <a href="#" class="text-indigo-600 hover:text-indigo-900"> <!-- Link to booking detail if available -->
+                                    #{{ earning.booking.id }}
+                                </a>
+                                {% else %}N/A{% endif %}
+                            </td>
+                            <td>£{{ earning.amount|floatformat:2 }}</td>
+                            <td><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full status-{{ earning.status|lower }}">{{ earning.get_status_display }}</span></td>
+                            <td>{{ earning.calculated_at|date:"d M Y, H:i" }}</td>
+                            <td>{{ earning.paid_at|date:"d M Y, H:i"|default:"N/A" }}</td>
+                            <td>{{ earning.transaction_id|default:"N/A" }}</td>
+                            <td class="whitespace-nowrap">
+                                <button type="button" onclick="openUpdateStatusModal('earning', {{ earning.id }}, '{{ earning.status }}', '{{ earning.notes|escapejs|default_if_none:'' }}', '{{ earning.transaction_id|default_if_none:''|escapejs }}')" class="text-indigo-600 hover:text-indigo-900 text-sm mr-2">Update</button>
+                                {% if earning.status == ExpertEarning_PENDING or earning.status == ExpertEarning_FAILED %}
+                                    {% if earning.expert and earning.expert.user and earning.expert.stripe_account_id and earning.expert.stripe_account_active %}
+                                        <button type="button" onclick="initiatePayout(this, 'earning', {{ earning.id }})" class="text-green-600 hover:text-green-900 text-sm">Pay/Retry</button>
+                                    {% else %}
+                                        <span class="text-xs text-red-500" title="Expert, user, or Stripe account not configured/active.">Cannot Pay</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="9" class="text-center py-4 text-gray-500">No earnings records found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% include "custom_admin/partials/_pagination.html" with page_obj=earnings_page_obj param_name="earnings_page" %}
+        </div>
+
+        <!-- Bonuses Tab -->
+        <div class="hidden p-4 rounded-lg bg-gray-50" id="bonuses" role="tabpanel" aria-labelledby="bonuses-tab">
+            <!-- ... (Bonuses filter form) ... -->
+            <div class="overflow-x-auto bg-white rounded-lg shadow">
+                <table class="min-w-full divide-y divide-gray-200 table">
+                    <!-- ... (thead) ... -->
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for bonus in bonuses_page_obj %}
+                        <tr>
+                            <td>{{ bonus.id }}</td>
+                            <td>
+                                {{ bonus.expert.user.get_full_name|default:bonus.expert.user.email }}
+                                <br><small class="text-gray-500">{{ bonus.expert.user.email }}</small>
+                            </td>
+                            <td>{{ bonus.reason }}</td>
+                            <td>£{{ bonus.amount|floatformat:2 }}</td>
+                            <td><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full status-{{ bonus.status|lower }}">{{ bonus.get_status_display }}</span></td>
+                            <td>{{ bonus.created_at|date:"d M Y, H:i" }}</td>
+                            <td>{{ bonus.paid_at|date:"d M Y, H:i"|default:"N/A" }}</td>
+                            <td>{{ bonus.transaction_id|default:"N/A" }}</td>
+                            <td class="whitespace-nowrap">
+                                <button type="button" onclick="openUpdateStatusModal('bonus', {{ bonus.id }}, '{{ bonus.status }}', '{{ bonus.notes|escapejs|default_if_none:'' }}', '{{ bonus.transaction_id|default_if_none:''|escapejs }}')" class="text-indigo-600 hover:text-indigo-900 text-sm mr-2">Update</button>
+                                {% if bonus.status == ExpertBonus_PENDING or bonus.status == ExpertBonus_FAILED %}
+                                    {% if bonus.expert.stripe_account_id and bonus.expert.stripe_account_active %}
+                                        <button type="button" onclick="initiatePayout(this, 'bonus', {{ bonus.id }})" class="text-green-600 hover:text-green-900 text-sm">Pay/Retry</button>
+                                    {% else %}
+                                        <span class="text-xs text-red-500" title="Expert Stripe account not configured or inactive.">Cannot Pay</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="9" class="text-center py-4 text-gray-500">No bonus records found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% include "custom_admin/partials/_pagination.html" with page_obj=bonuses_page_obj param_name="bonuses_page" %}
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Update Status Modal -->
+<div id="updateStatusModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-modal md:h-full">
+    <div class="relative p-4 w-full max-w-md h-full md:h-auto">
+        <div class="relative p-4 bg-white rounded-lg shadow sm:p-5">
+            <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5">
+                <h3 class="text-lg font-semibold text-gray-900">Update Payout Status</h3>
+                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center" data-modal-toggle="updateStatusModal">
+                    <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+            <form id="updateStatusForm">
+                {% csrf_token %}
+                <input type="hidden" id="payoutType" name="payout_type">
+                <input type="hidden" id="payoutId" name="payout_id">
+                <div class="mb-4">
+                    <label for="newStatus" class="block mb-2 text-sm font-medium text-gray-900">New Status</label>
+                    <select id="newStatus" name="status" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="transactionId" class="block mb-2 text-sm font-medium text-gray-900">Transaction ID (Optional)</label>
+                    <input type="text" name="transaction_id" id="transactionId" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5" placeholder="Stripe TRN_xxxx or similar">
+                </div>
+                <div class="mb-4">
+                    <label for="notes" class="block mb-2 text-sm font-medium text-gray-900">Admin Notes (Optional)</label>
+                    <textarea id="notes" name="notes" rows="3" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Reason for status change, manual payment details, etc."></textarea>
+                </div>
+                <button type="submit" class="text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                    Update Status
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Tab persistence
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeTab = urlParams.get('tab');
+        if (activeTab) {
+            const tabButton = document.getElementById(activeTab + '-tab');
+            const tabContent = document.getElementById(activeTab);
+            if (tabButton && tabContent) {
+                // Deactivate others
+                document.querySelectorAll('[data-tabs-target]').forEach(btn => {
+                    btn.setAttribute('aria-selected', 'false');
+                    btn.classList.remove('tab-active', 'border-indigo-600', 'text-indigo-600');
+                    btn.classList.add('hover:text-gray-600', 'hover:border-gray-300');
+                });
+                document.querySelectorAll('[role="tabpanel"]').forEach(panel => {
+                    panel.classList.add('hidden');
+                });
+
+                // Activate current
+                tabButton.setAttribute('aria-selected', 'true');
+                tabButton.classList.add('tab-active', 'border-indigo-600', 'text-indigo-600');
+                tabButton.classList.remove('hover:text-gray-600', 'hover:border-gray-300');
+                tabContent.classList.remove('hidden');
+            }
+        } else {
+            // Default to first tab if no tab param
+            const firstTabButton = document.querySelector('[data-tabs-target]');
+            if (firstTabButton) {
+                 firstTabButton.click(); // Programmatically click to trigger Flowbite's logic
+            }
+        }
+    });
+
+const updateStatusModalElement = document.getElementById('updateStatusModal');
+    const updateStatusModal = new Modal(updateStatusModalElement);
+
+    // Correctly parse JSON for status choices
+    const earningStatusChoices = JSON.parse('{{ earning_status_choices_json|escapejs }}');
+    const bonusStatusChoices = JSON.parse('{{ bonus_status_choices_json|escapejs }}');
+
+    function openUpdateStatusModal(type, id, currentStatus, currentNotes, currentTransactionId) {
+        document.getElementById('payoutType').value = type;
+        document.getElementById('payoutId').value = id;
+        
+        const statusSelect = document.getElementById('newStatus');
+        statusSelect.innerHTML = ''; // Clear existing options
+        
+        const choices = type === 'earning' ? earningStatusChoices : bonusStatusChoices;
+        
+        choices.forEach(choicePair => { // choicePair will be like ['pending', 'Pending Payout']
+            const option = document.createElement('option');
+            option.value = choicePair[0]; // The value (e.g., 'pending')
+            option.textContent = choicePair[1]; // The display text (e.g., 'Pending Payout')
+            if (choicePair[0] === currentStatus) {
+                option.selected = true;
+            }
+            statusSelect.appendChild(option);
+        });
+
+        document.getElementById('notes').value = currentNotes || '';
+        document.getElementById('transactionId').value = currentTransactionId || '';
+        updateStatusModal.show();
+    }
+
+    document.getElementById('updateStatusForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const payoutType = document.getElementById('payoutType').value;
+        const payoutId = document.getElementById('payoutId').value;
+        const newStatus = document.getElementById('newStatus').value;
+        const notes = document.getElementById('notes').value;
+        const transactionId = document.getElementById('transactionId').value;
+
+        let url = '';
+        if (payoutType === 'earning') {
+            url = `{% url 'custom_admin:update_earning_payout_status_api' 0 %}`.replace('0', payoutId);
+        } else if (payoutType === 'bonus') {
+            url = `{% url 'custom_admin:update_bonus_payout_status_api' 0 %}`.replace('0', payoutId);
+        }
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                status: newStatus,
+                notes: notes,
+                transaction_id: transactionId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Status updated successfully!'); // Replace with a nicer notification
+                updateStatusModal.hide();
+                window.location.reload(); // Simple reload to see changes
+            } else {
+                alert('Error updating status: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An unexpected error occurred.');
+        });
+    });
+
+
+    function initiatePayout(buttonElement, type, id) {
+        if (!confirm(`Are you sure you want to attempt to pay/retry this ${type} (ID: ${id})? This is currently a simulation and will log the attempt.`)) {
+            return;
+        }
+
+        let url = '';
+        if (type === 'earning') {
+            url = `{% url 'custom_admin:initiate_earning_payout_api' 0 %}`.replace('0', id);
+        } else if (type === 'bonus') {
+            url = `{% url 'custom_admin:initiate_bonus_payout_api' 0 %}`.replace('0', id);
+        } else {
+            alert('Invalid payout type.');
+            return;
+        }
+
+        const originalButtonText = buttonElement.innerHTML;
+        buttonElement.innerHTML = 'Processing...';
+        buttonElement.disabled = true;
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            // No body needed for this placeholder for now
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Using a more subtle notification that doesn't require a full reload immediately
+                // You might want to update the row in the table via JS instead of full reload for better UX
+                alert(data.message || `Payout for ${type} ID ${id} logged (simulation). Refresh page to see system messages if any.`);
+                // For now, a reload is simple to reflect any messages.success from Django
+                window.location.reload(); 
+            } else {
+                alert('Error initiating payout: ' + (data.error || 'Unknown error. Check console.'));
+                console.error("Payout initiation error data:", data);
+            }
+        })
+        .catch(error => {
+            console.error('Fetch Error:', error);
+            alert('An unexpected network error occurred while trying to initiate payout.');
+        })
+        .finally(() => {
+            buttonElement.innerHTML = originalButtonText;
+            buttonElement.disabled = false;
+        });
+    }
+</script>
+{% endblock %}

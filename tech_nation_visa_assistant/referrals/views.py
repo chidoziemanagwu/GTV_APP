@@ -19,70 +19,53 @@ from accounts.utils import verify_recaptcha, is_disposable_email, rate_limit_sig
 logger = logging.getLogger(__name__)
 
 @login_required
-# @cache_page(60 * 15)  # Cache for 15 minutes
 def share_link(request):
     """View for sharing referral links - optimized with caching"""
     try:
-        # Get or create referral code for the user
         referral_code, created = ReferralCode.objects.get_or_create(user=request.user)
 
-        # Get base URL (with protocol and domain)
         if request.is_secure():
             protocol = 'https'
         else:
             protocol = 'http'
         domain = request.get_host()
         base_url = f"{protocol}://{domain}"
-
-        # Generate share URL
         share_url = f"{base_url}/referrals/join/{referral_code.code}/"
-
-        # Generate social media share URLs
         share_text = "Join me on Tech Nation Visa Assistant - the AI-powered platform that helps with your Global Talent visa application!"
-
-        # WhatsApp share URL
         whatsapp_share_url = f"https://wa.me/?text={urllib.parse.quote(share_text + ' ' + share_url)}"
-
-        # Twitter share URL
         twitter_share_url = f"https://twitter.com/intent/tweet?text={urllib.parse.quote(share_text)}&url={urllib.parse.quote(share_url)}"
 
-        # Force refresh referral code to get latest data
-        referral_code.refresh_from_db()
+        # Get referral stats
+        # Total signups made using this user's referral code
+        total_signups_via_this_code = referral_code.signups.count()
 
-        # Get referral stats - use select_related for efficiency
-        total_referrals = referral_code.signups.count()
+        # Count of signups that resulted in a free use being granted to the referrer
+        successful_referrals_for_this_code = referral_code.signups.filter(free_use_granted=True).count()
+        
+        # Referrer's current total available free uses (from their profile)
+        # This is accessed directly in the template via request.user.profile.available_free_uses
 
-        # Explicitly fetch all signups to ensure they're loaded
-        signups = list(referral_code.signups.all())
-
-        # Count paying customers
-        paying_customers_count = sum(1 for signup in signups if signup.points_awarded)
-
-        # Calculate total points (3 per paying customer)
-        total_points = paying_customers_count * 3
-
-        # Log data for debugging
-        logger.info(f"User: {request.user.username}, Referrals: {total_referrals}, Paying: {paying_customers_count}, Points: {total_points}")
-        logger.info(f"Signups: {signups}")
+        logger.info(f"User: {request.user.username}, Total Signups via code: {total_signups_via_this_code}, Successful Referrals (earned free use): {successful_referrals_for_this_code}, Current Available Free Uses: {request.user.profile.available_free_uses}")
 
         context = {
             'referral_code': referral_code,
             'share_url': share_url,
             'whatsapp_share_url': whatsapp_share_url,
             'twitter_share_url': twitter_share_url,
-            'total_referrals': total_referrals,
-            'paying_customers_count': paying_customers_count,
-            'total_points': total_points,
-            'referrals': referral_code.signups.select_related('referred_user').order_by('-timestamp'),
+            'total_referrals_count': total_signups_via_this_code, # For the card: "Total Referrals"
+            'successful_referrals_count': successful_referrals_for_this_code, # For the card: "Successful Referrals"
+            # 'referrer_available_free_uses' is accessed via request.user.profile.available_free_uses in template
+            'referrals': referral_code.signups.select_related('referred_user', 'referred_user__profile').order_by('-timestamp'),
         }
-
         return render(request, 'referrals/share.html', context)
-
     except Exception as e:
-        logger.error(f"Error in share_link: {e}")
+        logger.error(f"Error in share_link: {e}", exc_info=True) # Added exc_info for more details
         context = {'error': f"An error occurred: {str(e)}"}
         return render(request, 'referrals/share.html', context)
+
+
     
+        
     
 
 @require_POST

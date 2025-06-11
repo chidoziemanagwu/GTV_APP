@@ -1,0 +1,8 @@
+{% extends 'expert_marketplace/expert_base.html' %}
+{% load static %}
+
+{% block expert_title %}Booking #{{ booking.id }} Details{% endblock %} {# Assuming expert_base.html uses expert_title #}
+
+{% block expert_content %} {# Assuming expert_base.html uses expert_content #}
+    {% include 'expert_marketplace/_booking_detail_content.html' with booking=booking %}
+{% endblock %}

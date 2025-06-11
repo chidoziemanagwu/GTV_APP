@@ -1,0 +1,8 @@
+{% extends 'dashboard_base.html' %} {# Or your client's actual base template #}
+{% load static %}
+
+{% block title %}Booking Details - #{{ booking.id }}{% endblock %}
+
+{% block content %} {# Or the main content block name in dashboard_base.html #}
+    {% include 'expert_marketplace/_booking_detail_content.html' with booking=booking %}
+{% endblock %}

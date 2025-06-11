@@ -1,0 +1,48 @@
+{% extends "emails/base_mail.html" %}
+
+{% block subject %}Your Consultation Booking Has Been Cancelled{% endblock %}
+
+{% block content %}
+<!-- Main Content -->
+<tr>
+  <td style="padding: 30px 20px;">
+    <h2 style="color: #1f2937; margin-top: 0; font-family: Arial, sans-serif;">Booking Cancellation Confirmation</h2>
+    
+    <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 15px;">Hello {{ booking.name }},</p>
+    
+    <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 15px;">Your consultation booking (Reference #{{ booking.id }}) has been cancelled.</p>
+    
+    <div style="background-color: #f3f4f6; padding: 15px; border-radius: 6px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #1f2937; font-family: Arial, sans-serif;">Booking Details</h3>
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;"><strong>Date:</strong> {{ booking.scheduled_date|date:"F j, Y" }}</p>
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;"><strong>Time:</strong> {{ booking.scheduled_time }}</p>
+      {% if booking.expert %}
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;"><strong>Expert:</strong> {{ booking.expert.full_name }}</p>
+      {% endif %}
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;"><strong>Expertise:</strong> {{ booking.expertise_needed|default:"General Consultation" }}</p>
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;"><strong>Duration:</strong> {{ booking.duration_minutes }} minutes</p>
+    </div>
+    
+    {% if refund_amount %}
+    <div style="background-color: #e0f2fe; padding: 15px; border-radius: 6px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #0369a1; font-family: Arial, sans-serif;">Refund Information</h3>
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;">A refund of <strong>£{{ refund_amount }}</strong> has been processed to your original payment method.</p>
+      
+      {% if is_full_refund %}
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;">This is a full refund as the cancellation was initiated by the expert or our system.</p>
+      {% else %}
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;">This is a partial refund in accordance with our cancellation policy.</p>
+      {% endif %}
+      
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;">The refund should appear in your account within 5-10 business days, depending on your payment provider.</p>
+    </div>
+    {% endif %}
+    
+    <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 15px;">If you have any questions about this cancellation or would like to book another consultation, please don't hesitate to contact our support team.</p>
+    
+    <div style="margin-top: 30px; text-align: center;">
+      <a href="{{ site_url }}/consultation/book/" style="background-color: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-family: Arial, sans-serif; display: inline-block;">Book Another Consultation</a>
+    </div>
+  </td>
+</tr>
+{% endblock %}

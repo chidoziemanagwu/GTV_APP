@@ -41,9 +41,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',  # Required for allauth
+    'django.contrib.humanize',
     # Third-party apps
     'channels',
     'allauth',
+    'custom_admin',  # Custom admin app
     'allauth.account',
     'crispy_forms',
     'corsheaders',
@@ -235,8 +237,9 @@ AUTH_USER_MODEL = 'accounts.User'
 
 # Django AllAuth settings
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
+    'expert_marketplace.backends.ExpertAuthBackend', # Custom expert auth
+    'django.contrib.auth.backends.ModelBackend',       # Default Django auth
+    'allauth.account.auth_backends.AuthenticationBackend', # Allauth
 ]
 
 ACCOUNT_LOGIN_METHODS = {'email'}
@@ -422,3 +425,8 @@ GROQ_MODEL_SETTINGS = {
 
 # Create cache table command to run after deployment:
 # python manage.py createcachetable
+
+
+# Expert Marketplace Settings
+DEFAULT_CONSULTATION_FEE = 100.00
+DEFAULT_CONSULTATION_DURATION = 30  # minutes

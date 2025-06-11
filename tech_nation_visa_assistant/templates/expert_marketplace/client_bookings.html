@@ -1,0 +1,819 @@
+{% extends 'dashboard_base.html' %}
+{% load static %}
+
+{% block title %}My Consultations{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- ... (your existing content: header, tabs, booking lists) ... -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">My Consultations</h1>
+            <p class="text-gray-600">Manage your expert consultations</p>
+        </div>
+        <div class="mt-4 md:mt-0">
+            <a href="{% url 'expert_marketplace:book_consultation' %}" class="inline-flex items-center px-4 py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-all duration-300">
+                <i class="fas fa-plus mr-2"></i> Book New Consultation
+            </a>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="mb-8">
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600" data-tab="upcoming">
+                    <i class="fas fa-calendar-day mr-2"></i>Upcoming ({{ upcoming_bookings.count|default:0 }})
+                </button>
+                <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="pending">
+                    <i class="fas fa-clock mr-2"></i>Pending ({{ pending_bookings.count|default:0 }})
+                </button>
+                <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="completed">
+                    <i class="fas fa-check-circle mr-2"></i>Completed ({{ completed_bookings.count|default:0 }})
+                </button>
+                <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="cancelled">
+                    <i class="fas fa-ban mr-2"></i>Cancelled ({{ cancelled_bookings.count|default:0 }})
+                </button>
+                <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="past">
+                    <i class="fas fa-history mr-2"></i>Past ({{ past_bookings.count|default:0 }})
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Upcoming Bookings -->
+    <div id="upcoming-tab" class="tab-content">
+        {% if upcoming_bookings %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for booking in upcoming_bookings %}
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+                        <div class="p-5 bg-blue-50">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">{{ booking.get_expertise_needed_display|default:"Consultation" }}</h3>
+                                    <p class="text-sm text-gray-600">
+                                        <i class="fas fa-calendar mr-1"></i> {{ booking.scheduled_date|date:"F j, Y" }}
+                                    </p>
+                                    <p class="text-sm text-gray-600">
+                                        <i class="fas fa-clock mr-1"></i> {{ booking.scheduled_time }}
+                                    </p>
+                                </div>
+                                <span class="px-3 py-1 text-xs font-medium rounded-full 
+                                    {% if booking.status == 'confirmed' %}bg-green-100 text-green-800
+                                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="p-5">
+                            <div class="flex items-center mb-4">
+                                {% if booking.expert %}
+                                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                                    {% if booking.expert.profile_image %}
+                                        <img src="{{ booking.expert.profile_image.url }}" alt="{{ booking.expert.full_name }}" class="w-full h-full rounded-full object-cover">
+                                    {% else %}
+                                        <i class="fas fa-user-tie"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800">{{ booking.expert.full_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ booking.expert.get_expertise_display }}</p>
+                                </div>
+                                {% else %}
+                                <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 mr-3">
+                                    <i class="fas fa-user-clock"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800">Awaiting Expert</p>
+                                    <p class="text-xs text-gray-500">Assignment in progress</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="flex flex-wrap gap-2 mt-4">
+                                {% if booking.status == 'confirmed' and booking.meeting_link %}
+                                    <a href="{{ booking.meeting_link }}" target="_blank" class="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all duration-300">
+                                        <i class="fas fa-video mr-2"></i> Join Meeting
+                                    </a>
+                                {% endif %}
+                                
+                                <a href="{% url 'expert_marketplace:booking_detail' booking_id=booking.id %}" class="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-300">
+                                    <i class="fas fa-eye mr-2"></i> View Details
+                                </a>
+                            </div>
+                            
+                            {% if booking.status == 'confirmed' %}
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <a href="{% url 'expert_marketplace:reschedule_booking' booking_id=booking.id %}" class="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium rounded-lg bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-all duration-300">
+                                    <i class="fas fa-calendar-alt mr-2"></i> Reschedule
+                                </a>
+                                
+                                <a href="{% url 'expert_marketplace:cancel_booking' booking_id=booking.id %}" class="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-all duration-300">
+                                    <i class="fas fa-times mr-2"></i> Cancel
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12 bg-gray-50 rounded-xl">
+                <div class="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-calendar-day text-blue-500 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No Upcoming Consultations</h3>
+                <p class="text-gray-500 mb-6">You don't have any upcoming consultations scheduled.</p>
+                <a href="{% url 'expert_marketplace:book_consultation' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all duration-300">
+                    <i class="fas fa-plus mr-2"></i> Book a Consultation
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Pending Bookings -->
+    <div id="pending-tab" class="tab-content hidden">
+        {% if pending_bookings %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for booking in pending_bookings %}
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+                        <div class="p-5 bg-yellow-50">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">{{ booking.get_expertise_needed_display|default:"Consultation" }}</h3>
+                                    <p class="text-sm text-gray-600">
+                                        <i class="fas fa-calendar mr-1"></i> {{ booking.scheduled_date|date:"F j, Y"|default:"Date TBD" }}
+                                    </p>
+                                    <p class="text-sm text-gray-600">
+                                        <i class="fas fa-clock mr-1"></i> {{ booking.scheduled_time|default:"Time TBD" }}
+                                    </p>
+                                </div>
+                                <span class="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="p-5">
+                            <div class="flex items-center mb-4">
+                                {% if booking.expert %}
+                                <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 mr-3">
+                                    {% if booking.expert.profile_image %}
+                                        <img src="{{ booking.expert.profile_image.url }}" alt="{{ booking.expert.full_name }}" class="w-full h-full rounded-full object-cover">
+                                    {% else %}
+                                        <i class="fas fa-user-tie"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800">{{ booking.expert.full_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ booking.expert.get_expertise_display }}</p>
+                                </div>
+                                {% else %}
+                                <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 mr-3">
+                                    <i class="fas fa-user-clock"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800">Awaiting Expert</p>
+                                    <p class="text-xs text-gray-500">Assignment in progress</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="flex flex-wrap gap-2 mt-4">
+                                <a href="{% url 'expert_marketplace:booking_detail' booking_id=booking.id %}" class="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-300">
+                                    <i class="fas fa-eye mr-2"></i> View Details
+                                </a>
+                                
+                                {% if booking.status == 'pending_payment' and booking.expert %}
+                                    <a href="{% url 'expert_marketplace:payment' booking_id=booking.id %}" class="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all duration-300">
+                                        <i class="fas fa-credit-card mr-2"></i> Complete Payment
+                                    </a>
+                                {% elif booking.status == 'pending_assignment' %}
+                                    <span class="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i> Finding Expert...
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12 bg-gray-50 rounded-xl">
+                <div class="w-16 h-16 mx-auto mb-4 bg-yellow-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-clock text-yellow-500 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No Pending Consultations</h3>
+                <p class="text-gray-500 mb-6">You don't have any consultations pending payment or assignment.</p>
+                <a href="{% url 'expert_marketplace:book_consultation' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all duration-300">
+                    <i class="fas fa-plus mr-2"></i> Book a Consultation
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Completed Bookings -->
+    <div id="completed-tab" class="tab-content hidden">
+        {% if completed_bookings %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for booking in completed_bookings %}
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+                        <div class="p-5 bg-green-50">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">{{ booking.get_expertise_needed_display|default:"Consultation" }}</h3>
+                                    <p class="text-sm text-gray-600">
+                                        <i class="fas fa-calendar mr-1"></i> {{ booking.scheduled_date|date:"F j, Y" }}
+                                    </p>
+                                    <p class="text-sm text-gray-600">
+                                        <i class="fas fa-clock mr-1"></i> {{ booking.scheduled_time }}
+                                    </p>
+                                </div>
+                                <span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="p-5">
+                            <div class="flex items-center mb-4">
+                                {% if booking.expert %}
+                                <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-3">
+                                    {% if booking.expert.profile_image %}
+                                        <img src="{{ booking.expert.profile_image.url }}" alt="{{ booking.expert.full_name }}" class="w-full h-full rounded-full object-cover">
+                                    {% else %}
+                                        <i class="fas fa-user-tie"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800">{{ booking.expert.full_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ booking.expert.get_expertise_display }}</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="flex flex-wrap gap-2 mt-4">
+                                <a href="{% url 'expert_marketplace:booking_detail' booking_id=booking.id %}" class="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-300">
+                                    <i class="fas fa-eye mr-2"></i> View Details
+                                </a>
+                                
+                                {% if booking.consultation_record and booking.consultation_record.client_rating_for_expert %}
+                                  <div class="flex items-center space-x-1 rating-stars">
+                            {% for i in "12345" %}
+                            <input type="radio" id="star{{ i }}_review_page" name="client_rating_for_expert" value="{{ i }}" class="sr-only" {% if forloop.first %}required{% endif %}>
+                            {# Note: Removed 'peer' from input, and peer-hover/peer-checked from label. Added 'star-label' class to label. #}
+                            {# Initial color is set on the icon itself. #}
+                            <label for="star{{ i }}_review_page" class="star-label text-3xl cursor-pointer transition-colors">
+                                <i class="fas fa-star text-yellow-300"></i>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        <div id="ratingError" class="text-red-500 text-sm mt-1 hidden">Please select a rating.</div>
+                                {% elif booking.status == 'completed' %}
+                                     <button type="button" 
+                                            onclick="openCompleteModal({
+                                                expertName: '{{ booking.expert.full_name|escapejs|default:'the expert' }}', 
+                                                isCompletion: false,
+                                                markCompleteUrl: '{% url 'expert_marketplace:mark_meeting_complete' booking.id %}'
+                                            })"
+                                            class="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-all duration-300">
+                                        <i class="far fa-star mr-2"></i> Leave Review
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12 bg-gray-50 rounded-xl">
+                <div class="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No Completed Consultations</h3>
+                <p class="text-gray-500 mb-6">You don't have any completed consultations yet.</p>
+                <a href="{% url 'expert_marketplace:book_consultation' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all duration-300">
+                    <i class="fas fa-plus mr-2"></i> Book a Consultation
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Cancelled Bookings -->
+    <div id="cancelled-tab" class="tab-content hidden">
+        {% if cancelled_bookings %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for booking in cancelled_bookings %}
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+                        <div class="p-5 bg-red-50">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">{{ booking.get_expertise_needed_display|default:"Consultation" }}</h3>
+                                    <p class="text-sm text-gray-600">
+                                        <i class="fas fa-calendar mr-1"></i> {{ booking.scheduled_date|date:"F j, Y" }}
+                                    </p>
+                                    <p class="text-sm text-gray-600">
+                                        <i class="fas fa-clock mr-1"></i> {{ booking.scheduled_time }}
+                                    </p>
+                                </div>
+                                <span class="px-3 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="p-5">
+                            <div class="flex items-center mb-4">
+                                {% if booking.expert %}
+                                <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 mr-3">
+                                     {% if booking.expert.profile_image %}
+                                        <img src="{{ booking.expert.profile_image.url }}" alt="{{ booking.expert.full_name }}" class="w-full h-full rounded-full object-cover">
+                                    {% else %}
+                                        <i class="fas fa-user-tie"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800">{{ booking.expert.full_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ booking.expert.get_expertise_display }}</p>
+                                </div>
+                                {% else %}
+                                <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 mr-3">
+                                    <i class="fas fa-user-slash"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800">Expert Unassigned</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            {% if booking.refund_amount and booking.refund_amount > 0 %}
+                                <div class="bg-green-50 p-3 rounded-lg mb-4">
+                                    <p class="text-sm text-green-700">
+                                        <i class="fas fa-money-bill-wave mr-1"></i> Refunded: {{ booking.currency|default:"£" }}{{ booking.refund_amount }}
+                                    </p>
+                                </div>
+                            {% endif %}
+                            
+                            {% if booking.cancellation_reason %}
+                                <div class="bg-gray-50 p-3 rounded-lg mb-4">
+                                    <p class="text-sm text-gray-700">
+                                        <i class="fas fa-info-circle mr-1"></i> Reason: {{ booking.cancellation_reason }}
+                                    </p>
+                                </div>
+                            {% endif %}
+                            
+                            <div class="flex flex-wrap gap-2 mt-4">
+                                <a href="{% url 'expert_marketplace:booking_detail' booking_id=booking.id %}" class="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-300">
+                                    <i class="fas fa-eye mr-2"></i> View Details
+                                </a>
+                                
+                                <a href="{% url 'expert_marketplace:book_consultation' %}" class="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-all duration-300">
+                                    <i class="fas fa-redo mr-2"></i> Book Again
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12 bg-gray-50 rounded-xl">
+                <div class="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-ban text-red-500 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No Cancelled Consultations</h3>
+                <p class="text-gray-500 mb-6">You don't have any cancelled consultations.</p>
+                <a href="{% url 'expert_marketplace:book_consultation' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all duration-300">
+                    <i class="fas fa-plus mr-2"></i> Book a Consultation
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Past Bookings -->
+    <div id="past-tab" class="tab-content hidden">
+        {% if past_bookings %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for booking in past_bookings %}
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+                        <div class="p-5 bg-gray-50">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">{{ booking.get_expertise_needed_display|default:"Consultation" }}</h3>
+                                    <p class="text-sm text-gray-600">
+                                        <i class="fas fa-calendar mr-1"></i> {{ booking.scheduled_date|date:"F j, Y" }}
+                                    </p>
+                                    <p class="text-sm text-gray-600">
+                                        <i class="fas fa-clock mr-1"></i> {{ booking.scheduled_time }}
+                                    </p>
+                                </div>
+                                <span class="px-3 py-1 text-xs font-medium rounded-full 
+                                    {% if booking.status == 'completed' %}bg-green-100 text-green-800
+                                    {% elif booking.status == 'cancelled' or booking.status == 'refunded' or booking.status == 'expert_noshow' or booking.status == 'client_noshow' or booking.status == 'system_cancelled' %}bg-red-100 text-red-800
+                                    {% elif booking.status == 'confirmed' %}bg-yellow-100 text-yellow-800  {# Past but still confirmed #}
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="p-5">
+                            <div class="flex items-center mb-4">
+                                {% if booking.expert %}
+                                <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 mr-3">
+                                    {% if booking.expert.profile_image %}
+                                        <img src="{{ booking.expert.profile_image.url }}" alt="{{ booking.expert.full_name }}" class="w-full h-full rounded-full object-cover">
+                                    {% else %}
+                                        <i class="fas fa-user-tie"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800">{{ booking.expert.full_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ booking.expert.get_expertise_display }}</p>
+                                </div>
+                                {% else %}
+                                <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 mr-3">
+                                    <i class="fas fa-user-slash"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800">Expert Unassigned</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="flex flex-wrap gap-2 mt-4">
+                                <a href="{% url 'expert_marketplace:booking_detail' booking_id=booking.id %}" class="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-300">
+                                    <i class="fas fa-eye mr-2"></i> View Details
+                                </a>
+                                {% if booking.status == 'confirmed' %} {# Actions for past bookings that are still 'confirmed' #}
+                                    <button type="button" class="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-all duration-300" onclick="showNoShowReportModal({{ booking.id }})">
+                                        <i class="fas fa-exclamation-triangle mr-2"></i> Report No-Show
+                                    </button>
+                                    <form action="{% url 'expert_marketplace:mark_meeting_complete' booking_id=booking.id %}" method="POST" class="flex-1">
+                                        {% csrf_token %}
+                                        <button type="submit" class="w-full inline-flex justify-center items-center px-3 py-2 text-sm font-medium rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-all duration-300">
+                                            <i class="fas fa-check-circle mr-2"></i> Mark Complete
+                                        </button>
+                                    </form>
+                                {% elif booking.status == 'completed' %}
+                                     {% if not booking.consultation_record or not booking.consultation_record.client_rating_for_expert %}
+                                        <button type="button" 
+                                                onclick="openCompleteModal({
+                                                    expertName: '{{ booking.expert.full_name|escapejs|default:'the expert' }}', 
+                                                    isCompletion: false,
+                                                    markCompleteUrl: '{% url 'expert_marketplace:mark_meeting_complete' booking.id %}'
+                                                })"
+                                                class="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-all duration-300">
+                                            <i class="far fa-star mr-2"></i> Leave Review
+                                        </button>
+                                    {% else %}
+                                        <div class="flex-1 inline-flex justify-center items-center px-3 py-2 text-sm font-medium rounded-lg bg-sky-50 dark:bg-sky-700/30 text-sky-700 dark:text-sky-200 border border-sky-200 dark:border-sky-600 cursor-default">
+                                            <span class="mr-1.5">You rated:</span>
+                                            {% for i in "12345" %}
+                                                <i class="fas fa-star text-base {% if forloop.counter <= booking.consultation_record.client_rating_for_expert %}text-yellow-400{% else %}text-slate-300 dark:text-slate-500{% endif %}"></i>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12 bg-gray-50 rounded-xl">
+                <div class="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center">
+                    <i class="fas fa-history text-gray-500 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No Past Consultations</h3>
+                <p class="text-gray-500 mb-6">You don't have any past consultations.</p>
+                <a href="{% url 'expert_marketplace:book_consultation' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all duration-300">
+                    <i class="fas fa-plus mr-2"></i> Book a Consultation
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- No-Show Report Modal -->
+    <div id="noShowReportModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden transition-opacity duration-300 ease-in-out">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 ease-in-out scale-95 opacity-0" id="noShowReportModalContent">
+            <div class="p-5 border-b flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-800">Report No-Show</h3>
+                <button type="button" onclick="closeNoShowReportModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="noShowReportForm" method="POST" action="">
+                {% csrf_token %}
+                <div class="p-5">
+                    <p class="mb-1 text-gray-700">You are reporting a no-show for booking <strong id="modalBookingId">#</strong> with <strong id="modalExpertName">Expert</strong>.</p>
+                    <p class="mb-4 text-sm text-gray-500" id="modalBookingDateTime">Scheduled for Date at Time</p>
+                    
+                    <label for="noShowReason" class="block text-sm font-medium text-gray-700 mb-1">Reason for reporting:</label>
+                    <textarea id="noShowReason" name="reason" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="4" placeholder="Please explain why the expert did not attend or if there were issues with the meeting link/platform." required></textarea>
+                    <input type="hidden" name="booking_id_field" id="modalBookingIdField">
+                </div>
+                <div class="p-4 bg-gray-50 border-t flex justify-end space-x-3 rounded-b-lg">
+                    <button type="button" onclick="closeNoShowReportModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        Submit Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- START: Complete & Review Modal HTML (Embedded) -->
+    <div id="completeReviewModal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center hidden transition-opacity duration-300 ease-in-out">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 transform transition-all duration-300 ease-in-out scale-95 opacity-0" id="completeReviewModalContent">
+            <div class="p-5 border-b flex justify-between items-center">
+                <h3 id="completeModalTitle" class="text-xl font-semibold text-gray-800">Complete & Review</h3>
+                <button type="button" onclick="closeCompleteModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <form id="completeReviewForm" method="POST" action="">
+                {% csrf_token %}
+                <div class="p-6 space-y-4">
+                    <p class="text-gray-700">You are about to interact with the booking for <strong id="modalExpertNameReview">the expert</strong>.</p>
+                    
+<div class="mb-4">
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="client_rating_slider" class="block text-sm font-medium text-gray-700">Your Rating for <strong id="modalExpertNameRatingSlider">Expert</strong>:</label>
+                            <span id="sliderValueDisplay" class="text-sm font-semibold text-blue-600">3 / 5</span>
+                        </div>
+                        <input type="range" id="client_rating_slider" name="client_rating_for_expert" 
+                               min="1" max="5" step="1" value="3" 
+                               class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50">
+                        {# The input 'name' is still 'client_rating_for_expert', so backend processing remains the same #}
+                        <div id="ratingError" class="text-red-500 text-sm mt-1 hidden">A rating is required.</div>
+                    </div>
+
+                    <div>
+                        <label for="client_review_for_expert_page" class="block text-sm font-medium text-gray-700 mb-1">Your Review (Optional):</label>
+                        <textarea id="client_review_for_expert_page" name="client_review_for_expert" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="4" placeholder="Share your experience with the expert..."></textarea>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-50 border-t flex justify-end space-x-3 rounded-b-lg">
+                    <button type="button" onclick="closeCompleteModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">
+                        Cancel
+                    </button>
+                    <button id="completeModalSubmitButton" type="submit" class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        Complete & Submit Review
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- END: Complete & Review Modal HTML (Embedded) -->
+
+</div> <!-- End of container -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // START: JavaScript for Tab Switching
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const initialTab = 'upcoming'; 
+
+    function activateTab(tabId) {
+        tabButtons.forEach(btn => {
+            btn.classList.remove('border-blue-500', 'text-blue-600');
+            btn.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+        });
+        
+        const activeButton = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
+        if (activeButton) {
+            activeButton.classList.add('border-blue-500', 'text-blue-600');
+            activeButton.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+        }
+        
+        tabContents.forEach(content => {
+            content.classList.add('hidden');
+        });
+        
+        const activeContent = document.getElementById(`${tabId}-tab`);
+        if (activeContent) {
+            activeContent.classList.remove('hidden');
+        }
+    }
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const tabId = button.getAttribute('data-tab');
+            activateTab(tabId);
+        });
+    });
+    if (document.querySelector(`.tab-button[data-tab="${initialTab}"]`)) {
+        activateTab(initialTab);
+    }
+    // END: JavaScript for Tab Switching
+
+    // START: JavaScript for No-Show Report Modal
+    const noShowReportModal = document.getElementById('noShowReportModal');
+    const noShowReportModalContent = document.getElementById('noShowReportModalContent');
+    const noShowReportForm = document.getElementById('noShowReportForm');
+    const modalBookingIdSpan = document.getElementById('modalBookingId');
+    const modalExpertNameSpan = document.getElementById('modalExpertName');
+    const modalBookingDateTimeField = document.getElementById('modalBookingDateTime');
+    const modalBookingIdHiddenField = document.getElementById('modalBookingIdField');
+
+    // Make showNoShowReportModal globally accessible if called from inline HTML
+    window.showNoShowReportModal = function(bookingId) {
+        const bookingCard = document.querySelector(`button[onclick*="showNoShowReportModal(${bookingId})"]`)?.closest('.bg-white.rounded-xl');
+        let expertName = "N/A";
+        let scheduledDate = "N/A";
+        let scheduledTime = "N/A";
+
+        if (bookingCard) {
+            const expertNameEl = bookingCard.querySelector('.font-medium.text-gray-800');
+            if (expertNameEl) expertName = expertNameEl.textContent.trim();
+            
+            // More robust way to get date and time, assuming they are next siblings to icons
+            const calendarIcon = bookingCard.querySelector('i.fa-calendar');
+            if (calendarIcon && calendarIcon.nextSibling && calendarIcon.nextSibling.nodeType === Node.TEXT_NODE) {
+                 scheduledDate = calendarIcon.nextSibling.textContent.trim();
+            }
+            const clockIcon = bookingCard.querySelector('i.fa-clock');
+            if (clockIcon && clockIcon.nextSibling && clockIcon.nextSibling.nodeType === Node.TEXT_NODE) {
+                 scheduledTime = clockIcon.nextSibling.textContent.trim();
+            }
+        } else {
+            console.warn(`Could not find booking card for ID: ${bookingId} to populate modal details for no-show.`);
+        }
+
+        if (modalBookingIdSpan) modalBookingIdSpan.textContent = `#${bookingId}`;
+        if (modalExpertNameSpan) modalExpertNameSpan.textContent = expertName;
+        if (modalBookingDateTimeField) modalBookingDateTimeField.textContent = `Scheduled for ${scheduledDate} at ${scheduledTime}`;
+        if (modalBookingIdHiddenField) modalBookingIdHiddenField.value = bookingId;
+        if (noShowReportForm) noShowReportForm.action = `/consultation/booking/${bookingId}/report-noshow/`; 
+
+        if (noShowReportModal && noShowReportModalContent) {
+            noShowReportModal.classList.remove('hidden');
+            setTimeout(() => { 
+                noShowReportModalContent.classList.remove('scale-95', 'opacity-0');
+                noShowReportModalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+    }
+
+    window.closeNoShowReportModal = function() {
+        if (noShowReportModalContent && noShowReportModal) {
+            noShowReportModalContent.classList.add('scale-95', 'opacity-0');
+            noShowReportModalContent.classList.remove('scale-100', 'opacity-100');
+            setTimeout(() => {
+                noShowReportModal.classList.add('hidden');
+            }, 300);
+        }
+    }
+
+    if (noShowReportModal) {
+        noShowReportModal.addEventListener('click', function(event) {
+            if (event.target === noShowReportModal) {
+                closeNoShowReportModal();
+            }
+        });
+    }
+    // END: JavaScript for No-Show Report Modal
+
+    // START: JavaScript for Complete & Review Modal
+console.log("DEBUG: client_bookings.html - DOMContentLoaded. Setting up Complete/Review Modal JS.");
+
+const completeReviewModal = document.getElementById('completeReviewModal');
+const completeReviewModalContent = document.getElementById('completeReviewModalContent');
+const completeReviewForm = document.getElementById('completeReviewForm');
+// Note: modalExpertNameReviewSpan is for the general text, modalExpertNameRatingSlider is for the slider label
+const modalExpertNameReviewSpan = document.getElementById('modalExpertNameReview'); 
+const modalExpertNameRatingSliderSpan = document.getElementById('modalExpertNameRatingSlider'); // For the slider label
+const completeModalTitle = document.getElementById('completeModalTitle');
+const completeModalSubmitButton = document.getElementById('completeModalSubmitButton');
+
+// NEW: Slider elements
+const ratingSlider = document.getElementById('client_rating_slider');
+const sliderValueDisplay = document.getElementById('sliderValueDisplay');
+const ratingErrorDivPage = document.getElementById('ratingError'); // Keep this for potential errors
+
+let currentRating = 3; // Default rating, matches slider's initial value
+
+// --- REMOVE OLD STAR RATING CODE HERE ---
+// REMOVE: const ratingStarsContainer = document.querySelector('#completeReviewModal .rating-stars');
+// REMOVE: let ratingInputs = [];
+// REMOVE: let starLabels = [];
+// REMOVE: function updateStarDisplay(ratingToDisplay) { ... }
+// REMOVE: starLabels.forEach((label, index) => { ... });
+// --- END OF CODE TO REMOVE ---
+
+
+// NEW: Event listener for the slider
+if (ratingSlider && sliderValueDisplay) {
+    // Initialize display
+    sliderValueDisplay.textContent = `${ratingSlider.value} / 5`;
+    currentRating = parseInt(ratingSlider.value);
+
+    ratingSlider.addEventListener('input', function() {
+        sliderValueDisplay.textContent = `${this.value} / 5`;
+        currentRating = parseInt(this.value);
+        if (ratingErrorDivPage) {
+            ratingErrorDivPage.classList.add('hidden'); // Hide error when user interacts
+        }
+    });
+} else {
+    console.error("DEBUG: Slider (client_rating_slider) or its display (sliderValueDisplay) not found.");
+}
+
+
+// Make openCompleteModal globally accessible
+window.openCompleteModal = function(options) {
+    console.log("DEBUG: openCompleteModal FUNCTION CALLED with options:", options);
+    
+    if (!completeReviewModal || !completeReviewForm || !modalExpertNameReviewSpan || !modalExpertNameRatingSliderSpan || !completeModalTitle || !completeModalSubmitButton) {
+        console.error("DEBUG: One or more Complete/Review modal elements not found! Check IDs.");
+        return;
+    }
+
+    modalExpertNameReviewSpan.textContent = options.expertName || 'the expert';
+    // NEW: Update expert name in slider label
+    if (modalExpertNameRatingSliderSpan) modalExpertNameRatingSliderSpan.textContent = options.expertName || 'Expert'; 
+    
+    completeReviewForm.action = options.markCompleteUrl;
+    
+    if (options.isCompletion) {
+        completeModalTitle.textContent = 'Complete & Review Consultation';
+        completeModalSubmitButton.textContent = 'Complete & Submit Review';
+        completeModalSubmitButton.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'focus:ring-blue-500');
+        completeModalSubmitButton.classList.add('bg-green-600', 'hover:bg-green-700', 'focus:ring-green-500');
+    } else {
+        completeModalTitle.textContent = 'Leave a Review';
+        completeModalSubmitButton.textContent = 'Submit Review';
+        completeModalSubmitButton.classList.remove('bg-green-600', 'hover:bg-green-700', 'focus:ring-green-500');
+        completeModalSubmitButton.classList.add('bg-blue-600', 'hover:bg-blue-700', 'focus:ring-blue-500');
+    }
+    
+    completeReviewForm.reset(); // Resets textareas etc.
+    
+    // NEW: Reset slider to default when modal opens
+    if (ratingSlider && sliderValueDisplay) {
+        ratingSlider.value = '3'; // Default value
+        sliderValueDisplay.textContent = '3 / 5';
+        currentRating = 3;
+    }
+    
+    if(ratingErrorDivPage) ratingErrorDivPage.classList.add('hidden');
+
+    completeReviewModal.classList.remove('hidden');
+    setTimeout(() => { 
+        if (completeReviewModalContent) {
+            completeReviewModalContent.classList.remove('scale-95', 'opacity-0');
+            completeReviewModalContent.classList.add('scale-100', 'opacity-100');
+        }
+    }, 10);
+}
+
+// Make closeCompleteModal globally accessible (no changes needed here)
+window.closeCompleteModal = function() { /* ... */ };
+
+if (completeReviewForm) {
+    completeReviewForm.addEventListener('submit', function(event) {
+        // With the slider, a value (1-5) is always present.
+        // The 'required' attribute isn't directly on the slider in the same way as radio,
+        // but the slider always has a value in its range.
+        // So, the client-side check for "not selected" (currentRating === 0) is no longer applicable
+        // if we consider any value from 1-5 as "selected".
+        // If you still want to force interaction away from the default, you'd need more complex logic.
+        // For now, we assume any slider value is a valid submission.
+        // The ratingErrorDivPage can be used by backend validation if needed.
+        console.log("DEBUG: Submitting rating:", currentRating); 
+        // No explicit client-side prevention needed here for "not selected" if slider defaults to a valid rating.
+    });
+}
+
+
+
+    if (completeReviewModal) {
+        completeReviewModal.addEventListener('click', function(event) {
+            if (event.target === completeReviewModal) {
+                closeCompleteModal();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            if (noShowReportModal && !noShowReportModal.classList.contains('hidden')) {
+                closeNoShowReportModal();
+            }
+            if (completeReviewModal && !completeReviewModal.classList.contains('hidden')) {
+                closeCompleteModal();
+            }
+        }
+    });
+
+    console.log("DEBUG: All modal functions (openCompleteModal, showNoShowReportModal etc.) should be defined on window now.");
+    // END: JavaScript for Complete & Review Modal
+});
+</script>
+{% endblock %}

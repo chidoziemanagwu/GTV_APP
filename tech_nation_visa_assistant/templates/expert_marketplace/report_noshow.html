@@ -1,0 +1,137 @@
+<!-- templates/expert_marketplace/report_noshow.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Report No-Show{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto">
+        <div class="mb-6">
+            <a href="javascript:history.back()" class="inline-flex items-center text-blue-600 hover:text-blue-800">
+                <i class="fas fa-arrow-left mr-2"></i> Back
+            </a>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+            <div class="p-6 bg-red-50 border-b border-gray-200">
+                <h1 class="text-2xl font-bold text-gray-800">Report No-Show</h1>
+                <p class="text-gray-600 mt-1">
+                    {% if is_client %}
+                    Report that the expert didn't attend the scheduled consultation
+                    {% else %}
+                    Report that the client didn't attend the scheduled consultation
+                    {% endif %}
+                </p>
+            </div>
+            
+            <div class="p-6">
+                <!-- Booking Info -->
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-3">Booking Details</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% if booking.expert %}
+                        <div>
+                            <p class="text-sm text-gray-500">Expert</p>
+                            <p class="font-medium">{{ booking.expert.full_name }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        <div>
+                            <p class="text-sm text-gray-500">Client</p>
+                            <p class="font-medium">{{ booking.name }}</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-500">Date</p>
+                            <p class="font-medium">{{ booking.scheduled_date|date:"F j, Y" }}</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-500">Time</p>
+                            <p class="font-medium">{{ booking.scheduled_time }}</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-500">Duration</p>
+                            <p class="font-medium">{{ booking.duration_minutes }} minutes</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Policy Information -->
+                <div class="bg-yellow-50 p-4 rounded-lg mb-6 border border-yellow-100">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-yellow-800">Important Information</h3>
+                            <div class="mt-2 text-sm text-yellow-700">
+                                {% if is_client %}
+                                <p>By reporting that the expert didn't show up:</p>
+                                <ul class="list-disc pl-5 space-y-1 mt-2">
+                                    <li>You will receive a <strong>full refund</strong> of your payment</li>
+                                    <li>The expert will be notified of this report</li>
+                                    <li>Our team may contact you for additional information</li>
+                                </ul>
+                                {% else %}
+                                <p>By reporting that the client didn't show up:</p>
+                                <ul class="list-disc pl-5 space-y-1 mt-2">
+                                    <li>You will receive <strong>partial compensation</strong> for your time</li>
+                                    <li>The client will be notified of this report</li>
+                                    <li>The client will not receive a refund</li>
+                                </ul>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Warning About False Reports -->
+                <div class="bg-red-50 p-4 rounded-lg mb-6 border border-red-100">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-circle text-red-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">Warning About False Reports</h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                <p>Submitting false no-show reports is a violation of our terms of service and may result in:</p>
+                                <ul class="list-disc pl-5 space-y-1 mt-2">
+                                    <li>Account suspension or termination</li>
+                                    <li>Forfeiture of any refunds</li>
+                                    <li>Potential legal action for fraud</li>
+                                </ul>
+                                <p class="mt-2">We review all no-show reports and may request additional evidence.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Report Form -->
+                <form method="POST" action="">
+                    {% csrf_token %}
+                    
+                    <div class="mb-6">
+                        <label for="reason" class="block text-sm font-medium text-gray-700 mb-1">Please provide details about what happened</label>
+                        <textarea id="reason" name="reason" rows="4" required
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500"
+                                  placeholder="Explain what happened and any attempts you made to contact the other party..."></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <a href="javascript:history.back()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-300">
+                            Cancel
+                        </a>
+                        <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-300">
+                            Submit Report
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,429 @@
+{% extends 'dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Payment for Consultation{% endblock %}
+
+{% block extra_head %}
+<!-- Make sure Stripe.js loads properly -->
+<script src="https://js.stripe.com/v3/" id="stripe-js"></script>
+<style>
+  #card-element {
+    padding: 12px;
+    background-color: white;
+  }
+  
+  #card-errors {
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+  }
+  
+  .spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 0.5rem;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-4 sm:p-6 lg:p-8 bg-gray-50">
+  <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-6">
+      <h1 class="text-2xl font-bold text-white">Complete Your Booking</h1>
+      <p class="text-blue-100 mt-1">Secure payment for your expert consultation</p>
+    </div>
+    
+    <!-- Booking Summary -->
+    <div class="p-6">
+      <div class="bg-gray-50 rounded-lg p-5 border border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-800 flex items-center mb-4">
+          <svg class="w-5 h-5 mr-2 text-indigo-600" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+            <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
+          </svg>
+          Booking Summary
+        </h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <div class="flex items-start mb-3">
+              <div class="flex-shrink-0">
+                <svg class="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+                  <path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z"></path>
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-gray-700">Service</h3>
+                <p class="text-sm text-gray-900">Expert Consultation</p>
+              </div>
+            </div>
+            
+            <div class="flex items-start mb-3">
+              <div class="flex-shrink-0">
+                <svg class="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-gray-700">Expertise</h3>
+                <p class="text-sm text-gray-900">{{ booking.expertise_needed }}</p>
+              </div>
+            </div>
+            
+            <div class="flex items-start mb-3">
+              <div class="flex-shrink-0">
+                <svg class="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-gray-700">Date</h3>
+                <p class="text-sm text-gray-900">{{ booking.scheduled_date|date:"F j, Y" }}</p>
+              </div>
+            </div>
+            
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <svg class="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-gray-700">Time</h3>
+                <p class="text-sm text-gray-900">{{ booking.scheduled_time|time:"g:i A" }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex items-start mb-3">
+              <div class="flex-shrink-0">
+                <svg class="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-gray-700">Duration</h3>
+                <p class="text-sm text-gray-900">{{ booking.duration_minutes }} minutes</p>
+              </div>
+            </div>
+            
+            <div class="flex items-start mb-3">
+              <div class="flex-shrink-0">
+                <svg class="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-gray-700">Name</h3>
+                <p class="text-sm text-gray-900">{{ booking.name }}</p>
+              </div>
+            </div>
+            
+            <div class="flex items-start mb-3">
+              <div class="flex-shrink-0">
+                <svg class="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
+                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-gray-700">Email</h3>
+                <p class="text-sm text-gray-900">{{ booking.email }}</p>
+              </div>
+            </div>
+            
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <svg class="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-gray-700">Phone</h3>
+                <p class="text-sm text-gray-900">{{ booking.phone }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-6 pt-4 border-t border-gray-200">
+          <div class="flex justify-between items-center">
+            <span class="text-base font-semibold text-gray-900">Consultation Fee:</span>
+            <span class="text-lg font-bold text-indigo-600">£{{ booking.consultation_fee }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Payment Form -->
+      <div class="mt-8">
+        <h2 class="text-lg font-semibold text-gray-800 flex items-center mb-4">
+          <svg class="w-5 h-5 mr-2 text-indigo-600" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"></path>
+            <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"></path>
+          </svg>
+          Payment Information
+        </h2>
+        
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm text-blue-700">
+                Your card will be charged £{{ booking.consultation_fee }}. All payments are secure and encrypted.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <form id="payment-form" class="space-y-6">
+          {% csrf_token %}
+          <div>
+            <label for="card-element" class="block text-sm font-medium text-gray-700 mb-2">
+              Credit or debit card
+            </label>
+            <div id="card-element" class="border border-gray-300 rounded-lg p-4">
+              <!-- Stripe Card Element will be inserted here -->
+            </div>
+            <div id="card-errors" role="alert" class="text-red-600 text-sm mt-2"></div>
+          </div>
+          
+          <button id="submit-button" type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+            <span id="button-text">Pay £{{ booking.consultation_fee }}</span>
+            <span id="spinner" class="spinner hidden"></span>
+          </button>
+        </form>
+        
+        <div class="mt-6 text-center">
+          <p class="text-sm text-gray-600">
+            By proceeding with payment, you agree to our 
+            <a href="#" class="font-medium text-indigo-600">Terms of Service</a> 
+            and 
+            <a href="#" class="font-medium text-indigo-600">Refund Policy</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Check if Stripe is loaded
+  if (typeof Stripe === 'undefined') {
+    console.error('Stripe.js not loaded. Loading it now...');
+    // Try to load Stripe dynamically if it failed to load
+    const script = document.createElement('script');
+    script.src = 'https://js.stripe.com/v3/';
+    script.onload = initializeStripe;
+    document.head.appendChild(script);
+  } else {
+    // Stripe is already loaded, initialize it
+    document.addEventListener('DOMContentLoaded', initializeStripe);
+  }
+
+  function initializeStripe() {
+    console.log('Initializing Stripe...');
+    try {
+      // Create a Stripe client with your publishable key
+      const stripe = Stripe('{{ stripe_publishable_key }}');
+      console.log('Stripe initialized successfully');
+      
+      // Create an instance of Elements with international settings
+      const elements = stripe.elements({
+        locale: 'auto', // Automatically detect user's locale
+        fonts: [
+          {
+            cssSrc: 'https://fonts.googleapis.com/css?family=Roboto',
+          },
+        ],
+      });
+      
+      // Create an instance of the card Element with global settings
+      const cardElement = elements.create('card', {
+        style: {
+          base: {
+            fontSize: '16px',
+            color: '#32325d',
+            fontFamily: 'Roboto, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
+            '::placeholder': {
+              color: '#aab7c4'
+            },
+            iconColor: '#6366f1'
+          },
+          invalid: {
+            color: '#ef4444',
+            iconColor: '#ef4444'
+          }
+        },
+        // Disable zip code collection for global payments
+        hidePostalCode: true,
+      });
+      
+      // Add an instance of the card Element into the `card-element` div
+      cardElement.mount('#card-element');
+      
+      // Handle real-time validation errors from the card Element
+      cardElement.on('change', function(event) {
+        const displayError = document.getElementById('card-errors');
+        if (event.error) {
+          displayError.textContent = event.error.message;
+        } else {
+          displayError.textContent = '';
+        }
+      });
+      
+      // Handle form submission
+      const form = document.getElementById('payment-form');
+      const submitButton = document.getElementById('submit-button');
+      const spinner = document.getElementById('spinner');
+      const buttonText = document.getElementById('button-text');
+      
+      form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        // Disable the submit button to prevent repeated clicks
+        submitButton.disabled = true;
+        spinner.classList.remove('hidden');
+        buttonText.textContent = 'Processing...';
+        
+        try {
+          console.log('Creating payment method...');
+          // Create payment method with minimal billing details
+          const { paymentMethod, error } = await stripe.createPaymentMethod({
+            type: 'card',
+            card: cardElement,
+            billing_details: {
+              name: '{{ booking.name }}',
+              email: '{{ booking.email }}',
+              // No address required for global payments
+            }
+          });
+          
+          if (error) {
+            // Show error to customer
+            console.error('Payment method error:', error);
+            const errorElement = document.getElementById('card-errors');
+            errorElement.textContent = error.message;
+            submitButton.disabled = false;
+            spinner.classList.add('hidden');
+            buttonText.textContent = 'Pay £{{ booking.consultation_fee }}';
+            return;
+          }
+          
+          console.log('Payment method created successfully');
+          
+          const response = await fetch("{% url 'expert_marketplace:create_payment_intent' booking.id %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ payment_method_id: paymentMethod.id })
+          });
+          
+          const result = await response.json();
+          console.log('Server response:', result);
+          
+          if (result.requires_action) {
+            // Use Stripe.js to handle required card action
+            const { error } = await stripe.handleCardAction(result.payment_intent_client_secret);
+            
+            if (error) {
+              // Show error to customer
+              console.error('Card action error:', error);
+              const errorElement = document.getElementById('card-errors');
+              errorElement.textContent = error.message;
+              submitButton.disabled = false;
+              spinner.classList.add('hidden');
+              buttonText.textContent = 'Pay £{{ booking.consultation_fee }}';
+              return;
+            }
+            
+            // The card action has been handled, confirm payment
+            await confirmPayment(result.payment_intent_id);
+          } else if (result.success) {
+            // Payment succeeded
+            console.log('Payment successful, redirecting to:', result.redirect_url);
+            window.location.href = result.redirect_url;
+          } else {
+            // Show error to customer
+            console.error('Payment error:', result.error);
+            const errorElement = document.getElementById('card-errors');
+            errorElement.textContent = result.error || 'An error occurred during payment';
+            submitButton.disabled = false;
+            spinner.classList.add('hidden');
+            buttonText.textContent = 'Pay £{{ booking.consultation_fee }}';
+          }
+        } catch (error) {
+          console.error('Unexpected error:', error);
+          const errorElement = document.getElementById('card-errors');
+          errorElement.textContent = 'An unexpected error occurred. Please try again.';
+          submitButton.disabled = false;
+          spinner.classList.add('hidden');
+          buttonText.textContent = 'Pay £{{ booking.consultation_fee }}';
+        }
+      });
+      
+      async function confirmPayment(paymentIntentId) {
+        try {
+          console.log('Confirming payment:', paymentIntentId);
+          const response = await fetch("{% url 'expert_marketplace:confirm_payment' booking.id %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ payment_intent_id: paymentIntentId })
+          });
+          
+          const result = await response.json();
+          console.log('Confirmation response:', result);
+          
+          if (result.success) {
+            // Payment succeeded
+            console.log('Payment confirmed successfully, redirecting to:', result.redirect_url);
+            window.location.href = result.redirect_url;
+          } else {
+            // Show error to customer
+            console.error('Confirmation error:', result.error);
+            const errorElement = document.getElementById('card-errors');
+            errorElement.textContent = result.error || 'An error occurred during payment confirmation';
+            submitButton.disabled = false;
+            spinner.classList.add('hidden');
+            buttonText.textContent = 'Pay £{{ booking.consultation_fee }}';
+          }
+        } catch (error) {
+          console.error('Unexpected confirmation error:', error);
+          const errorElement = document.getElementById('card-errors');
+          errorElement.textContent = 'An unexpected error occurred. Please try again.';
+          submitButton.disabled = false;
+          spinner.classList.add('hidden');
+          buttonText.textContent = 'Pay £{{ booking.consultation_fee }}';
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing Stripe:', error);
+      const errorElement = document.getElementById('card-errors');
+      if (errorElement) {
+        errorElement.textContent = 'Payment system initialization failed. Please refresh the page and try again.';
+      }
+    }
+  }
+</script>
+{% endblock %}

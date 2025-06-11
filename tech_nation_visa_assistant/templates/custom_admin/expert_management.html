@@ -1,0 +1,877 @@
+{% extends 'custom_admin/base.html' %}
+
+{% block title %}Expert Management Dashboard{% endblock %}
+
+{% block content %}
+    <div class="p-4 sm:p-6 lg:p-8">
+        <!-- Page Header -->
+        <div class="mb-6 flex justify-between items-center">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">Expert Management</h2>
+                <p class="mt-1 text-sm text-gray-500">Manage experts who provide consultations and reviews</p>
+            </div>
+            <button type="button" data-modal-target="addExpertModal" data-modal-toggle="addExpertModal" 
+                class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">
+                <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Add Expert
+            </button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <!-- Total Experts -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500">Total Experts</h3>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_experts }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Experts -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500">Active Experts</h3>
+                        <p class="text-2xl font-bold text-gray-900">{{ active_experts }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Consultations -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500">Total Consultations</h3>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_consultations }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Average Rating -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 h-12 w-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500">Average Rating</h3>
+                        <p class="text-2xl font-bold text-gray-900">{{ avg_rating_all_experts|default:0|floatformat:1 }}/5.0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <form method="get" class="flex flex-wrap items-end gap-4">
+                <div>
+                    <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                    <input type="text" id="search" name="search" value="{{ search }}" placeholder="Name or email" 
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                </div>
+                <div>
+                    <label for="expertise_filter" class="block text-sm font-medium text-gray-700 mb-1">Expertise</label>
+                    <select id="expertise_filter" name="expertise" 
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                        <option value="">All Expertise</option>
+                        {% for value, display in expertise_choices %}
+                        <option value="{{ value }}" {% if expertise == value %}selected{% endif %}>{{ display }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="status_filter" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select id="status_filter" name="status" 
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                        <option value="">All Status</option>
+                        <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                <div>
+                    <button type="submit" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">
+                        Filter
+                    </button>
+                </div>
+                <div>
+                    <a href="{% url 'custom_admin:expert_management' %}" class="text-gray-500 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5">
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Experts Table -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expert</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expertise</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Consultations</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for expert in page_obj %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                                        {% if expert.profile_image %}
+                                        <img src="{{ expert.profile_image.url }}" alt="{{ expert.first_name }}" class="h-10 w-10 rounded-full object-cover">
+                                        {% else %}
+                                        <span class="text-gray-600 font-medium">{{ expert.first_name|slice:":1"|upper }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">{{ expert.first_name }} {{ expert.last_name }}</div>
+                                        <div class="text-sm text-gray-500">{{ expert.email }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ expert.get_expertise_display }}</div>
+                                <div class="text-xs text-gray-500">{{ expert.specialization|default:"N/A" }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ expert.consultation_count_annotated|default:"0" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+    <div class="flex items-center">
+        <span class="text-sm font-medium text-gray-900 mr-2">{{ expert.rating|default:"0"|floatformat:1 }}</span>
+        <div class="flex text-yellow-400"> <!-- (1) Parent div sets yellow color -->
+            {% with expert_rating_int=expert.rating|default:"0"|floatformat:"0"|add:"0" %} <!-- (2) Calculates integer rating -->
+            {% for i in "12345" %}
+                {% if forloop.counter <= expert_rating_int %} <!-- (3) Condition for filled star -->
+                <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"> <!-- (4) Filled star, inherits yellow -->
+                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+                </svg>
+                {% else %}
+                <svg class="w-4 h-4 fill-current text-gray-300" viewBox="0 0 24 24"> <!-- (5) Empty star, explicitly gray -->
+                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+                </svg>
+                {% endif %}
+            {% endfor %}
+            {% endwith %}
+        </div>
+        <span class="text-xs text-gray-500 ml-2">({{ expert.review_count_annotated|default:"0" }})</span>
+    </div>
+</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if expert.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ expert.is_active|yesno:"Active,Inactive" }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-2">
+                                    <button type="button" data-modal-target="editExpertModal" data-modal-toggle="editExpertModal" 
+                                        data-expert-id="{{ expert.id }}" class="text-blue-600 hover:text-blue-900">
+                                        Edit
+                                    </button>
+                                    <button type="button" data-modal-target="viewExpertModal" data-modal-toggle="viewExpertModal" 
+                                        data-expert-id="{{ expert.id }}" class="text-gray-600 hover:text-gray-900">
+                                        View
+                                    </button>
+                                    <button type="button" onclick="toggleExpertStatus({{ expert.id }})" 
+                                        class="{% if expert.is_active %}text-red-600 hover:text-red-900{% else %}text-green-600 hover:text-green-900{% endif %}">
+                                        {{ expert.is_active|yesno:"Deactivate,Activate" }}
+                                    </button>
+                                    <button type="button" onclick="editExpertAvailability({{ expert.id }})" 
+                                        class="text-indigo-600 hover:text-indigo-900">
+                                        Edit Availability
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
+                                No experts found
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1 flex justify-between sm:hidden">
+                        {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                            class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            Previous
+                        </a>
+                        {% endif %}
+                        {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            Next
+                        </a>
+                        {% endif %}
+                    </div>
+                    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                        <div>
+                            <p class="text-sm text-gray-700">
+                                Showing <span class="font-medium">{{ page_obj.start_index }}</span> to 
+                                <span class="font-medium">{{ page_obj.end_index }}</span> of 
+                                <span class="font-medium">{{ page_obj.paginator.count }}</span> experts
+                            </p>
+                        </div>
+                        <div>
+                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                {% if page_obj.has_previous %}
+                                <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                                    class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <span class="sr-only">Previous</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </a>
+                                {% endif %}
+                                
+                                {% for i in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == i %}
+                                    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+                                        {{ i }}
+                                    </span>
+                                    {% elif i > page_obj.number|add:"-3" and i < page_obj.number|add:"3" %}
+                                    <a href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                        {{ i }}
+                                    </a>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                                    class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <span class="sr-only">Next</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10l-3.293-3.293a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </a>
+                                {% endif %}
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Add Expert Modal -->
+    <div id="addExpertModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
+        <div class="relative w-full max-w-2xl max-h-full">
+            <div class="relative bg-white rounded-lg shadow">
+                <div class="flex items-start justify-between p-4 border-b rounded-t">
+                    <h3 class="text-xl font-semibold text-gray-900">Add New Expert</h3>
+                    <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center" data-modal-hide="addExpertModal">
+                        <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/></svg><span class="sr-only">Close modal</span>
+                    </button>
+                </div>
+                <div class="p-6 space-y-6">
+                    <form id="addExpertForm" action="{% url 'custom_admin:add_expert' %}" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div><label for="add_first_name" class="block mb-2 text-sm font-medium text-gray-900">First Name</label><input type="text" name="first_name" id="add_first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required></div>
+                            <div><label for="add_last_name" class="block mb-2 text-sm font-medium text-gray-900">Last Name</label><input type="text" name="last_name" id="add_last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required></div>
+                            <div><label for="add_email" class="block mb-2 text-sm font-medium text-gray-900">Email</label><input type="email" name="email" id="add_email" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required></div>
+                            <div>
+                                <label for="add_expert_password" class="block mb-2 text-sm font-medium text-gray-900">Password</label>
+                                <div class="relative"><input type="password" name="password" id="add_expert_password" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-10" required placeholder="Enter initial password"><button type="button" id="toggle_add_expert_password" class="absolute inset-y-0 right-0 px-3 flex items-center text-sm leading-5 text-gray-500 hover:text-gray-700 focus:outline-none"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="eye_icon_add"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg><svg class="h-5 w-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="eye_slash_icon_add"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 .946-3.013 3.496-5.332 6.574-6.175M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.458 3.458l-1.525-1.525A6.968 6.968 0 0021.542 12c-1.274-4.057-5.064-7-9.542-7a9.953 9.953 0 00-3.393.65M3.542 3.542L20.458 20.458"></path></svg></button></div>
+                                <p class="mt-1 text-xs text-gray-500">Expert will use this to log in.</p>
+                            </div>
+                            <div><label for="add_phone" class="block mb-2 text-sm font-medium text-gray-900">Phone</label><input type="tel" name="phone" id="add_phone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"></div>
+                            <div>
+                                <label for="add_expertise_select" class="block mb-2 text-sm font-medium text-gray-900">Expertise</label>
+                                <select name="expertise" id="add_expertise_select" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                                    <option value="">Select expertise</option>{% for value, display in expertise_choices %}<option value="{{ value }}">{{ display }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div><label for="add_specialization" class="block mb-2 text-sm font-medium text-gray-900">Specialization</label><input type="text" name="specialization" id="add_specialization" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"></div>
+                            <div class="md:col-span-2"><label for="add_bio" class="block mb-2 text-sm font-medium text-gray-900">Bio</label><textarea name="bio" id="add_bio" rows="4" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"></textarea></div>
+                            <div><label for="add_hourly_rate" class="block mb-2 text-sm font-medium text-gray-900">Hourly Rate (£)</label><input type="number" name="hourly_rate" id="add_hourly_rate" min="0" step="0.01" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required></div>
+                            <div><label for="add_profile_image" class="block mb-2 text-sm font-medium text-gray-900">Profile Image</label><input type="file" name="profile_image" id="add_profile_image" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"></div>
+                            
+                            <!-- **** START: ADDED Availability JSON Textarea **** -->
+                            <div class="md:col-span-2">
+                                <label for="add_availability_json" class="block mb-2 text-sm font-medium text-gray-900">Availability (JSON List)</label>
+                                <textarea name="availability_json" id="add_availability_json" rows="6" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 font-mono" placeholder='[{"date": "YYYY-MM-DD", "start_time": "HH:MM", "end_time": "HH:MM"}, ...] (Optional)'></textarea>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    Enter specific available date and time slots as a JSON list. Each item must have "date", "start_time", and "end_time".
+                                    Example: <code class="text-xs bg-gray-100 p-0.5 rounded">[{"date": "2025-07-01", "start_time": "10:00", "end_time": "11:00"}, {"date": "2025-07-01", "start_time": "14:00", "end_time": "15:30"}]</code>
+                                </p>
+                            </div>
+                            <!-- **** END: ADDED Availability JSON Textarea **** -->
+
+                            <div class="md:col-span-2">
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="is_active" value="1" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    <span class="ml-3 text-sm font-medium text-gray-900">Active</span>
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="flex items-center p-6 space-x-2 border-t border-gray-200 rounded-b">
+                    <button type="submit" form="addExpertForm" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Add Expert</button>
+                    <button data-modal-hide="addExpertModal" type="button" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Expert Modal -->
+    <div id="editExpertModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
+        <div class="relative w-full max-w-2xl max-h-full">
+            <div class="relative bg-white rounded-lg shadow">
+                <div class="flex items-start justify-between p-4 border-b rounded-t">
+                    <h3 class="text-xl font-semibold text-gray-900">Edit Expert</h3>
+                    <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center" data-modal-hide="editExpertModal">
+                        <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/></svg><span class="sr-only">Close modal</span>
+                    </button>
+                </div>
+                <div class="p-6 space-y-6">
+                    <form id="editExpertForm" action="" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="expert_id" id="edit_expert_id_hidden_field">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div><label for="edit_first_name" class="block mb-2 text-sm font-medium text-gray-900">First Name</label><input type="text" name="first_name" id="edit_first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required></div>
+                            <div><label for="edit_last_name" class="block mb-2 text-sm font-medium text-gray-900">Last Name</label><input type="text" name="last_name" id="edit_last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required></div>
+                            <div><label for="edit_email" class="block mb-2 text-sm font-medium text-gray-900">Email</label><input type="email" name="email" id="edit_email" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required></div>
+                            <div>
+                                <label for="edit_expert_password" class="block mb-2 text-sm font-medium text-gray-900">New Password (Optional)</label>
+                                <div class="relative"><input type="password" name="password" id="edit_expert_password" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-10" placeholder="Leave blank to keep current password"><button type="button" id="toggle_edit_expert_password" class="absolute inset-y-0 right-0 px-3 flex items-center text-sm leading-5 text-gray-500 hover:text-gray-700 focus:outline-none"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="eye_icon_edit"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg><svg class="h-5 w-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="eye_slash_icon_edit"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 .946-3.013 3.496-5.332 6.574-6.175M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.458 3.458l-1.525-1.525A6.968 6.968 0 0021.542 12c-1.274-4.057-5.064-7-9.542-7a9.953 9.953 0 00-3.393.65M3.542 3.542L20.458 20.458"></path></svg></button></div>
+                                <p class="mt-1 text-xs text-gray-500">Only fill this if you want to change the expert's password.</p>
+                            </div>
+                            <div><label for="edit_phone" class="block mb-2 text-sm font-medium text-gray-900">Phone</label><input type="tel" name="phone" id="edit_phone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"></div>
+                            <div>
+                                <label for="edit_expertise_select" class="block mb-2 text-sm font-medium text-gray-900">Expertise</label>
+                                <select name="expertise" id="edit_expertise_select" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                                    <option value="">Select expertise</option>{% for value, display in expertise_choices %}<option value="{{ value }}">{{ display }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div><label for="edit_specialization" class="block mb-2 text-sm font-medium text-gray-900">Specialization</label><input type="text" name="specialization" id="edit_specialization" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"></div>
+                            <div class="md:col-span-2"><label for="edit_bio" class="block mb-2 text-sm font-medium text-gray-900">Bio</label><textarea name="bio" id="edit_bio" rows="4" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"></textarea></div>
+                            <div><label for="edit_hourly_rate" class="block mb-2 text-sm font-medium text-gray-900">Hourly Rate (£)</label><input type="number" name="hourly_rate" id="edit_hourly_rate" min="0" step="0.01" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required></div>
+                            <div>
+                                <label for="edit_profile_image" class="block mb-2 text-sm font-medium text-gray-900">Profile Image</label>
+                                <input type="file" name="profile_image" id="edit_profile_image" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                                <div id="current_image_container" class="mt-2 hidden"><span class="text-sm text-gray-500">Current image:</span><img id="current_image_preview" src="#" alt="Current Image" class="h-16 w-16 object-cover rounded mt-1 inline-block"><span id="current_image_name" class="text-sm font-medium text-gray-900 ml-1"></span></div>
+                            </div>
+
+                            <!-- **** START: ADDED Availability JSON Textarea for Edit **** -->
+                            <div class="md:col-span-2">
+                                <label for="edit_availability_json" class="block mb-2 text-sm font-medium text-gray-900">Availability (JSON List)</label>
+                                <textarea name="availability_json" id="edit_availability_json" rows="6" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 font-mono" placeholder='[{"date": "YYYY-MM-DD", "start_time": "HH:MM", "end_time": "HH:MM"}, ...] (Leave blank to keep current or set to [] to clear)'></textarea>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    Edit specific available date and time slots as a JSON list.
+                                    Example: <code class="text-xs bg-gray-100 p-0.5 rounded">[{"date": "2025-07-01", "start_time": "10:00", "end_time": "11:00"}]</code>
+                                </p>
+                            </div>
+                            <!-- **** END: ADDED Availability JSON Textarea for Edit **** -->
+
+                            <div class="md:col-span-2">
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="is_active" id="edit_is_active" value="1" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    <span class="ml-3 text-sm font-medium text-gray-900">Active</span>
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="flex items-center p-6 space-x-2 border-t border-gray-200 rounded-b">
+                    <button type="submit" form="editExpertForm" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Save Changes</button>
+                    <button data-modal-hide="editExpertModal" type="button" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Expert Modal -->
+    <div id="viewExpertModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
+        <div class="relative w-full max-w-2xl max-h-full">
+            <div class="relative bg-white rounded-lg shadow">
+                <div class="flex items-start justify-between p-4 border-b rounded-t">
+                    <h3 class="text-xl font-semibold text-gray-900" id="view_expert_name_title">Expert Details</h3>
+                    <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center" data-modal-hide="viewExpertModal">
+                        <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/></svg><span class="sr-only">Close modal</span>
+                    </button>
+                </div>
+                <div class="p-6 space-y-6">
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <div class="md:w-1/3 flex flex-col items-center">
+                            <div id="view_expert_image_container" class="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center mb-4 overflow-hidden">
+                                <span id="view_expert_initial_char" class="text-3xl font-bold text-gray-600"></span>
+                            </div>
+                            <div class="text-center">
+                                <div id="view_expert_status_badge" class="px-3 py-1 inline-flex text-sm font-semibold rounded-full bg-green-100 text-green-800 mb-2">Active</div>
+                                <div class="flex items-center justify-center">
+                                    <div id="view_expert_rating_stars_display" class="flex text-yellow-400"></div>
+                                    <span id="view_expert_rating_value" class="ml-2 text-sm font-medium text-gray-900">4.5</span>
+                                    <span id="view_expert_review_count_value" class="ml-1 text-sm text-gray-500">(24 reviews)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="md:w-2/3">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><h4 class="text-sm font-medium text-gray-500">Email</h4><p id="view_expert_email_display" class="text-sm font-medium text-gray-900 break-all">expert@example.com</p></div>
+                                <div><h4 class="text-sm font-medium text-gray-500">Phone</h4><p id="view_expert_phone_display" class="text-sm font-medium text-gray-900">N/A</p></div>
+                                <div><h4 class="text-sm font-medium text-gray-500">Expertise</h4><p id="view_expert_expertise_display" class="text-sm font-medium text-gray-900">Tech</p></div>
+                                <div><h4 class="text-sm font-medium text-gray-500">Specialization</h4><p id="view_expert_specialization_display" class="text-sm font-medium text-gray-900">N/A</p></div>
+                                <div><h4 class="text-sm font-medium text-gray-500">Hourly Rate</h4><p id="view_expert_hourly_rate_display" class="text-sm font-medium text-gray-900">£0.00</p></div>
+                                <div><h4 class="text-sm font-medium text-gray-500">Total Consultations</h4><p id="view_expert_consultations_count" class="text-sm font-medium text-gray-900">0</p></div>
+                                <div class="md:col-span-2"><h4 class="text-sm font-medium text-gray-500">Bio</h4><p id="view_expert_bio_display" class="text-sm text-gray-900 mt-1 whitespace-pre-wrap">No bio provided.</p></div>
+                                <div class="md:col-span-2 mt-4">
+                                    <h4 class="text-sm font-medium text-gray-500">Availability</h4>
+                                    <!-- **** START: MODIFIED Availability Display Area **** -->
+                                    <div id="view_expert_availability_json_display" class="mt-2 p-3 bg-gray-50 rounded-lg text-sm font-mono overflow-auto max-h-60">
+                                        <div id="view_expert_availability_formatted_list" class="space-y-1"></div>
+                                        <p id="view_expert_no_availability_message" class="text-gray-500 italic hidden">No availability schedule set.</p>
+                                        <pre id="view_expert_availability_raw_json" class="text-xs text-gray-400 mt-2 hidden whitespace-pre-wrap break-all"></pre>
+                                    </div>
+                                    <!-- **** END: MODIFIED Availability Display Area **** -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-t pt-4">
+                        <h4 class="text-lg font-medium text-gray-900 mb-3">Recent Consultations</h4>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th><th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th><th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th><th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th><th scope="col" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th></tr></thead><tbody id="view_expert_consultations_table_body" class="bg-white divide-y divide-gray-200"></tbody></table>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center p-6 space-x-2 border-t border-gray-200 rounded-b">
+                    <button type="button" id="view_expert_modal_edit_button" data-modal-hide="viewExpertModal" data-modal-target="editExpertModal" data-modal-toggle="editExpertModal" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Edit Expert</button>
+                    <button type="button" id="view_expert_modal_edit_availability_button" class="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 focus:ring-4 focus:ring-indigo-300 font-medium rounded-lg text-sm px-5 py-2.5">Edit Availability</button>
+                    <button data-modal-hide="viewExpertModal" type="button" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store Django URLs in JS constants
+        const EXPERT_DETAILS_URL_TEMPLATE = "{% url 'custom_admin:expert_details' 0 %}";
+        const EXPERT_UPDATE_AVAILABILITY_URL_TEMPLATE = "{% url 'custom_admin:update_expert_availability' 0 %}"; // This view needs to be updated in Python
+        const EXPERT_TOGGLE_STATUS_URL_TEMPLATE = "{% url 'custom_admin:toggle_expert_status' 0 %}";
+        const EXPERT_UPDATE_URL_TEMPLATE = "{% url 'custom_admin:update_expert' 0 %}";
+
+        function getCsrfToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        }
+
+        // **** START: MODIFIED editExpertAvailability function ****
+        function editExpertAvailability(expertId) {
+            const fetchUrl = EXPERT_DETAILS_URL_TEMPLATE.replace('0', expertId);
+            fetch(fetchUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const expert = data.expert;
+                        let availabilityJsonString = "[]"; // Default to empty list for new format
+                        
+                        try {
+                            if (expert.availability_json && expert.availability_json.trim() !== "") {
+                                const parsedJson = JSON.parse(expert.availability_json);
+                                // Ensure it's an array, otherwise default to empty array string
+                                if (Array.isArray(parsedJson)) {
+                                   availabilityJsonString = JSON.stringify(parsedJson, null, 2);
+                                } else {
+                                    console.warn('Fetched availability_json is not an array, defaulting to []. Raw:', expert.availability_json);
+                                    availabilityJsonString = "[]";
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Error parsing availability JSON from server for editing:', e, "Raw:", expert.availability_json);
+                            availabilityJsonString = "[]"; // Fallback to empty list string
+                        }
+                        
+                        const modalId = `availabilityModal-${expertId}`;
+                        let existingModal = document.getElementById(modalId);
+                        if (existingModal) existingModal.remove();
+
+                        const modal = document.createElement('div');
+                        modal.id = modalId;
+                        modal.className = 'fixed inset-0 z-[100] overflow-auto bg-gray-800 bg-opacity-75 flex';
+                        modal.innerHTML = `
+                            <div class="relative p-6 sm:p-8 bg-white w-full max-w-2xl m-auto rounded-lg shadow-lg">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="text-xl font-semibold text-gray-900">Edit Availability for ${expert.full_name || (expert.first_name + ' ' + expert.last_name)}</h3>
+                                    <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5" data-close-availability-modal>
+                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                                    </button>
+                                </div>
+                                <div class="help-text mb-4 bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                                    <p class="text-sm text-blue-800">Enter availability as a JSON list of specific slots. Each slot must be an object with "date" (YYYY-MM-DD), "start_time" (HH:MM), and "end_time" (HH:MM).</p>
+                                    <p class="text-sm text-blue-800 mt-1">Example: <code class="bg-blue-100 px-1 py-0.5 rounded text-xs">[{"date": "2025-07-15", "start_time": "09:00", "end_time": "10:00"}, {"date": "2025-07-15", "start_time": "14:00", "end_time": "15:30"}]</code></p>
+                                </div>
+                                <textarea id="availabilityJsonEditor-${expertId}" rows="10" class="w-full p-3 border border-gray-300 rounded-lg font-mono text-sm bg-gray-50">${availabilityJsonString}</textarea>
+                                <div class="mt-4">
+                                    <button type="button" data-insert-sample-availability class="text-blue-600 bg-blue-50 hover:bg-blue-100 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2">
+                                        Insert Sample
+                                    </button>
+                                </div>
+                                <div class="flex justify-end mt-6">
+                                    <button type="button" data-save-availability class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2">
+                                        Save Changes
+                                    </button>
+                                    <button type="button" data-cancel-availability-modal class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 border border-gray-200">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(modal);
+                        
+                        modal.querySelector('[data-close-availability-modal]').addEventListener('click', () => modal.remove());
+                        modal.querySelector('[data-cancel-availability-modal]').addEventListener('click', () => modal.remove());
+                        
+                        modal.querySelector('[data-insert-sample-availability]').addEventListener('click', () => {
+                            const sample = [{"date": "2025-07-20", "start_time": "10:00", "end_time": "11:00"}, {"date": "2025-07-21", "start_time": "14:00", "end_time": "16:00"}];
+                            document.getElementById(`availabilityJsonEditor-${expertId}`).value = JSON.stringify(sample, null, 2);
+                        });
+                        
+                        modal.querySelector('[data-save-availability]').addEventListener('click', () => {
+                            const newAvailabilityJson = document.getElementById(`availabilityJsonEditor-${expertId}`).value;
+                            try {
+                                const parsed = JSON.parse(newAvailabilityJson); // Validate JSON
+                                if (!Array.isArray(parsed)) { // Ensure it's an array for the new format
+                                    alert('Invalid format. Availability must be a JSON list (array) of slots.');
+                                    return;
+                                }
+                                // Further validation could be added here to check structure of each slot if needed,
+                                // but the backend `validate_availability_json_list_format` will handle it.
+                            } catch (e) {
+                                alert('Invalid JSON format. Please check your input.\nError: ' + e.message);
+                                return;
+                            }
+                            
+                            const postUrl = EXPERT_UPDATE_AVAILABILITY_URL_TEMPLATE.replace('0', expertId);
+                            fetch(postUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                                body: JSON.stringify({ availability_json: newAvailabilityJson }) // Send the raw string
+                            })
+                            .then(response => response.json())
+                            .then(saveData => {
+                                if (saveData.success) {
+                                    alert(saveData.message || 'Availability updated successfully');
+                                    modal.remove();
+                                    const viewModal = document.getElementById('viewExpertModal');
+                                    if (viewModal && !viewModal.classList.contains('hidden') && document.getElementById('view_expert_modal_edit_button').getAttribute('data-expert-id-for-view') === expertId.toString()) {
+                                        loadExpertForView(expertId); // Refresh view modal
+                                    }
+                                    // Also refresh the main edit modal's availability field if it's open for this expert
+                                    const editModal = document.getElementById('editExpertModal');
+                                    if (editModal && !editModal.classList.contains('hidden') && document.getElementById('edit_expert_id_hidden_field').value === expertId.toString()) {
+                                        document.getElementById('edit_availability_json').value = newAvailabilityJson;
+                                    }
+
+                                } else {
+                                    alert('Error: ' + (saveData.error || 'Could not update availability. Check format.'));
+                                }
+                            }).catch(err => {
+                                console.error('Save availability error:', err);
+                                alert('An error occurred while saving availability.');
+                            });
+                        });
+                    } else {
+                        alert('Error loading expert details: ' + (data.error || 'Unknown error'));
+                    }
+                }).catch(err => {
+                    console.error('Fetch expert details error:', err);
+                    alert('An error occurred while fetching expert details.');
+                });
+        }
+        // **** END: MODIFIED editExpertAvailability function ****
+
+        function toggleExpertStatus(expertId) {
+            if (confirm('Are you sure you want to change this expert\'s status?')) {
+                const postUrl = EXPERT_TOGGLE_STATUS_URL_TEMPLATE.replace('0', expertId);
+                fetch(postUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() }})
+                .then(response => response.json()).then(data => {
+                    if (data.success) { alert(data.message || 'Status updated successfully.'); window.location.reload(); } 
+                    else { alert('Error: ' + (data.error || 'Could not update status.')); }
+                }).catch(error => { console.error('Toggle status error:', error); alert('An error occurred.'); });
+            }
+        }
+
+        // **** START: MODIFIED loadExpertForEdit function ****
+        function loadExpertForEdit(expertId) {
+            const fetchUrl = EXPERT_DETAILS_URL_TEMPLATE.replace('0', expertId);
+            fetch(fetchUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const expert = data.expert;
+                        document.getElementById('edit_expert_id_hidden_field').value = expert.id;
+                        document.getElementById('edit_first_name').value = expert.first_name || '';
+                        document.getElementById('edit_last_name').value = expert.last_name || '';
+                        document.getElementById('edit_email').value = expert.email || '';
+                        document.getElementById('edit_expert_password').value = '';
+                        document.getElementById('edit_phone').value = expert.phone || '';
+                        document.getElementById('edit_expertise_select').value = expert.expertise || '';
+                        document.getElementById('edit_specialization').value = expert.specialization || '';
+                        document.getElementById('edit_bio').value = expert.bio || '';
+                        document.getElementById('edit_hourly_rate').value = expert.hourly_rate !== null ? expert.hourly_rate.toFixed(2) : '';
+                        document.getElementById('edit_is_active').checked = expert.is_active;
+                        
+                        // Populate availability_json textarea
+                        let availabilityJsonToEdit = "[]"; // Default to empty list string
+                        if (expert.availability_json && expert.availability_json.trim() !== "") {
+                            try {
+                                const parsed = JSON.parse(expert.availability_json);
+                                if (Array.isArray(parsed)) { // Ensure it's an array
+                                    availabilityJsonToEdit = JSON.stringify(parsed, null, 2); // Pretty print
+                                } else {
+                                     availabilityJsonToEdit = expert.availability_json; // Use raw if not array (though backend should ensure it is)
+                                }
+                            } catch (e) {
+                                console.warn("Could not parse availability_json for edit form, using raw string:", expert.availability_json, e);
+                                availabilityJsonToEdit = expert.availability_json; // Fallback to raw string if parse fails
+                            }
+                        }
+                        document.getElementById('edit_availability_json').value = availabilityJsonToEdit;
+                        
+                        const form = document.getElementById('editExpertForm');
+                        form.action = EXPERT_UPDATE_URL_TEMPLATE.replace('0', expert.id);
+                        
+                        const currentImageContainer = document.getElementById('current_image_container');
+                        const currentImagePreview = document.getElementById('current_image_preview');
+                        const currentImageName = document.getElementById('current_image_name');
+                        if (expert.profile_image) {
+                            currentImagePreview.src = expert.profile_image;
+                            currentImageName.textContent = expert.profile_image.split('/').pop();
+                            currentImageContainer.classList.remove('hidden');
+                        } else {
+                            currentImageContainer.classList.add('hidden');
+                            currentImagePreview.src = "#";
+                            currentImageName.textContent = "";
+                        }
+                        document.getElementById('edit_profile_image').value = '';
+                    } else {
+                        alert('Error loading expert details: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => { console.error('Load for edit error:', error); alert('An error occurred.'); });
+        }
+        // **** END: MODIFIED loadExpertForEdit function ****
+
+        // **** START: MODIFIED loadExpertForView function ****
+        function loadExpertForView(expertId) {
+            const fetchUrl = EXPERT_DETAILS_URL_TEMPLATE.replace('0', expertId);
+            fetch(fetchUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const expert = data.expert;
+                        document.getElementById('view_expert_name_title').textContent = expert.full_name || `${expert.first_name || ''} ${expert.last_name || ''}`;
+                        
+                        const imageContainer = document.getElementById('view_expert_image_container');
+                        const initialSpan = document.getElementById('view_expert_initial_char');
+                        imageContainer.innerHTML = ''; 
+                        if (expert.profile_image) {
+                            const img = document.createElement('img'); img.src = expert.profile_image; img.alt = expert.full_name; img.className = "w-32 h-32 rounded-full object-cover"; imageContainer.appendChild(img);
+                        } else {
+                            initialSpan.textContent = (expert.first_name || 'E').charAt(0).toUpperCase(); imageContainer.appendChild(initialSpan);
+                        }
+
+                        const statusBadge = document.getElementById('view_expert_status_badge');
+                        statusBadge.textContent = expert.is_active ? 'Active' : 'Inactive';
+                        statusBadge.className = `px-3 py-1 inline-flex text-sm font-semibold rounded-full mb-2 ${expert.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+                        
+                        document.getElementById('view_expert_rating_value').textContent = (expert.rating !== null ? expert.rating.toFixed(1) : 'N/A');
+                        document.getElementById('view_expert_review_count_value').textContent = `(${expert.review_count || 0} reviews)`;
+
+                        const ratingStarsContainer = document.getElementById('view_expert_rating_stars_display');
+ratingStarsContainer.innerHTML = '';
+const ratingToShow = expert.rating !== null ? expert.rating : 0; // expert.rating is a float from API
+for (let i = 1; i <= 5; i++) {
+    const starSvg = `<svg class="w-4 h-4 fill-current ${i <= Math.round(ratingToShow) ? 'text-yellow-400' : 'text-gray-300'}" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path></svg>`;
+    ratingStarsContainer.innerHTML += starSvg;
+}
+                        document.getElementById('view_expert_email_display').textContent = expert.email || 'N/A';
+                        document.getElementById('view_expert_phone_display').textContent = expert.phone || 'N/A';
+                        document.getElementById('view_expert_expertise_display').textContent = expert.expertise_display || 'N/A';
+                        document.getElementById('view_expert_specialization_display').textContent = expert.specialization || 'N/A';
+                        document.getElementById('view_expert_hourly_rate_display').textContent = expert.hourly_rate !== null ? `£${expert.hourly_rate.toFixed(2)}` : 'N/A';
+                        document.getElementById('view_expert_consultations_count').textContent = expert.consultation_count !== null ? expert.consultation_count : '0';
+                        document.getElementById('view_expert_bio_display').textContent = expert.bio || 'No bio provided.';
+
+                        const availabilityListDiv = document.getElementById('view_expert_availability_formatted_list');
+                        const noAvailabilityMsg = document.getElementById('view_expert_no_availability_message');
+                        const rawJsonPre = document.getElementById('view_expert_availability_raw_json');
+                        availabilityListDiv.innerHTML = '';
+                        rawJsonPre.textContent = '';
+                        rawJsonPre.classList.add('hidden');
+
+                        if (expert.availability_json && expert.availability_json.trim() !== "" && expert.availability_json.trim() !== "[]") {
+                            try {
+                                const availabilitySlots = JSON.parse(expert.availability_json);
+                                if (Array.isArray(availabilitySlots) && availabilitySlots.length > 0) {
+                                    // Group by date for better display
+                                    const slotsByDate = availabilitySlots.reduce((acc, slot) => {
+                                        const date = slot.date;
+                                        if (!acc[date]) acc[date] = [];
+                                        acc[date].push(`${slot.start_time} - ${slot.end_time}`);
+                                        return acc;
+                                    }, {});
+
+                                    const sortedDates = Object.keys(slotsByDate).sort();
+
+                                    sortedDates.forEach(dateStr => {
+                                        const dateObj = new Date(dateStr + 'T00:00:00'); // Ensure correct date parsing
+                                        const formattedDate = dateObj.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+                                        
+                                        const dateDiv = document.createElement('div');
+                                        dateDiv.className = 'mb-1';
+                                        dateDiv.innerHTML = `<strong class="text-gray-700">${formattedDate}:</strong> <span class="text-gray-600">${slotsByDate[dateStr].join(', ')}</span>`;
+                                        availabilityListDiv.appendChild(dateDiv);
+                                    });
+                                    noAvailabilityMsg.classList.add('hidden');
+                                } else if (Array.isArray(availabilitySlots) && availabilitySlots.length === 0) {
+                                    noAvailabilityMsg.classList.remove('hidden');
+                                } else { // Not an array or unexpected structure
+                                    availabilityListDiv.innerHTML = '<p class="text-orange-500">Availability data is not in the expected list format.</p>';
+                                    rawJsonPre.textContent = expert.availability_json; // Show raw if format is unexpected
+                                    rawJsonPre.classList.remove('hidden');
+                                    noAvailabilityMsg.classList.add('hidden');
+                                }
+                            } catch (e) {
+                                console.error('Error parsing availability_json for view:', e, "Raw:", expert.availability_json);
+                                availabilityListDiv.innerHTML = '<p class="text-red-500">Error displaying availability (invalid JSON).</p>';
+                                rawJsonPre.textContent = expert.availability_json;
+                                rawJsonPre.classList.remove('hidden');
+                                noAvailabilityMsg.classList.add('hidden');
+                            }
+                        } else {
+                            noAvailabilityMsg.classList.remove('hidden');
+                        }
+                        
+                        const consultationsTableBody = document.getElementById('view_expert_consultations_table_body');
+                        consultationsTableBody.innerHTML = '';
+                        if (expert.recent_consultations && expert.recent_consultations.length > 0) {
+                            expert.recent_consultations.forEach(c => {
+                                const row = consultationsTableBody.insertRow();
+                                row.innerHTML = `
+                                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${c.date ? new Date(c.date).toLocaleDateString() : 'N/A'}</td>
+                                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${c.client_name || 'N/A'}</td>
+                                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${c.type || 'N/A'}</td>
+                                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${c.duration !== null ? c.duration + ' min' : 'N/A'}</td>
+                                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${c.rating !== null ? c.rating.toFixed(1) + '/5' : 'Not rated'}</td>
+                                `;
+                            });
+                        } else {
+                            consultationsTableBody.innerHTML = '<tr><td colspan="5" class="px-4 py-4 text-center text-sm text-gray-500">No recent consultations.</td></tr>';
+                        }
+                        
+                        document.getElementById('view_expert_modal_edit_button').setAttribute('data-expert-id-for-view', expert.id);
+                        document.getElementById('view_expert_modal_edit_availability_button').setAttribute('data-expert-id-for-view', expert.id);
+
+                    } else {
+                        alert('Error loading expert details: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => { console.error('Load for view error:', error); alert('An error occurred.'); });
+        }
+        // **** END: MODIFIED loadExpertForView function ****
+
+        function setupPasswordToggle(inputId, toggleButtonId, eyeIconId, eyeSlashIconId) {
+            const passwordInput = document.getElementById(inputId);
+            const toggleButton = document.getElementById(toggleButtonId);
+            const eyeIcon = document.getElementById(eyeIconId);
+            const eyeSlashIcon = document.getElementById(eyeSlashIconId);
+            if (passwordInput && toggleButton && eyeIcon && eyeSlashIcon) {
+                toggleButton.addEventListener('click', function () {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    eyeIcon.classList.toggle('hidden', type !== 'password');
+                    eyeSlashIcon.classList.toggle('hidden', type === 'password');
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setupPasswordToggle('add_expert_password', 'toggle_add_expert_password', 'eye_icon_add', 'eye_slash_icon_add');
+            setupPasswordToggle('edit_expert_password', 'toggle_edit_expert_password', 'eye_icon_edit', 'eye_slash_icon_edit');
+            
+            if (typeof Flowbite !== 'undefined' && typeof Modal !== 'undefined') {
+                 document.querySelectorAll('[data-modal-toggle]').forEach(function (modalToggleEl) {
+                    const modalId = modalToggleEl.getAttribute('data-modal-target');
+                    const modalEl = document.getElementById(modalId);
+                    if (modalEl) { new Modal(modalEl, {backdrop: 'static'}); }
+                });
+            }
+
+            document.querySelectorAll('button[data-modal-target="editExpertModal"]').forEach(button => {
+                button.addEventListener('click', function() {
+                    const expertId = this.getAttribute('data-expert-id');
+                    if (expertId) loadExpertForEdit(expertId);
+                });
+            });
+            
+            document.querySelectorAll('button[data-modal-target="viewExpertModal"]').forEach(button => {
+                button.addEventListener('click', function() {
+                    const expertId = this.getAttribute('data-expert-id');
+                    if (expertId) loadExpertForView(expertId);
+                });
+            });
+            
+            const viewModalEditButton = document.getElementById('view_expert_modal_edit_button');
+            if (viewModalEditButton) {
+                viewModalEditButton.addEventListener('click', function() {
+                    const expertId = this.getAttribute('data-expert-id-for-view');
+                    if (expertId) { loadExpertForEdit(expertId); }
+                });
+            }
+            
+            const viewModalEditAvailabilityButton = document.getElementById('view_expert_modal_edit_availability_button');
+            if (viewModalEditAvailabilityButton) {
+                viewModalEditAvailabilityButton.addEventListener('click', function() {
+                    const expertId = this.getAttribute('data-expert-id-for-view');
+                    if (expertId) {
+                        const viewModalEl = document.getElementById('viewExpertModal');
+                        if (typeof Modal !== 'undefined') {
+                            const modalInstance = Modal.getInstance(viewModalEl);
+                            if (modalInstance) modalInstance.hide(); else viewModalEl.classList.add('hidden');
+                        } else { viewModalEl.classList.add('hidden'); }
+                        editExpertAvailability(expertId);
+                    }
+                });
+            }
+        });
+    </script>
+{% endblock %}

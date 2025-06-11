@@ -1,0 +1,587 @@
+{% load static %}
+{% load humanize %}
+
+<div class="container px-4 py-6 mx-auto max-w-4xl">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-4 border-b border-slate-200 dark:border-slate-700">
+        <h2 class="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100">Booking #{{ booking.id }}</h2>
+        <span class="mt-2 sm:mt-0 px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-full shadow-sm
+            {% if booking.status == 'confirmed' %}bg-green-100 text-green-700 border border-green-300 dark:bg-green-700/30 dark:text-green-200 dark:border-green-600
+            {% elif booking.status == 'pending_payment' or booking.status == 'awaiting_assignment' %}bg-yellow-100 text-yellow-700 border border-yellow-300 dark:bg-yellow-700/30 dark:text-yellow-200 dark:border-yellow-600
+            {% elif booking.status == 'completed' %}bg-sky-100 text-sky-700 border border-sky-300 dark:bg-sky-700/30 dark:text-sky-200 dark:border-sky-600
+            {% elif booking.status == 'cancelled' or booking.status == 'cancelled_by_client' or booking.status == 'cancelled_by_expert' or booking.status == 'refunded' or booking.status == 'partially_refunded' %}bg-red-100 text-red-700 border border-red-300 dark:bg-red-700/30 dark:text-red-200 dark:border-red-600
+            {% elif booking.status == 'dispute' %}bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-700/30 dark:text-amber-200 dark:border-amber-600
+            {% elif booking.status == 'expert_noshow' or booking.status == 'client_noshow' %}bg-orange-100 text-orange-700 border border-orange-300 dark:bg-orange-700/30 dark:text-orange-200 dark:border-orange-600
+            {% else %}bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600{% endif %}">
+            {{ booking.get_status_display|default:booking.status|capfirst }}
+        </span>
+    </div>
+    
+    <!-- Booking Information Card -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden mb-6 border border-slate-200 dark:border-slate-700">
+        <div class="px-6 py-4 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
+            <h3 class="text-lg font-semibold text-slate-700 dark:text-slate-200 flex items-center">
+                <i class="fas fa-info-circle mr-2 text-sky-500"></i>Booking Information
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                {% with item_class="py-1" label_class="text-xs font-medium text-slate-500 dark:text-slate-400 block" value_class="text-slate-800 dark:text-slate-100 text-sm" %}
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Client</span>
+                    <p class="{{ value_class }}">{{ booking.name|default:booking.user.get_full_name|default:"N/A" }}</p>
+                </div>
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Scheduled Date</span>
+                    <p class="{{ value_class }}">{{ booking.scheduled_date|date:"l, F j, Y" }}</p>
+                </div>
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Email</span>
+                    <p class="{{ value_class }}">{{ booking.email|default:"N/A" }}</p>
+                </div>
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Scheduled Time</span>
+                    <p class="{{ value_class }}">{{ booking.scheduled_time|time:"g:i A T" }}</p>
+                    {% if booking.reschedule_count > 0 %}
+                    <div class="mt-1">
+                        <span class="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">
+                            <i class="fas fa-history mr-1"></i> Rescheduled {{ booking.reschedule_count }} time{{ booking.reschedule_count|pluralize }}
+                            {% if booking.reschedule_count >= 3 %} {# Assuming 3 is max, adjust if needed #}
+                            <span class="text-red-500">(Max limit)</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Phone</span>
+                    <p class="{{ value_class }}">{{ booking.phone|default:"Not provided" }}</p>
+                </div>
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Duration</span>
+                    <p class="{{ value_class }}">{{ booking.duration_minutes }} minutes</p>
+                </div>
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Expertise Needed</span>
+                    <p class="{{ value_class }}">{{ booking.get_expertise_needed_display|default:booking.expertise_needed }}</p>
+                </div>
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Consultation Fee</span>
+                    <p class="{{ value_class }} font-semibold text-emerald-600 dark:text-emerald-400">£{{ booking.consultation_fee|floatformat:2|intcomma }}</p>
+                </div>
+                {% endwith %}
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
+                <span class="text-xs font-medium text-slate-500 dark:text-slate-400 block">Booking Placed</span>
+                <p class="text-slate-800 dark:text-slate-100 text-sm">{{ booking.created_at|date:"F j, Y, g:i a" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client's Description Card -->
+    {% if booking.description %}
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden mb-6 border border-slate-200 dark:border-slate-700">
+        <div class="px-6 py-4 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
+            <h3 class="text-lg font-semibold text-slate-700 dark:text-slate-200 flex items-center">
+                <i class="far fa-file-alt mr-2 text-sky-500"></i>Client's Description
+            </h3>
+        </div>
+        <div class="p-6">
+            <p class="text-slate-700 dark:text-slate-300 whitespace-pre-line text-sm">{{ booking.description }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Additional Notes Card (from Admin/System) -->
+    {% if booking.additional_notes %}
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden mb-6 border border-slate-200 dark:border-slate-700">
+        <div class="px-6 py-4 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
+            <h3 class="text-lg font-semibold text-slate-700 dark:text-slate-200 flex items-center">
+                <i class="fas fa-sticky-note mr-2 text-sky-500"></i>Additional Notes (from Admin/System)
+            </h3>
+        </div>
+        <div class="p-6">
+            <p class="text-slate-700 dark:text-slate-300 whitespace-pre-line text-sm">{{ booking.additional_notes }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Assigned Expert Card -->
+    {% if booking.expert %}
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden mb-6 border border-slate-200 dark:border-slate-700">
+        <div class="px-6 py-4 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
+            <h3 class="text-lg font-semibold text-slate-700 dark:text-slate-200 flex items-center">
+                <i class="fas fa-user-tie mr-2 text-sky-500"></i>Assigned Expert
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="flex items-start">
+                <div class="flex-shrink-0 mr-4">
+                    {% if booking.expert.profile_image %}
+                    <img src="{{ booking.expert.profile_image.url }}" alt="{{ booking.expert.full_name }}" 
+                         class="w-16 h-16 rounded-full object-cover shadow-md">
+                    {% else %}
+                    <div class="w-16 h-16 rounded-full bg-sky-100 dark:bg-sky-700 flex items-center justify-center text-sky-600 dark:text-sky-200 font-semibold text-xl shadow-md">
+                        {{ booking.expert.first_name|first|default:""|upper }}{{ booking.expert.last_name|first|default:""|upper }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold text-slate-800 dark:text-slate-100">{{ booking.expert.full_name }}</h4>
+                    <p class="text-slate-600 dark:text-slate-300 text-sm">{{ booking.expert.get_expertise_display }}</p>
+                    {% if booking.expert.specialization %}
+                    <p class="text-slate-500 dark:text-slate-400 mt-1 text-xs">
+                        <span class="font-medium">Specialization:</span> {{ booking.expert.specialization }}
+                    </p>
+                    {% endif %}
+                    {% if booking.expert.rating %}
+                    <div class="flex items-center mt-2">
+                        <div class="flex items-center">
+                            {% for i in "12345" %}
+                                <svg class="w-4 h-4 {% if forloop.counter <= booking.expert.rating|floatformat:'0'|add:0 %}text-yellow-400{% else %}text-slate-300 dark:text-slate-600{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                </svg>
+                            {% endfor %}
+                            <span class="ml-1.5 text-xs text-slate-500 dark:text-slate-400">{{ booking.expert.rating|floatformat:1 }} / 5.0</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Cancellation Details Card -->
+    {% if booking.status == 'cancelled' or booking.status == 'refunded' or booking.status == 'partially_refunded' or booking.status == 'cancelled_by_client' or booking.status == 'cancelled_by_expert' %}
+    <div class="bg-red-50 dark:bg-red-800/30 rounded-xl shadow-md overflow-hidden mb-6 border border-red-200 dark:border-red-600">
+        <div class="px-6 py-4 bg-red-100 dark:bg-red-700/40 border-b border-red-200 dark:border-red-600">
+            <h3 class="text-lg font-semibold text-red-700 dark:text-red-200 flex items-center">
+                <i class="fas fa-ban mr-2"></i>Cancellation Details
+            </h3>
+        </div>
+        <div class="p-6">
+            {% if booking.cancellation_reason %}
+            <p class="text-red-700 dark:text-red-200 whitespace-pre-line text-sm mb-1"><strong>Reason:</strong> {{ booking.cancellation_reason }}</p>
+            {% else %}
+            <p class="text-red-700 dark:text-red-200 whitespace-pre-line text-sm mb-1">This booking was cancelled.</p>
+            {% endif %}
+            {% if booking.cancelled_by_user_type %}
+            <p class="text-xs text-red-600 dark:text-red-300 mt-1">Cancelled by: {{ booking.get_cancelled_by_user_type_display|default:booking.cancelled_by_user_type|capfirst }}</p>
+            {% elif booking.cancelled_by %} {# Fallback to older field if it exists #}
+            <p class="text-xs text-red-600 dark:text-red-300 mt-1">Cancelled by: {{ booking.cancelled_by|capfirst }}</p>
+            {% endif %}
+            {% if booking.cancelled_at %}
+            <p class="text-xs text-red-600 dark:text-red-300 mt-1">Cancelled on: {{ booking.cancelled_at|date:"F j, Y, g:i a" }}</p>
+            {% endif %}
+            {% if booking.refund_amount and booking.refund_amount > 0 %}
+            <p class="text-sm text-red-700 dark:text-red-200 mt-2"><strong>Refunded Amount:</strong> £{{ booking.refund_amount|floatformat:2 }}</p>
+            {% if booking.stripe_refund_id %}
+            <p class="text-xs text-red-600 dark:text-red-300 mt-1">Stripe Refund ID: {{ booking.stripe_refund_id }}</p>
+            {% endif %}
+            {% elif booking.status == 'refunded' or booking.status == 'partially_refunded' %}
+             <p class="text-sm text-red-700 dark:text-red-200 mt-2">A refund was processed for this booking.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Meeting Information Card -->
+    {% if booking.status == 'confirmed' and booking.meeting_link %}
+    <div class="bg-green-50 dark:bg-green-800/30 rounded-xl shadow-xl overflow-hidden mb-6 border border-green-200 dark:border-green-600">
+        <div class="px-6 py-4 bg-green-100 dark:bg-green-700/40 border-b border-green-200 dark:border-green-600">
+            <h3 class="text-lg font-semibold text-green-700 dark:text-green-200 flex items-center">
+                <i class="fas fa-video mr-2"></i>Meeting Information
+            </h3>
+        </div>
+        <div class="p-6">
+            <p class="mb-3 text-sm text-slate-700 dark:text-slate-300">Your consultation is scheduled for <strong>{{ booking.scheduled_date|date:"F j, Y" }}</strong> at <strong>{{ booking.scheduled_time|time:"g:i A T" }}</strong>.</p>
+            
+            <div class="mb-4">
+                <p class="font-medium mb-1 text-sm text-slate-700 dark:text-slate-200">Join your meeting at the scheduled time:</p>
+                <a href="{{ booking.meeting_link }}" target="_blank" class="inline-flex items-center px-5 py-2.5 text-sm font-semibold text-white bg-blue-500 hover:bg-sky-600 rounded-lg focus:ring-4 focus:ring-sky-300 dark:focus:ring-sky-700 transition-colors shadow-md hover:shadow-lg">
+                    <i class="fas fa-external-link-alt w-4 h-4 mr-2"></i>Join Meeting
+                </a>
+            </div>
+            
+            <div class="bg-sky-50 dark:bg-sky-700/30 p-4 rounded-lg border border-sky-200 dark:border-sky-600">
+                <h4 class="font-semibold text-sky-700 dark:text-sky-200 mb-2 text-sm">How to Join:</h4>
+                <ol class="list-decimal list-inside text-xs text-slate-600 dark:text-slate-300 space-y-1">
+                    <li>Click the "Join Meeting" button at the scheduled time.</li>
+                    <li>Allow access to your camera and microphone if prompted.</li>
+                    <li>Enter your name if asked.</li>
+                    <li>You're in! No downloads typically required.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Consultation Outcome Card -->
+    {% if booking.status == 'completed' and booking.consultation_record %}
+    <div class="bg-sky-50 dark:bg-sky-800/30 rounded-xl shadow-xl overflow-hidden mb-6 border border-sky-200 dark:border-sky-600">
+        <div class="px-6 py-4 bg-sky-100 dark:bg-sky-700/40 border-b border-sky-200 dark:border-sky-600">
+            <h3 class="text-lg font-semibold text-sky-700 dark:text-sky-200 flex items-center">
+                <i class="fas fa-check-double mr-2"></i>Consultation Outcome
+            </h3>
+        </div>
+        <div class="p-6">
+            <p class="text-sm text-slate-700 dark:text-slate-300 mb-2">This consultation was marked as completed on {{ booking.completed_at|date:"F j, Y, g:i a" }}.</p>
+            {% if booking.consultation_record.notes_by_client %}
+            <div class="mb-3">
+                <h4 class="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">Notes from Client:</h4>
+                <p class="text-slate-700 dark:text-slate-300 whitespace-pre-line text-sm bg-slate-50 dark:bg-slate-700 p-3 rounded-md border border-slate-200 dark:border-slate-600">{{ booking.consultation_record.notes_by_client }}</p>
+            </div>
+            {% endif %}
+            {% if booking.consultation_record.notes_by_expert %}
+            <div class="mb-3">
+                <h4 class="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">Notes from Expert:</h4>
+                <p class="text-slate-700 dark:text-slate-300 whitespace-pre-line text-sm bg-slate-50 dark:bg-slate-700 p-3 rounded-md border border-slate-200 dark:border-slate-600">{{ booking.consultation_record.notes_by_expert }}</p>
+            </div>
+            {% endif %}
+            {% if not booking.consultation_record.notes_by_client and not booking.consultation_record.notes_by_expert %}
+            <p class="text-sm text-slate-600 dark:text-slate-400">No additional notes were recorded for this consultation.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+
+    <!-- Dispute Information Card -->
+    {% if booking.status == 'dispute' and dispute_record %}
+    <div class="bg-amber-50 dark:bg-amber-800/30 rounded-xl shadow-xl overflow-hidden mb-6 border border-amber-300 dark:border-amber-600">
+        <div class="px-6 py-4 bg-amber-100 dark:bg-amber-700/40 border-b border-amber-200 dark:border-amber-600">
+            <h3 class="text-lg font-semibold text-amber-700 dark:text-amber-200 flex items-center">
+                <i class="fas fa-gavel mr-2"></i>Dispute Details (ID: {{ dispute_record.id }})
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                {% with item_class="py-1" label_class="text-xs font-medium text-slate-500 dark:text-slate-400 block" value_class="text-amber-800 dark:text-amber-100 text-sm" %}
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Dispute Type</span>
+                    <p class="{{ value_class }}">{{ dispute_record.get_dispute_type_display }}</p>
+                </div>
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Dispute Status</span>
+                    <p class="{{ value_class }} font-semibold">{{ dispute_record.get_status_display }}</p>
+                </div>
+                <div class="{{ item_class }} md:col-span-2">
+                    <span class="{{ label_class }}">Reason for Dispute (
+                        {% with dispute_type_lower=dispute_record.get_dispute_type_display|lower %}
+                            {% if "client" in dispute_type_lower %}
+                                from Client
+                            {% elif "expert" in dispute_type_lower %}
+                                from  Expert
+                            {% else %}
+                                <!-- Default or N/A if neither -->
+                            {% endif %}
+                        {% endwith %}
+                    )</span>
+                    <p class="{{ value_class }} whitespace-pre-line bg-amber-50 dark:bg-amber-700/50 p-3 rounded-md border border-amber-200 dark:border-amber-600">{{ dispute_record.reason|default:"Not provided." }}</p>
+                </div>
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Reported By</span>
+                    <p class="{{ value_class }}">
+                        {% if dispute_record.dispute_type == 'expert_noshow' or dispute_record.dispute_type == 'quality' or dispute_record.dispute_type == 'technical' or dispute_record.dispute_type == 'other' %} {# Assuming these are client-initiated types #}
+                            {{ dispute_record.client_name|default:dispute_record.booking.name }} (Client)
+                        {% elif dispute_record.dispute_type == 'client_noshow' %}
+                            {{ dispute_record.expert_name|default:dispute_record.booking.expert.full_name }} (Expert)
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Reported On</span>
+                    <p class="{{ value_class }}">{{ dispute_record.reported_at|date:"F j, Y, g:i a" }}</p>
+                </div>
+
+                {% if dispute_record.expert_response %}
+                <div class="{{ item_class }} md:col-span-2 mt-3 pt-3 border-t border-amber-200 dark:border-amber-500">
+                    <span class="{{ label_class }}">Expert's Response ({{ dispute_record.expert_name|default:"Expert" }})</span>
+                    <p class="{{ value_class }} whitespace-pre-line bg-amber-50 dark:bg-amber-700/50 p-3 rounded-md border border-amber-200 dark:border-amber-600">{{ dispute_record.expert_response }}</p>
+                </div>
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Expert Responded On</span>
+                    <p class="{{ value_class }}">{{ dispute_record.expert_response_at|date:"F j, Y, g:i a" }}</p>
+                </div>
+                {% if dispute_record.expert_evidence_file %}
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Expert Evidence</span>
+                    <p class="{{ value_class }}">
+                        <a href="{{ dispute_record.expert_evidence_file.url }}" target="_blank" class="text-sky-600 dark:text-sky-400 hover:underline">
+                            View Evidence File <i class="fas fa-external-link-alt text-xs ml-1"></i>
+                        </a>
+                    </p>
+                </div>
+                {% endif %}
+                {% elif is_expert and dispute_record.status == 'pending' and dispute_record.dispute_type != 'client_noshow' %} {# Expert viewing, dispute pending their response (and not one they raised) #}
+                <div class="md:col-span-2 mt-3 pt-3 border-t border-amber-200 dark:border-amber-500">
+                     <h4 class="text-sm font-semibold text-amber-700 dark:text-amber-200 mb-2">Action Required: Respond to Dispute</h4>
+                     <p class="text-sm text-slate-600 dark:text-slate-300 mb-3">
+                        This dispute (ID: {{ dispute_record.id }}, Code: {{ dispute_record.dispute_code }}) is awaiting your response.
+                        Please provide your account of the situation and any relevant evidence. The response window is typically 24-48 hours from when the dispute was filed ({{ dispute_record.reported_at|date:"F j, Y, g:i a" }}).
+                     </p>
+                     <a href="{% url 'expert_marketplace:dispute_response' dispute_code=dispute_record.dispute_code %}" 
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 dark:focus:ring-offset-slate-800 transition-colors">
+                        <i class="fas fa-reply mr-2"></i>Respond to Dispute Now
+                     </a>
+                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-3">
+                        You should have also received an email with a unique link to respond. If you encounter any issues, please contact support.
+                     </p>
+                </div>
+                {% elif dispute_record.status == 'pending' %} {# Client or Admin viewing, or Expert viewing a dispute they raised, dispute pending expert response (if applicable) or admin review #}
+                 <div class="md:col-span-2 mt-3 pt-3 border-t border-amber-200 dark:border-amber-500">
+                     <p class="text-sm text-amber-700 dark:text-amber-200">
+                        {% if dispute_record.dispute_type != 'client_noshow' and not dispute_record.expert_response %}
+                            This dispute is currently awaiting a response from the expert ({{ dispute_record.expert_name|default:"Assigned Expert" }}). We will notify you once a response is received or if the response window closes.
+                        {% else %}
+                            This dispute is currently under review by our team. We will notify you of any updates.
+                        {% endif %}
+                     </p>
+                 </div>
+                {% endif %}
+
+                {% if dispute_record.status in "resolved,rejected,investigating" or dispute_record.resolution_notes %}
+                <div class="md:col-span-2 mt-3 pt-3 border-t border-amber-200 dark:border-amber-500">
+                    <span class="{{ label_class }}">Admin Resolution Notes</span>
+                    <p class="{{ value_class }} whitespace-pre-line bg-slate-50 dark:bg-slate-700 p-3 rounded-md border border-slate-200 dark:border-slate-600">{{ dispute_record.resolution_notes|default:"Admin investigation is in progress or notes are pending." }}</p>
+                </div>
+                {% if dispute_record.refund_amount_decided is not None %}
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Refund Decided</span>
+                    <p class="{{ value_class }} font-semibold">£{{ dispute_record.refund_amount_decided|floatformat:2 }}</p>
+                </div>
+                {% endif %}
+                {% if dispute_record.refund_processed_for_dispute %}
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Refund Processed for Dispute</span>
+                    <p class="{{ value_class }} text-green-600 dark:text-green-400">Yes</p>
+                </div>
+                {% elif dispute_record.status == 'resolved' and dispute_record.refund_amount_decided > 0 %}
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Refund Processed for Dispute</span>
+                    <p class="{{ value_class }} text-green-600 dark:text-green-400">Yes (Assumed based on resolution)</p> {# Or "To be confirmed" if there's a delay #}
+                </div>
+                {% endif %}
+                {% if dispute_record.resolved_at %}
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Resolved On</span>
+                    <p class="{{ value_class }}">{{ dispute_record.resolved_at|date:"F j, Y, g:i a" }}</p>
+                </div>
+                {% endif %}
+                {% if dispute_record.resolved_by %}
+                <div class="{{ item_class }}">
+                    <span class="{{ label_class }}">Resolved By</span>
+                    <p class="{{ value_class }}">{{ dispute_record.resolved_by.get_full_name|default:dispute_record.resolved_by.username }} (Admin)</p>
+                </div>
+                {% endif %}
+                {% endif %} {# End of resolved/rejected/investigating block #}
+
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+    {% elif booking.status == 'dispute' and not dispute_record %}
+    <div class="bg-amber-50 dark:bg-amber-800/30 rounded-xl shadow-xl overflow-hidden mb-6 border border-amber-300 dark:border-amber-600">
+        <div class="px-6 py-4 bg-amber-100 dark:bg-amber-700/40 border-b border-amber-200 dark:border-amber-600">
+            <h3 class="text-lg font-semibold text-amber-700 dark:text-amber-200 flex items-center">
+                <i class="fas fa-gavel mr-2"></i>Dispute Information
+            </h3>
+        </div>
+        <div class="p-6">
+            <p class="text-amber-700 dark:text-amber-200">This booking is marked as disputed, but detailed dispute information could not be loaded at this time. This may be a temporary issue or the dispute record is still being created. Please check back shortly or contact support if the issue persists.</p>
+        </div>
+    </div>
+    {% endif %} {# End of dispute_record check #}
+
+
+<!-- Action Buttons -->
+    <div class="flex flex-wrap gap-3 mt-8">
+        <button onclick="history.back()" class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg focus:ring-4 focus:ring-slate-200 dark:text-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 dark:focus:ring-slate-600 transition-colors">
+            <i class="fas fa-arrow-left w-4 h-4 mr-2"></i>Back
+        </button>
+        
+        {% if is_client %} {# Actions for the client viewing the booking #}
+            {% if booking.status == 'confirmed' %}
+                {# TODO: Add view logic to check if rescheduling is allowed (e.g., >24h before) #}
+                <a href="{% url 'expert_marketplace:reschedule_booking' booking.id %}" class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-blue-600 hover:bg-blue-700 rounded-lg focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 transition-colors">
+                    <i class="fas fa-calendar-alt w-4 h-4 mr-2"></i>Reschedule
+                </a>
+                {# TODO: Add view logic for cancellation policy #}
+                <form action="{% url 'expert_marketplace:cancel_booking' booking.id %}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to cancel this booking? Please review our cancellation policy regarding refunds.');">
+                    {% csrf_token %}
+                    <button type="submit" class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-red-600 hover:bg-red-700 rounded-lg focus:ring-4 focus:ring-red-300 dark:focus:ring-red-800 transition-colors">
+                        <i class="fas fa-times-circle w-4 h-4 mr-2"></i>Cancel Booking
+                    </button>
+                </form>
+                {# TODO: Add view logic to show only after scheduled time has passed #}
+                <form action="{% url 'expert_marketplace:report_expert_noshow' booking.id %}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to report the expert as a no-show? This will initiate a dispute process.');">
+                    {% csrf_token %}
+                    <input type="hidden" name="reason" value="Expert did not attend the scheduled consultation.">
+                    <button type="submit" class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-orange-500 hover:bg-orange-600 rounded-lg focus:ring-4 focus:ring-orange-300 dark:focus:ring-orange-800 transition-colors">
+                        <i class="fas fa-user-clock w-4 h-4 mr-2"></i>Report Expert No-Show
+                    </button>
+                </form>
+                
+                <!-- MODIFIED BUTTON: Client's "Mark as Complete" now triggers modal -->
+                <button type="button" onclick="openCompleteModal()" 
+                        class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-green-500 hover:bg-green-600 rounded-lg focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 transition-colors">
+                    <i class="fas fa-check-circle w-4 h-4 mr-2"></i>Mark as Complete & Review
+                </button>
+
+            {% elif booking.status == 'pending_payment' %}
+                 <a href="{% url 'expert_marketplace:payment' booking_id=booking.id %}" class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg focus:ring-4 focus:ring-emerald-300 dark:focus:ring-emerald-800 transition-colors">
+                    <i class="fas fa-credit-card w-4 h-4 mr-2"></i>Proceed to Payment
+                </a>
+            {% endif %}
+        {% elif is_expert %} {# Actions for the expert viewing the booking #}
+            <!-- ... expert actions ... -->
+        {% endif %}
+        
+        {% if is_staff %}
+            {% if booking.status == 'confirmed' %}
+                {# Staff's "Mark Complete" button - can remain a direct form if staff don't rate/review for client #}
+                <form action="{% url 'expert_marketplace:mark_meeting_complete' booking.id %}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to mark this consultation as complete (as staff)?');">
+                    {% csrf_token %}
+                    <textarea name="completion_notes" placeholder="Optional completion notes for staff..." class="hidden w-full p-2 border rounded mb-2 text-sm" rows="2"></textarea> <!-- Staff can add notes here if needed -->
+                    <button type="submit" class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-teal-500 hover:bg-teal-600 rounded-lg focus:ring-4 focus:ring-teal-300 dark:focus:ring-teal-800 transition-colors">
+                        <i class="fas fa-user-shield mr-1"></i> <i class="fas fa-check-circle w-4 h-4 mr-2"></i>Mark Complete (Staff)
+                    </button>
+                </form>
+            {% endif %}
+
+
+            <a href="{% url 'admin:expert_marketplace_booking_change' booking.id %}" target="_blank" class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-purple-600 hover:bg-purple-700 rounded-lg focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-800 transition-colors">
+                <i class="fas fa-edit w-4 h-4 mr-2"></i>Admin: Edit Booking
+            </a>
+            {% if dispute_record %}
+            <a href="{% url 'admin:expert_marketplace_noshowdispute_change' dispute_record.id %}" target="_blank" class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition-colors">
+                <i class="fas fa-edit w-4 h-4 mr-2"></i>Admin: Edit Dispute
+            </a>
+            {% endif %}
+        {% endif %}
+    
+    
+    </div>
+</div>
+
+
+<!-- Rating and Review Modal -->
+<div id="completeAndRateModal" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-[100] hidden flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out" onclick="closeCompleteModalOutside(event)">
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-lg w-full p-6 transform transition-all duration-300 ease-in-out scale-95 opacity-0" id="completeModalContent">
+        <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-200 dark:border-slate-700">
+            <h3 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Complete & Review Consultation</h3>
+            <button type="button" onclick="closeCompleteModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="completeAndRateForm" action="{% url 'expert_marketplace:mark_meeting_complete' booking.id %}" method="POST">
+            {% csrf_token %}
+            <div class="mb-5">
+                <label for="client_rating_for_expert_1" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Your Rating (Required):</label>
+                <div class="flex items-center space-x-1 star-rating-input">
+                    {% for i_star in "54321"|make_list %} {# Iterate backwards for flex-row-reverse trick if used, or just normal for peer logic #}
+                    <input type="radio" name="client_rating_for_expert" id="rating-{{ i_star }}" value="{{ i_star }}" class="sr-only peer" required>
+                    <label for="rating-{{ i_star }}" 
+                           class="text-3xl text-slate-300 dark:text-slate-500 peer-hover:text-yellow-300 peer-checked:text-yellow-400 cursor-pointer transition-colors"
+                           title="{{ i_star }} star{{ i_star|pluralize }}">
+                        <i class="fas fa-star"></i>
+                    </label>
+                    {% endfor %}
+                </div>
+                <style> /* CSS for star selection behavior */
+                  .star-rating-input { display: flex; flex-direction: row-reverse; justify-content: flex-end; }
+                  .star-rating-input input[type="radio"]:checked ~ label i,
+                  .star-rating-input label:hover ~ label i,
+                  .star-rating-input label:hover i { color: #FACC15; /* yellow-400 */ }
+                  .star-rating-input input[type="radio"]:checked + label i { color: #FACC15; } /* Ensure the clicked one is also colored */
+                </style>
+                <div id="ratingError" class="text-red-500 text-xs mt-1 hidden">Please select a rating.</div>
+            </div>
+
+            <div class="mb-6">
+                <label for="client_review_for_expert" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Your Review (Optional):</label>
+                <textarea name="client_review_for_expert" id="client_review_for_expert" rows="4" 
+                          class="w-full px-3 py-2 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 text-sm" 
+                          placeholder="Share your experience with {{ booking.expert.full_name|default:'the expert' }}..."></textarea>
+            </div>
+            
+            <div class="flex justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <button type="button" onclick="closeCompleteModal()" 
+                        class="px-5 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-600 hover:bg-slate-200 dark:hover:bg-slate-500 rounded-lg border border-slate-300 dark:border-slate-500 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-5 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 transition-colors">
+                    <i class="fas fa-check-circle mr-2"></i>Submit Completion & Review
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add this script block at the end of your file, or in your main JS file -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const completeModal = document.getElementById('completeAndRateModal');
+    const completeModalContent = document.getElementById('completeModalContent');
+    const completeAndRateForm = document.getElementById('completeAndRateForm');
+
+    window.openCompleteModal = function() {
+        if (completeModal) {
+            completeModal.classList.remove('hidden');
+            // Reset form fields
+            if (completeAndRateForm) {
+                completeAndRateForm.reset(); // Clears textareas and radio buttons
+                 // Explicitly uncheck radio buttons if reset doesn't cover it well for some browsers
+                document.querySelectorAll('.star-rating-input input[type="radio"]').forEach(radio => radio.checked = false);
+            }
+            document.getElementById('ratingError').classList.add('hidden');
+
+            setTimeout(() => {
+                if (completeModalContent) {
+                    completeModalContent.classList.remove('scale-95', 'opacity-0');
+                    completeModalContent.classList.add('scale-100', 'opacity-100');
+                }
+            }, 10);
+        }
+    }
+
+    window.closeCompleteModal = function() {
+        if (completeModalContent) {
+            completeModalContent.classList.add('scale-95', 'opacity-0');
+            completeModalContent.classList.remove('scale-100', 'opacity-100');
+            setTimeout(() => {
+                if (completeModal) completeModal.classList.add('hidden');
+            }, 300);
+        }
+    }
+
+    window.closeCompleteModalOutside = function(event) {
+        if (event.target === completeModal) {
+            closeCompleteModal();
+        }
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && completeModal && !completeModal.classList.contains('hidden')) {
+            closeCompleteModal();
+        }
+    });
+
+    if (completeAndRateForm) {
+        completeAndRateForm.addEventListener('submit', function(event) {
+            const ratingSelected = document.querySelector('input[name="client_rating_for_expert"]:checked');
+            if (!ratingSelected) {
+                event.preventDefault(); // Stop submission
+                document.getElementById('ratingError').classList.remove('hidden');
+                const firstStarRadio = document.querySelector('.star-rating-input input[type="radio"]');
+                if (firstStarRadio) firstStarRadio.focus();
+            } else {
+                document.getElementById('ratingError').classList.add('hidden');
+            }
+        });
+    }
+});
+</script>

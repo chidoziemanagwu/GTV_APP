@@ -56,7 +56,7 @@ urlpatterns = [
     path('api/clear-cache/', views.clear_cache, name='clear_cache'),
     path('health/', views.health_check, name='health_check'),
     path('recommendation-guide/', views.recommendation_guide, name='recommendation_guide'),
-    path('generation/status/<str:task_id>/', views.check_generation_status, name='document_generation_status'),
+
 
 
     path('purchase-points/', views.purchase_points, name='purchase_points'),

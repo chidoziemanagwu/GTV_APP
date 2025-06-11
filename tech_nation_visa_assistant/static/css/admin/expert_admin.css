@@ -1,0 +1,23 @@
+/* expert_marketplace/static/css/admin/expert_admin.css */
+.availability-editor {
+    font-family: monospace;
+    width: 100%;
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+
+.help-text {
+    background-color: #f0f7ff;
+    border: 1px solid #d0e3ff;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.help-text code {
+    background-color: #e0e0e0;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: monospace;
+}

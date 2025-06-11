@@ -1,0 +1,81 @@
+{% extends 'dashboard_base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto">
+        <div class="glass-bg">
+            <div class="gradient-header">
+                <h2 class="text-2xl font-bold mb-2">Booking Confirmation</h2>
+                <p class="text-blue-100">Your consultation has been booked successfully!</p>
+            </div>
+            
+            <div class="p-6">
+                <div class="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+                    <p class="font-semibold">Payment Successful</p>
+                    <p>Your payment of £{{ booking.consultation_fee }} has been processed.</p>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-2">Booking Details</h3>
+                    <div class="bg-white/80 rounded-lg p-4 shadow-sm">
+                        <p class="mb-2"><span class="font-medium">Booking ID:</span> {{ booking.id }}</p>
+                        <p class="mb-2"><span class="font-medium">Date:</span> {{ booking.scheduled_date|date:"l, F j, Y" }}</p>
+                        <p class="mb-2"><span class="font-medium">Time:</span> {{ booking.scheduled_time|time:"g:i A" }}</p>
+                        <p class="mb-2"><span class="font-medium">Duration:</span> {{ booking.duration_minutes }} minutes</p>
+                        <p class="mb-2"><span class="font-medium">Expertise:</span> {{ booking.expertise_needed }}</p>
+                    </div>
+                </div>
+                
+                {% if expert %}
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-2">Your Expert</h3>
+                    <div class="bg-white/80 rounded-lg p-4 shadow-sm flex items-center">
+                        {% if expert.profile_image %}
+                        <img src="{{ expert.profile_image.url }}" alt="{{ expert.first_name }}" class="w-16 h-16 rounded-full mr-4 object-cover">
+                        {% else %}
+                        <div class="w-16 h-16 rounded-full mr-4 bg-blue-100 flex items-center justify-center text-blue-500 font-bold text-xl">
+                            {{ expert.first_name|first }}{{ expert.last_name|first }}
+                        </div>
+                        {% endif %}
+                        <div>
+                            <p class="font-semibold text-lg">{{ expert.first_name }} {{ expert.last_name }}</p>
+                            <p class="text-gray-600">{{ expert.expertise }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-2">Expert Assignment</h3>
+                    <div class="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
+                        <p>We're matching you with the best expert for your needs. You'll receive an email once an expert has been assigned.</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="mb-6">
+    <h3 class="text-lg font-semibold mb-2">What's Next?</h3>
+    <div class="bg-white/80 rounded-lg p-4 shadow-sm">
+        <ol class="list-decimal list-inside space-y-2">
+            <li>You'll receive a confirmation email with all booking details.</li>
+            <li>{% if not expert %}Once an expert is assigned, you'll receive their details.{% else %}Your expert will review your booking details.{% endif %}</li>
+            <li>Prepare for your consultation by gathering any relevant documents or questions.</li>
+            <li>Join the video call link that will be sent to you before your scheduled time.</li>
+        </ol>
+        <p class="mt-3 text-sm text-gray-600">Note: All consultations are scheduled between 10 AM and 5 PM on weekdays only.</p>
+    </div>
+</div>
+                
+                <div class="flex justify-between mt-8">
+                    <a href="{% url 'dashboard' %}" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 transition">
+                        Return to Dashboard
+                    </a>
+                    <a href="{% url 'expert_marketplace:booking_status' booking_id=booking.id %}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white transition">
+                        View Booking Status
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

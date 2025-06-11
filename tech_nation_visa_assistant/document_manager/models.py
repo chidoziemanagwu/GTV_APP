@@ -1,5 +1,14 @@
 from django.db import models
 from accounts.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.utils import timezone
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+
 
 class EligibilityCriteria(models.Model):
     TYPE_CHOICES = (
@@ -159,50 +168,55 @@ class DocumentComment(models.Model):
 
 
 
-# Add this to your models.py
 class UserPoints(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='points')
     balance = models.IntegerField(default=0)
-    lifetime_points = models.IntegerField(default=0)
+    lifetime_points = models.IntegerField(default=0) # Total points ever acquired
     last_purchase = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.user.username} - {self.balance} points"
 
     def add_points(self, amount):
+        if amount <= 0: # Prevent adding zero or negative points if that's not desired
+            logger.warning(f"Attempted to add non-positive points ({amount}) for user {self.user.username}")
+            return
+
         self.balance += amount
         self.lifetime_points += amount
+        self.save() # Save UserPoints first
 
-        # Update the user's profile as well
+        # Update the user's profile's is_paid_user status
         try:
-            profile = self.user.profile
-            profile.ai_points = self.balance
-            profile.lifetime_points = self.lifetime_points
-            profile.is_paid_user = True  # Set to paid user when points are added
-            profile.save()
+            profile = self.user.profile # Assuming User has a 'profile' one-to-one link to UserProfile
+            if not profile.is_paid_user and self.balance > 0:
+                profile.is_paid_user = True
+                profile.save(update_fields=['is_paid_user'])
+        except User.profile.RelatedObjectDoesNotExist: # More specific exception
+            logger.error(f"UserProfile not found for user {self.user.username} during add_points.")
         except Exception as e:
-            print(f"Error updating profile points: {e}")
+            logger.error(f"Error updating profile's is_paid_user status for {self.user.username} during add_points: {e}")
 
-        self.save()
 
     def use_points(self, amount):
+        if amount <= 0: # Prevent using zero or negative points
+            logger.warning(f"Attempted to use non-positive points ({amount}) for user {self.user.username}")
+            return False
+            
         if self.balance >= amount:
             self.balance -= amount
-            self.save()
+            self.save() # Save UserPoints first
 
-            # Update the user's profile
+            # Update the user's profile's is_paid_user status if necessary
             try:
                 profile = self.user.profile
-                profile.ai_points = self.balance
-
-                # If points are depleted, update paid status
-                if self.balance <= 0:
+                if profile.is_paid_user and self.balance <= 0:
                     profile.is_paid_user = False
-
-                profile.save()
+                    profile.save(update_fields=['is_paid_user'])
+            except User.profile.RelatedObjectDoesNotExist:
+                logger.error(f"UserProfile not found for user {self.user.username} during use_points.")
             except Exception as e:
-                print(f"Error updating profile points: {e}")
-
+                logger.error(f"Error updating profile's is_paid_user status for {self.user.username} during use_points: {e}")
             return True
         return False
 
@@ -238,83 +252,79 @@ class PointsTransaction(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.points} points - {self.get_payment_status_display()}"
-    
 
 
-from django.db.models.signals import post_save
-from django.dispatch import receiver
+# --- SIGNALS ---
 
 @receiver(post_save, sender=UserPoints)
-def sync_points_with_profile(sender, instance, **kwargs):
-    """Sync points between UserPoints and UserProfile"""
+def sync_is_paid_user_on_profile(sender, instance, **kwargs):
+    """
+    Syncs the is_paid_user status on UserProfile based on UserPoints balance.
+    This is somewhat redundant if add_points and use_points handle it,
+    but can act as a failsafe or handle direct balance manipulations if any.
+    """
     try:
-        profile = instance.user.profile
-        profile.ai_points = instance.balance
-        profile.lifetime_points = instance.lifetime_points
-        profile.is_paid_user = instance.balance > 0
-        profile.save()
+        profile = instance.user.profile # instance is UserPoints
+        new_is_paid_status = instance.balance > 0
+        if profile.is_paid_user != new_is_paid_status:
+            profile.is_paid_user = new_is_paid_status
+            profile.save(update_fields=['is_paid_user'])
+            logger.info(f"Synced is_paid_user for {instance.user.username} to {new_is_paid_status} via UserPoints signal.")
+    except User.profile.RelatedObjectDoesNotExist:
+        logger.error(f"UserProfile not found for user {instance.user.username} during UserPoints signal sync.")
     except Exception as e:
-        print(f"Error syncing points with profile: {e}")
+        logger.error(f"Error in sync_is_paid_user_on_profile for {instance.user.username}: {e}")
 
 
-@receiver(post_save, sender='accounts.UserProfile')
-def create_user_points(sender, instance, created, **kwargs):
-    """Create UserPoints when a UserProfile is created"""
-    if created:
-        from document_manager.models import UserPoints
-        try:
-            UserPoints.objects.get(user=instance.user)
-        except UserPoints.DoesNotExist:
-            UserPoints.objects.create(
-                user=instance.user,
-                balance=instance.ai_points,
-                lifetime_points=instance.lifetime_points
-            )
-
-
-
-from django.utils import timezone
-import logging
-
-logger = logging.getLogger(__name__)
-
-def award_referral_points(user):
+@receiver(post_save, sender='accounts.UserProfile') # Sender is a string 'app_label.ModelName'
+def ensure_user_points_exists_on_profile_creation(sender, instance, created, **kwargs):
     """
-    Award referral points to the referrer when a user makes a purchase
-
-    Args:
-        user: The user who made the purchase
+    Ensures a UserPoints record exists when a UserProfile is created.
+    The initial point balance (e.g., 3 for new users) should be handled by
+    the signal connected to User creation in accounts/models.py.
+    This signal primarily ensures the UserPoints object is present.
     """
-    from referrals.models import ReferralSignup
-    from document_manager.models import UserPoints
+    if created: # instance here is a UserProfile
+        # UserPoints model is defined in this file, so direct reference is fine.
+        user_points, up_created = UserPoints.objects.get_or_create(user=instance.user)
+        if up_created:
+            # This means the signal in accounts/models.py (listening to User creation)
+            # might not have run yet or didn't create UserPoints for some reason.
+            # UserPoints.balance defaults to 0 as per model definition.
+            logger.info(f"UserPoints record created for {instance.user.username} via UserProfile creation signal. Balance defaults to {user_points.balance}.")
+        # else:
+            # logger.info(f"UserPoints record already existed for {instance.user.username} when UserProfile was created.")
+
+
+# --- REFERRAL POINTS LOGIC (Seems okay, but let's review its interaction) ---
+
+def award_referral_points(user_who_made_purchase): # Renamed for clarity
+    """
+    Awards referral rewards (now 1 free use, not points) to the referrer
+    when a user makes their first qualifying purchase/action.
+    This function is called externally, e.g., after a successful payment.
+    """
+    from referrals.models import ReferralSignup # Correctly imported locally
 
     try:
-        # Find if this user was referred by someone
-        referral = ReferralSignup.objects.get(referred_user=user)
+        # Find if this user was referred by someone and the reward hasn't been processed
+        referral_signup = ReferralSignup.objects.get(
+            referred_user=user_who_made_purchase,
+            has_been_rewarded=False # Ensure we only process once
+        )
 
-        if not referral.points_awarded:  # Only award points once
-            # Get the referrer
-            referrer = referral.referral_code.user
-
-            # Award bonus points to the referrer
-            referrer_points, _ = UserPoints.objects.get_or_create(user=referrer)
-            referrer_points.add_points(3)  # Award 3 bonus points
-
-            # Mark the referral as converted with points awarded
-            referral.points_awarded = True
-            referral.points_awarded_at = timezone.now()
-            referral.save()
-
-            logger.info(f"Awarded 3 referral points to {referrer.username} for {user.username}'s purchase")
+        # The award_rewards method on ReferralSignup now handles granting the free use
+        # and marking itself as rewarded.
+        if referral_signup.award_rewards(): # This method now returns True on success
+            logger.info(f"Successfully processed referral reward (1 free use to referrer) for referred user {user_who_made_purchase.username} via award_referral_points function.")
             return True
         else:
-            logger.info(f"Referral points already awarded for {user.username}")
+            logger.warning(f"ReferralSignup.award_rewards() failed or indicated no action for referred user {user_who_made_purchase.username}.")
             return False
 
     except ReferralSignup.DoesNotExist:
-        # User wasn't referred
-        logger.info(f"User {user.username} made a purchase but wasn't referred")
+        logger.info(f"User {user_who_made_purchase.username} made a purchase but was not found in ReferralSignup or reward already processed.")
         return False
     except Exception as e:
-        logger.error(f"Error processing referral bonus: {str(e)}")
+        logger.error(f"Error in award_referral_points for {user_who_made_purchase.username}: {e}", exc_info=True)
         return False

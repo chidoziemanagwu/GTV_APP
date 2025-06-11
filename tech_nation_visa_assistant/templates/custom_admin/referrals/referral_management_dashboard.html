@@ -1,0 +1,207 @@
+{% extends "custom_admin/base.html" %}
+{% load static %}
+
+{% block title %}Referral Management Dashboard{% endblock %}
+
+{% block content %}
+<div class="container px-6 mx-auto">
+    <h2 class="text-2xl font-semibold text-gray-700 mb-6">
+        Referral Management Dashboard
+    </h2>
+
+<!-- Stats Cards -->
+<div class="grid gap-6 mb-8 md:grid-cols-1 xl:grid-cols-1">
+    <!-- Total Referrals -->
+    <div class="flex flex-col items-center p-6 bg-white rounded-lg shadow-xs">
+        <div class="p-3 mb-4 text-orange-500 bg-orange-100 rounded-full">
+            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path>
+            </svg>
+        </div>
+        <div class="text-center">
+            <p class="mb-2 text-lg font-medium text-gray-600">
+                Total Referrals
+            </p>
+            <p class="text-4xl font-bold text-gray-700">
+                {{ total_referrals }}
+            </p>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Filters and Actions -->
+<div class="flex flex-col md:flex-row justify-between mb-6 gap-4">
+    <!-- Search Form -->
+    <div class="flex-1">
+        <form method="GET" class="flex gap-2">
+            <div class="relative flex-1">
+                <input type="text" name="search" value="{{ search_query }}" 
+                       class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none"
+                       placeholder="Search by referrer or referred user">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3">
+                    <svg class="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+            </div>
+            
+            <!-- Date filters -->
+            <input type="date" name="date_from" value="{{ date_from }}" 
+                   class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none"
+                   placeholder="From Date">
+                   
+            <input type="date" name="date_to" value="{{ date_to }}" 
+                   class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none"
+                   placeholder="To Date">
+            
+            <!-- Status filter -->
+            <select name="status" 
+                    class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none">
+                <option value="" {% if not status_filter %}selected{% endif %}>All Statuses</option>
+                <option value="awarded" {% if status_filter == 'awarded' %}selected{% endif %}>Points Awarded</option>
+                <option value="not_awarded" {% if status_filter == 'not_awarded' %}selected{% endif %}>Points Not Awarded</option>
+                <option value="rewarded" {% if status_filter == 'rewarded' %}selected{% endif %}>Rewarded</option>
+                <option value="not_rewarded" {% if status_filter == 'not_rewarded' %}selected{% endif %}>Not Rewarded</option>
+            </select>
+            
+            <button type="submit" class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none">
+                Filter
+            </button>
+        </form>
+    </div>
+
+    <!-- Export button removed -->
+</div>
+
+
+
+
+
+    <!-- All Referrals Table -->
+    <div class="w-full overflow-hidden rounded-lg shadow-xs">
+        <div class="w-full overflow-x-auto">
+            <table class="w-full whitespace-no-wrap">
+                <thead>
+                    <tr class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b bg-gray-50">
+                        <th class="px-4 py-3">Referrer</th>
+                        <th class="px-4 py-3">Referred User</th>
+                        <th class="px-4 py-3">Referral Code</th>
+                        <th class="px-4 py-3">Date</th>
+                        <!-- <th class="px-4 py-3">Points Awarded</th> -->
+                        <th class="px-4 py-3">Rewarded</th>
+                        <!-- <th class="px-4 py-3">Actions</th> -->
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y">
+                    {% for referral in page_obj %}
+                    <tr class="text-gray-700">
+                        <td class="px-4 py-3">
+                            <div class="flex items-center text-sm">
+                                <div>
+                                    <p class="font-semibold">{{ referral.referral_code.user.email }}</p>
+                                    <p class="text-xs text-gray-600">
+                                        {{ referral.referral_code.user.first_name }} {{ referral.referral_code.user.last_name }}
+                                    </p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            <p class="font-semibold">{{ referral.referred_user.email }}</p>
+                            <p class="text-xs text-gray-600">
+                                {{ referral.referred_user.first_name }} {{ referral.referred_user.last_name }}
+                            </p>
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            <span class="px-2 py-1 font-semibold leading-tight text-purple-700 bg-purple-100 rounded-full">
+                                {{ referral.referral_code.code }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            {{ referral.timestamp|date:"M d, Y H:i" }}
+                        </td>
+                        <!-- <td class="px-4 py-3 text-sm">
+                            {% if referral.points_awarded %}
+                                <span class="px-2 py-1 font-semibold leading-tight text-green-700 bg-green-100 rounded-full">
+                                    Yes
+                                </span>
+                            {% else %}
+                                <span class="px-2 py-1 font-semibold leading-tight text-red-700 bg-red-100 rounded-full">
+                                    No
+                                </span>
+                            {% endif %}
+                        </td> -->
+                        <td class="px-4 py-3 text-sm">
+                            {% if referral.has_been_rewarded %}
+                                <span class="px-2 py-1 font-semibold leading-tight text-green-700 bg-green-100 rounded-full">
+                                    Yes
+                                </span>
+                            {% else %}
+                                <span class="px-2 py-1 font-semibold leading-tight text-red-700 bg-red-100 rounded-full">
+                                    No
+                                </span>
+                            {% endif %}
+                        </td>
+                        <!-- Find this section around line 231-237 and replace it with the following -->
+                        <!-- <td class="px-4 py-3 text-sm">
+                            {% if not referral.points_awarded %}
+                                <span class="px-3 py-1 text-sm font-medium leading-5 text-gray-600">
+                                    Points pending
+                                </span>
+                            {% endif %}
+                        </td> -->
+                    </tr>
+                    {% empty %}
+                    <tr class="text-gray-700">
+                        <td colspan="7" class="px-4 py-3 text-sm text-center">
+                            No referrals found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="px-4 py-3 text-xs font-semibold tracking-wide text-gray-500 uppercase border-t bg-gray-50">
+            <div class="flex items-center justify-between">
+                <span class="flex items-center">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+                </span>
+                <div class="flex items-center space-x-2">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="px-3 py-1 rounded-md rounded-l-lg focus:outline-none">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                            <path d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" fill-rule="evenodd"></path>
+                        </svg>
+                    </a>
+                    {% endif %}
+
+                    {% for i in page_obj.paginator.page_range %}
+                        {% if page_obj.number == i %}
+                        <span class="px-3 py-1 text-white transition-colors duration-150 bg-purple-600 border border-r-0 border-purple-600 rounded-md focus:outline-none">
+                            {{ i }}
+                        </span>
+                        {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                        <a href="?page={{ i }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="px-3 py-1 rounded-md focus:outline-none">
+                            {{ i }}
+                        </a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="px-3 py-1 rounded-md rounded-r-lg focus:outline-none">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                            <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" fill-rule="evenodd"></path>
+                        </svg>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

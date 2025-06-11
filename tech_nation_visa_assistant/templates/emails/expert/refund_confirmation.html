@@ -1,0 +1,38 @@
+{% extends "emails/base_email.html" %}
+
+{% block subject %}
+Refund Confirmation for Booking #{{ booking.id }}
+{% endblock %}
+
+{% block content %}
+<tr>
+  <td style="padding: 20px; font-family: Arial, sans-serif; line-height: 1.6;">
+    <h2 style="color: #4f46e5; margin-bottom: 20px;">Refund Confirmation</h2>
+    
+    <p>Dear Expert,</p>
+    
+    <p>A booking that was assigned to you has been cancelled, and a refund has been processed.</p>
+    
+    <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
+      <p style="margin: 0 0 10px 0;"><strong>Booking Details:</strong></p>
+      <ul style="margin: 0; padding-left: 20px;">
+        <li>Booking ID: #{{ booking.id }}</li>
+        <li>Client: {{ booking.name }}</li>
+        <li>Scheduled Date: {{ booking.scheduled_date|date:"F j, Y" }}</li>
+        <li>Scheduled Time: {{ booking.scheduled_time|time:"g:i A" }}</li>
+        <li>Expertise: {{ booking.expertise_needed }}</li>
+        <li>Cancellation Reason: {{ booking.cancellation_reason }}</li>
+      </ul>
+    </div>
+    
+    <p>A refund of <strong>£{{ refund_amount }}</strong> has been processed to the client.</p>
+    
+    <p>If you have any questions about this cancellation, please contact the administration team.</p>
+    
+    <p>Thank you for your understanding.</p>
+    
+    <p>Best regards,<br>
+    The {{ site_name }} Team</p>
+  </td>
+</tr>
+{% endblock %}

@@ -97,6 +97,121 @@
         text-align: center;
         margin-top: 0.5rem;
     }
+    .step-indicator {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 2rem;
+    }
+    .step {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: #e0e7ff;
+        color: #4f46e5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        margin: 0 0.5rem;
+        position: relative;
+    }
+    .step.active {
+        background-color: #4f46e5;
+        color: white;
+    }
+    .step-line {
+        height: 2px;
+        background-color: #e0e7ff;
+        flex-grow: 1;
+        margin: 0 0.5rem;
+        position: relative;
+        top: 15px;
+    }
+    .step-line.active {
+        background-color: #4f46e5;
+    }
+    .step-content {
+        display: none;
+    }
+    .step-content.active {
+        display: block;
+    }
+    .modern-label {
+        display: block;
+        font-weight: 500;
+        color: #4b5563;
+        margin-bottom: 0.5rem;
+    }
+    .refund-policy {
+        font-size: 0.9rem;
+        color: #4b5563; /* Darker text for better readability */
+        margin-top: 1.5rem; /* Increased margin */
+        padding: 1.5rem; /* Increased padding */
+        background-color: #eff6ff; /* Lighter blue background */
+        border-radius: 0.75rem; /* More rounded corners */
+        border: 1px solid #bfdbfe; /* Softer border color */
+    }
+    .refund-policy h4 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1e40af; /* Darker blue for heading */
+        margin-bottom: 1rem;
+    }
+    .refund-policy ul {
+        list-style-type: disc;
+        padding-left: 1.25rem; /* Indent list */
+        space-y: 0.75rem; /* Space between list items */
+    }
+    .refund-policy ul li strong {
+        font-weight: 600;
+        color: #1d4ed8; /* Medium blue for strong text */
+    }
+    .ui-datepicker-calendar .ui-state-disabled {
+        opacity: 0.3;
+    }
+    
+    .weekend-day {
+        background-color: #f3f4f6 !important;
+        color: #9ca3af !important;
+        cursor: not-allowed !important;
+    }
+
+    /* New styles for "What to Expect" section */
+    .what-to-expect {
+        background-color: #f0f9ff; /* Very light blue, almost white */
+        border: 1px solid #e0f2fe; /* Light sky blue border */
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-top: 1.5rem; /* Space below header */
+        margin-bottom: 2rem; /* Space above step indicators */
+    }
+    .what-to-expect h3 {
+        color: #0c4a6e; /* Darker cyan-blue for heading */
+        font-weight: 700;
+        font-size: 1.25rem; /* Slightly larger heading */
+        margin-bottom: 1rem;
+    }
+    .what-to-expect p {
+        color: #374151; /* Gray-700 for text */
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin-bottom: 0.75rem;
+    }
+    .what-to-expect ul {
+        list-style-type: disc;
+        padding-left: 1.5rem;
+        color: #374151;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin-top: 0.5rem;
+    }
+    .what-to-expect ul li {
+        margin-bottom: 0.5rem;
+    }
+    .what-to-expect ul li strong {
+        color: #1d4ed8; /* Consistent with refund policy strong text */
+    }
+
 </style>
 {% endblock %}
 
@@ -116,103 +231,361 @@
                     </p>
                 </div>
                 <p class="text-blue-100 mt-2">
-                    Get expert guidance on your Tech Nation Global Talent Visa application from our experienced consultants.
+                    Connect with an expert for personalized guidance tailored to your unique career goals.
+                </p>
+                <p class="text-blue-100 mt-1">
+                    <small>Available hours: 10:00 AM - 5:00 PM, Monday to Friday (UK Time)</small>
                 </p>
             </div>
+            
+            <!-- What to Expect Section -->
+            <div class="p-6">
+                <div class="what-to-expect">
+                    <h3>What to Expect from Your Consultation</h3>
+                    <p>
+                        While our AI tools offer valuable initial analysis for your CV and Personal Statement, a one-on-one consultation with our experienced experts provides a deeper, more personalized level of support. Here’s how you’ll benefit:
+                    </p>
+                    <ul>
+                        <li><strong>Personalized In-depth Feedback:</strong> Go beyond automated suggestions. Our experts provide nuanced feedback specific to your career aspirations, industry, and individual strengths.</li>
+                        <li><strong>Interactive Q&A:</strong> This is your dedicated time to ask specific questions, discuss concerns, and explore scenarios in real-time with a knowledgeable professional.</li>
+                        <li><strong>Industry-Specific Insights:</strong> Gain insights into current trends, employer expectations, and application nuances within your target field that AI might not capture.</li>
+                        <li><strong>Holistic Career Guidance:</strong> Discuss broader career path considerations, interview preparation tips, and how to best present your unique value proposition.</li>
+                        <li><strong>The Human Touch:</strong> Benefit from empathy, understanding, and encouragement from an expert who is invested in your success.</li>
+                    </ul>
+                    <p class="mt-4">
+                        This session is designed to empower you with the clarity, confidence, and strategic direction needed to achieve your goals.
+                    </p>
+                </div>
+
+                <div class="step-indicator">
+                    <div class="step active" id="step-1">1</div>
+                    <div class="step-line" id="line-1-2"></div>
+                    <div class="step" id="step-2">2</div>
+                    <div class="step-line" id="line-2-3"></div>
+                    <div class="step" id="step-3">3</div>
+                </div>
+                
+                <form method="post" id="booking-form">
+                    {% csrf_token %}
+                    {% if form.errors %}
+                    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <p>{{ field }}: {{ error }}</p>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="step-content active" id="step-1-content">
+                        <h3 class="text-lg font-semibold mb-4 text-blue-700">Select Expertise</h3>
+                        <div class="mb-6">
+                            <label class="modern-label">What type of expertise do you need?</label>
+                            {{ form.expertise_needed }}
+                            {% if form.expertise_needed.errors %}
+                            <p class="text-red-600 text-sm mt-1">{{ form.expertise_needed.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="button" class="modern-btn next-step" data-next="2">Continue</button>
+                        </div>
+                    </div>
+                    
+                    <div class="step-content" id="step-2-content">
+                        <h3 class="text-lg font-semibold mb-4 text-blue-700">Schedule Your Consultation</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label class="modern-label">Date</label>
+                                {{ form.scheduled_date }}
+                                {% if form.scheduled_date.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.scheduled_date.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label class="modern-label">Time</label>
+                                {{ form.scheduled_time }}
+                                {% if form.scheduled_time.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.scheduled_time.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="flex justify-between">
+                            <button type="button" class="modern-btn bg-gray-500 hover:bg-gray-600 prev-step" data-prev="1">Back</button>
+                            <button type="button" class="modern-btn next-step" data-next="3">Continue</button>
+                        </div>
+                    </div>
+                    
+                    <div class="step-content" id="step-3-content">
+                        <h3 class="text-lg font-semibold mb-4 text-blue-700">Your Information</h3>
+                        <div class="space-y-4 mb-6">
+                            <div>
+                                <label class="modern-label">Full Name</label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.name.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label class="modern-label">Email</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.email.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label class="modern-label">Phone</label>
+                                {{ form.phone }}
+                                {% if form.phone.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.phone.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label class="modern-label">Description of Your Needs</label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.description.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <label class="modern-label">Additional Notes (Optional)</label>
+                                {{ form.additional_notes }}
+                                {% if form.additional_notes.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.additional_notes.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="refund-policy">
+                            <h4>Our Refund & Cancellation Policy</h4>
+                            <ul>
+                                <li>
+                                    <strong>Your Cancellations:</strong>
+                                    <ul class="list-disc pl-5 mt-1 space-y-1">
+                                        <li>If you cancel <strong>before</strong> an expert is assigned to your booking, you will receive a <strong>100% refund</strong>.</li>
+                                        <li>If you cancel <strong>after</strong> an expert has been assigned to your booking, you will receive a <strong>50% refund</strong> of the consultation fee.</li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    <strong>Expert Cancellations:</strong>
+                                    If an expert cancels your consultation and a suitable replacement cannot be found in time, you will receive a <strong>100% refund</strong>.
+                                </li>
+                                <li>
+                                    <strong>Rescheduling:</strong>
+                                    <ul class="list-disc pl-5 mt-1 space-y-1">
+                                        <li>You may reschedule your consultation up to a maximum of <strong>3 times</strong>, subject to expert availability.</li>
+                                        <li>If you attempt to reschedule a fourth time, or if your third reschedule request cannot be accommodated, your booking will be automatically cancelled, and you will receive a <strong>50% refund</strong>.</li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    <strong>No-Shows:</strong>
+                                    <ul class="list-disc pl-5 mt-1 space-y-1">
+                                        <li>If you do not attend your scheduled consultation (client no-show), no refund will be issued.</li>
+                                        <li>If an expert does not attend your scheduled consultation (expert no-show), please contact our support immediately. You will be eligible for a full refund or a complimentary reschedule.</li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    <strong>Disputes:</strong>
+                                    In case of disagreements (e.g., regarding a no-show or the quality of service), you can raise a dispute through your dashboard. Refunds or other resolutions will be processed according to the outcome of the dispute investigation.
+                                </li>
+                            </ul>
+                            <p class="mt-4 text-xs text-gray-500">
+                                All times are based on UK Time. Please ensure you are aware of any time differences.
+                                Policy effective as of {{ "now"|date:"F j, Y" }}. We reserve the right to update this policy.
+                            </p>
+                        </div>
+                        
+                        <div class="flex justify-between mt-6">
+                            <button type="button" class="modern-btn bg-gray-500 hover:bg-gray-600 prev-step" data-prev="2">Back</button>
+                            <button type="submit" class="modern-btn">Book & Proceed to Payment</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
-
-        <form method="post" class="space-y-8">
-            {% csrf_token %}
-            {% if form.errors %}
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                Please correct the errors below.
-            </div>
-            {% endif %}
-
-            <div class="glass-bg p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div>
-                        <label class="modern-label">Date</label>
-                        {{ form.scheduled_date }}
-                        {% if form.scheduled_date.errors %}
-                        <p class="text-red-600 text-sm mt-1">{{ form.scheduled_date.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <label class="modern-label">Time</label>
-                        {{ form.scheduled_time }}
-                        {% if form.scheduled_time.errors %}
-                        <p class="text-red-600 text-sm mt-1">{{ form.scheduled_time.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div class="space-y-4">
-                    <div>
-                        <label class="modern-label">Full Name</label>
-                        {{ form.name }}
-                        {% if form.name.errors %}
-                        <p class="text-red-600 text-sm mt-1">{{ form.name.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <label class="modern-label">Email</label>
-                        {{ form.email }}
-                        {% if form.email.errors %}
-                        <p class="text-red-600 text-sm mt-1">{{ form.email.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <label class="modern-label">Phone</label>
-                        {{ form.phone }}
-                        {% if form.phone.errors %}
-                        <p class="text-red-600 text-sm mt-1">{{ form.phone.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <label class="modern-label">Description</label>
-                        {{ form.description }}
-                        {% if form.description.errors %}
-                        <p class="text-red-600 text-sm mt-1">{{ form.description.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex justify-end">
-                <button type="submit" class="modern-btn">
-                    Book Consultation
-                </button>
-            </div>
-        </form>
     </div>
 
     <!-- Meet Our Consultants Section -->
     <div class="mt-16">
         <h3 class="text-xl font-bold text-blue-700 mb-6 text-center">Meet Our Consultants</h3>
         <div class="consultant-grid">
-            {% for consultant in consultants %}
+            {% for consultant in experts %}
             <div class="consultant-card">
-                <img src="{{ consultant.photo_url }}" alt="{{ consultant.name }}" class="consultant-photo" />
-                <div class="consultant-name">{{ consultant.name }}</div>
-                <div class="consultant-title">{{ consultant.title }}</div>
-                <div class="flex items-center justify-center mb-1">
+                {% if consultant.profile_image %}
+                <img src="{{ consultant.profile_image.url }}" alt="{{ consultant.full_name }}" class="consultant-photo" />
+                {% else %}
+                <img src="/static/images/default-profile.png" alt="{{ consultant.full_name }}" class="consultant-photo" />
+                {% endif %}
+                <div class="consultant-name">{{ consultant.full_name }}</div>
+                <div class="consultant-title">{{ consultant.get_expertise_display }}</div>
+                
+                <div class="flex items-center my-2">
                     {% for i in "12345" %}
-                        {% if forloop.counter <= consultant.rating %}
-                            <span class="star">&#9733;</span>
-                        {% else %}
-                            <span class="star-empty">&#9734;</span>
-                        {% endif %}
+                    {% if forloop.counter <= consultant.rating %}
+                    <span class="star">★</span>
+                    {% else %}
+                    <span class="star-empty">★</span>
+                    {% endif %}
                     {% endfor %}
+                    <span class="text-gray-500 text-sm ml-1">({{ consultant.rating|default_if_none:"N/A" }})</span>
                 </div>
+                
                 <div class="consultant-desc">
-                    {{ consultant.bio }}
+                    {{ consultant.bio|truncatechars:150 }}
                 </div>
             </div>
             {% empty %}
-            <p class="col-span-4 text-center text-gray-500">No consultants available at this time.</p>
+            <p class="col-span-1 sm:col-span-2 lg:col-span-4 text-center text-gray-500">No consultants available at this time.</p>
             {% endfor %}
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const nextButtons = document.querySelectorAll('.next-step');
+        const prevButtons = document.querySelectorAll('.prev-step');
+        
+        nextButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const nextStep = this.getAttribute('data-next');
+                
+                if (validateStep(parseInt(nextStep) - 1)) {
+                    document.querySelectorAll('.step-content.active').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(`step-${nextStep}-content`).classList.add('active');
+                    updateStepIndicators(nextStep);
+                }
+            });
+        });
+        
+        prevButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const prevStep = this.getAttribute('data-prev');
+                document.querySelectorAll('.step-content.active').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`step-${prevStep}-content`).classList.add('active');
+                updateStepIndicators(prevStep);
+            });
+        });
+        
+        function updateStepIndicators(activeStep) {
+            document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+            document.querySelectorAll('.step-line').forEach(line => line.classList.remove('active'));
+            
+            for (let i = 1; i <= activeStep; i++) {
+                document.getElementById(`step-${i}`).classList.add('active');
+                if (i < activeStep) {
+                    const lineElement = document.getElementById(`line-${i}-${i+1}`);
+                    if (lineElement) lineElement.classList.add('active');
+                }
+            }
+        }
+        
+        function validateStep(stepNumber) {
+            let isValid = true;
+            let firstErrorField = null;
+
+            if (stepNumber === 1) {
+                const expertise = document.getElementById('id_expertise_needed');
+                if (!expertise.value) {
+                    displayFieldError(expertise, 'Please select an expertise type.');
+                    isValid = false;
+                    if (!firstErrorField) firstErrorField = expertise;
+                } else {
+                    clearFieldError(expertise);
+                }
+            } else if (stepNumber === 2) {
+                const dateField = document.getElementById('id_scheduled_date');
+                const timeField = document.getElementById('id_scheduled_time');
+                
+                if (!dateField.value) {
+                    displayFieldError(dateField, 'Please select a date.');
+                    isValid = false;
+                    if (!firstErrorField) firstErrorField = dateField;
+                } else {
+                    clearFieldError(dateField);
+                }
+
+                if (!timeField.value) {
+                    displayFieldError(timeField, 'Please select a time.');
+                    isValid = false;
+                    if (!firstErrorField) firstErrorField = timeField;
+                } else {
+                    clearFieldError(timeField);
+                }
+            }
+            // Add validation for step 3 if needed before submitting the form
+            // For now, step 3 validation is handled by Django form submission
+
+            if (!isValid && firstErrorField) {
+                firstErrorField.focus();
+            }
+            return isValid;
+        }
+
+        function displayFieldError(fieldElement, message) {
+            clearFieldError(fieldElement); // Clear previous error first
+            fieldElement.classList.add('border-red-500'); // Add Tailwind class for red border
+            const errorP = document.createElement('p');
+            errorP.classList.add('text-red-600', 'text-sm', 'mt-1', 'field-error-message');
+            errorP.textContent = message;
+            // Insert error message after the field or its parent if it's a more complex widget
+            if (fieldElement.nextSibling) {
+                fieldElement.parentNode.insertBefore(errorP, fieldElement.nextSibling);
+            } else {
+                fieldElement.parentNode.appendChild(errorP);
+            }
+        }
+
+        function clearFieldError(fieldElement) {
+            fieldElement.classList.remove('border-red-500'); // Remove Tailwind class for red border
+            const parent = fieldElement.parentNode;
+            const existingError = parent.querySelector('.field-error-message');
+            if (existingError && existingError.previousSibling === fieldElement) {
+                 parent.removeChild(existingError);
+            } else if (existingError && fieldElement.nextSibling === existingError) { // Check if error is next sibling
+                parent.removeChild(existingError);
+            }
+        }
+        
+        const dateInput = document.getElementById('id_scheduled_date');
+        
+        if (typeof $ !== 'undefined' && $.fn.datepicker) {
+            $(dateInput).datepicker({
+                dateFormat: 'yy-mm-dd', // Django's default expected format
+                beforeShowDay: function(date) {
+                    const day = date.getDay();
+                    return [(day !== 0 && day !== 6), day === 0 || day === 6 ? 'weekend-day' : ''];
+                },
+                minDate: 1, 
+                maxDate: '+3M' 
+            });
+        } 
+        else if (dateInput.type === 'date') {
+            dateInput.addEventListener('input', function() {
+                const selectedDate = new Date(this.value + 'T00:00:00'); // Ensure correct date parsing
+                const day = selectedDate.getUTCDay(); // Use getUTCDay for consistency
+                
+                if (day === 0 || day === 6) {
+                    displayFieldError(this, 'Weekends are not available. Please select a weekday (Monday to Friday).');
+                    this.value = '';
+                } else {
+                    clearFieldError(this);
+                }
+            });
+            
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowFormatted = tomorrow.toISOString().split('T')[0];
+            dateInput.setAttribute('min', tomorrowFormatted);
+            
+            const maxDate = new Date();
+            maxDate.setMonth(maxDate.getMonth() + 3);
+            const maxDateFormatted = maxDate.toISOString().split('T')[0];
+            dateInput.setAttribute('max', maxDateFormatted);
+        }
+    });
+</script>
 {% endblock %}

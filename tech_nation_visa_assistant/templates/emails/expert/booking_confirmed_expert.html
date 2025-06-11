@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Consultation Booking</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #4f46e5;
+            padding: 20px;
+            text-align: center;
+            color: white;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #ffffff;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        .booking-details {
+            background-color: #f9fafb;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border: 1px solid #e5e7eb;
+        }
+        .meeting-info {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            background-color: #f7fafc;
+        }
+        .hosting-tips {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #bee3f8;
+            border-radius: 5px;
+            background-color: #ebf8ff;
+        }
+        .button {
+            display: inline-block;
+            background-color: #4f46e5;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        h1, h2, h3, h4 {
+            color: #1f2937;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>New Consultation Booking</h1>
+        </div>
+        <div class="content">
+            <p>Dear Expert,</p>
+            
+            <p>You have a new consultation booking with <strong>{{ client_name }}</strong>. Please review the details below and prepare for the session.</p>
+            
+            <div class="booking-details">
+                <h3>Booking Details</h3>
+                <p><strong>Client:</strong> {{ client_name }}</p>
+                <p><strong>Date:</strong> {{ booking.scheduled_date|date:"F j, Y" }}</p>
+                <p><strong>Time:</strong> {{ booking.scheduled_time }}</p>
+                <p><strong>Duration:</strong> {{ duration }} minutes</p>
+                <p><strong>Expertise:</strong> {{ expertise }}</p>
+                <p><strong>Booking ID:</strong> {{ booking.id }}</p>
+                <p><strong>Meeting Link:</strong> <a href="{{ meeting_link }}">{{ meeting_link }}</a></p>
+            </div>
+            
+            <div class="meeting-info">
+                <h3>Meeting Information</h3>
+                <p>Your consultation with {{ client_name }} is scheduled for <strong>{{ booking.scheduled_date|date:"F j, Y" }}</strong> at <strong>{{ booking.scheduled_time }}</strong>.</p>
+                
+                <p><strong>Meeting Link:</strong> <a href="{{ meeting_link }}" style="color: #3182ce;">{{ meeting_link }}</a></p>
+                <p>Please click the link above at the scheduled time to host the consultation.</p>
+                
+                <div class="hosting-tips">
+                    <h4>Hosting Tips:</h4>
+                    <ul style="padding-left: 20px; color: #4a5568;">
+                        <li>Join a few minutes early to test your audio/video</li>
+                        <li>The first person to join becomes the host</li>
+                        <li>You can share your screen by clicking the share icon</li>
+                        <li>Use the chat feature for sharing links or notes</li>
+                    </ul>
+                </div>
+            </div>
+            
+           
+            <p>Please ensure you're in a quiet environment with good lighting and a stable internet connection for the best consultation experience.</p>
+            
+            <p>If you need to cancel or reschedule this consultation, please do so at least 24 hours in advance to maintain your expert rating.</p>
+            
+            <p>Thank you for your expertise and commitment to our platform!</p>
+            
+            <p>Best regards,<br>The Consultation Team</p>
+        </div>
+        <div class="footer">
+            <p>© 2025 Your Consultation Platform. All rights reserved.</p>
+            <p>If you have any questions, please contact our support team at support@yourplatform.com</p>
+        </div>
+    </div>
+</body>
+</html>

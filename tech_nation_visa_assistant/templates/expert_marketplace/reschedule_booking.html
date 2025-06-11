@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reschedule Consultation{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto">
+        <div class="mb-6">
+            <a href="{% url 'expert_marketplace:client_bookings' %}" class="inline-flex items-center text-blue-600 hover:text-blue-800">
+                <i class="fas fa-arrow-left mr-2"></i> Back to My Consultations
+            </a>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+            <div class="p-6 bg-blue-50 border-b border-gray-200">
+                <h1 class="text-2xl font-bold text-gray-800">Reschedule Consultation</h1>
+                <p class="text-gray-600 mt-1">Change the date and time of your consultation</p>
+            </div>
+            
+            <div class="p-6">
+                <!-- Reschedule Limit Warning -->
+                <div class="bg-blue-50 p-4 rounded-lg mb-6">
+                    <p class="text-blue-800">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        You have <strong>{{ reschedules_remaining }}</strong> reschedule(s) remaining for this booking.
+                        {% if reschedules_remaining == 1 %}
+                            <span class="text-red-600 font-semibold">This is your last reschedule opportunity. After this, the booking will be automatically cancelled with a 50% refund.</span>
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <!-- Current Booking Info -->
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-3">Current Booking Details</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Expert</p>
+                            <p class="font-medium">{{ booking.expert.full_name }}</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-500">Expertise</p>
+                            <p class="font-medium">{{ booking.expertise_needed|default:"General Consultation" }}</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-500">Current Date</p>
+                            <p class="font-medium">{{ booking.scheduled_date|date:"F j, Y" }}</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-500">Current Time</p>
+                            <p class="font-medium">{{ booking.scheduled_time }}</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-500">Duration</p>
+                            <p class="font-medium">{{ booking.duration_minutes }} minutes</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-500">Status</p>
+                            <p class="font-medium">{{ booking.get_status_display }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Reschedule Form -->
+                <form method="POST" action="{% url 'expert_marketplace:reschedule_booking' booking_id=booking.id %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-6">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-3">Select New Date & Time</h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="new_date" class="block text-sm font-medium text-gray-700 mb-1">New Date</label>
+                                <input type="date" id="new_date" name="new_date" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label for="new_time" class="block text-sm font-medium text-gray-700 mb-1">New Time</label>
+                                <select id="new_time" name="new_time" required
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Select a time</option>
+                                    {% for slot in available_slots %}
+                                        <option value="{{ slot.time }}">{{ slot.time }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-yellow-50 p-4 rounded-lg mb-6 border border-yellow-100">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-yellow-800">Important Information</h3>
+                                <div class="mt-2 text-sm text-yellow-700">
+                                    <ul class="list-disc pl-5 space-y-1">
+                                        <li>You can reschedule up to 24 hours before the consultation.</li>
+                                        <li>The expert's availability is subject to change.</li>
+                                        <li>You will receive a confirmation email once rescheduled.</li>
+                                        <li>You are limited to a maximum of 3 reschedules per booking.</li>
+                                        <li>After 3 reschedules, your booking will be automatically cancelled with a 50% refund.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <a href="{% url 'expert_marketplace:booking_detail' booking_id=booking.id %}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-300">
+                            Cancel
+                        </a>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300">
+                            Reschedule Consultation
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set minimum date to tomorrow
+        const dateInput = document.getElementById('new_date');
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        // Format date as YYYY-MM-DD
+        const year = tomorrow.getFullYear();
+        const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+        const day = String(tomorrow.getDate()).padStart(2, '0');
+        
+        dateInput.min = `${year}-${month}-${day}`;
+        
+        // Filter available times based on selected date
+        dateInput.addEventListener('change', function() {
+            const selectedDate = this.value;
+            const timeSelect = document.getElementById('new_time');
+            
+            // Clear current options
+            timeSelect.innerHTML = '<option value="">Select a time</option>';
+            
+            // Filter slots for the selected date
+            const availableSlots = {{ available_slots|safe }};
+            const filteredSlots = availableSlots.filter(slot => slot.date === selectedDate);
+            
+            // Add filtered options
+            filteredSlots.forEach(slot => {
+                const option = document.createElement('option');
+                option.value = slot.time;
+                option.textContent = slot.time;
+                timeSelect.appendChild(option);
+            });
+        });
+    });
+</script>
+{% endblock %}

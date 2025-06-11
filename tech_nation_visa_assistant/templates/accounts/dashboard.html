@@ -111,7 +111,7 @@
                                 Get professional feedback before submitting your application
                             </p>
                         </div>
-                        <a href="{% url 'expert_marketplace:expert_marketplace' %}" class="text-yellow-400 hover:text-yellow-600 flex-shrink-0">
+                        <a href="{% url 'expert_marketplace:book_consultation' %}" class="text-yellow-400 hover:text-yellow-600 flex-shrink-0">
                             <i class="fas fa-chevron-right"></i>
                         </a>
                     </div>
@@ -174,7 +174,7 @@
                     </div>
                 </div>
 
-                <!-- Points Cards -->
+<!-- Points Cards -->
                 <div class="mt-4 grid grid-cols-1 gap-4">
                     <!-- AI Points Card -->
                     <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
@@ -186,7 +186,8 @@
                         </div>
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-sm text-gray-600">Available Points</span>
-                            <span class="font-medium text-blue-700">{{ request.user.points.balance|default:"0" }}</span>
+                            <!-- Assuming user_points is passed to context, or use request.user.userpoints -->
+                            <span class="font-medium text-blue-700">{{ user_points.balance|default:"0" }}</span>
                         </div>
                         <a href="{% url 'document_manager:purchase_points' %}" class="w-full inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg hover:from-blue-700 hover:to-blue-600 transition duration-150 shadow-sm">
                             <i class="fas fa-plus-circle mr-2"></i>
@@ -204,7 +205,8 @@
                         </div>
                         <div class="flex items-center justify-between mb-3">
                             <span class="text-sm text-gray-600">Free Uses Available</span>
-                            <span class="font-medium text-pink-700">{{ referral_free_uses|default:"0" }}</span>
+                            {# Accessing available_free_uses from the user's profile #}
+                            <span class="font-medium text-pink-700">{{ request.user.profile.available_free_uses|default:"0" }}</span>
                         </div>
                         <div class="text-xs text-gray-500 mb-3">
                             Each successful referral = 1 free use
@@ -247,7 +249,7 @@
                         <i class="fas fa-chevron-right ml-auto text-gray-400 flex-shrink-0"></i>
                     </a>
 
-                    <a href="{% url 'expert_marketplace:expert_marketplace' %}" class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition duration-150">
+                    <a href="{% url 'expert_marketplace:book_consultation' %}" class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition duration-150">
                         <div class="w-10 h-10 rounded-full bg-green-100 text-green-500 flex items-center justify-center mr-3 flex-shrink-0">
                             <i class="fas fa-users"></i>
                         </div>

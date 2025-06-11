@@ -1,0 +1,38 @@
+{% extends "base_mail.html" %}
+
+{% block subject %}Consultation Booking Cancelled{% endblock %}
+
+{% block content %}
+<!-- Main Content -->
+<tr>
+  <td style="padding: 30px 20px;">
+    <h2 style="color: #1f2937; margin-top: 0; font-family: Arial, sans-serif;">Booking Cancellation Notice</h2>
+    
+    <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 15px;">Hello {{ booking.expert.first_name }},</p>
+    
+    <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 15px;">A consultation booking (Reference #{{ booking.id }}) has been cancelled by {{ cancelled_by }}.</p>
+    
+    <div style="background-color: #f3f4f6; padding: 15px; border-radius: 6px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #1f2937; font-family: Arial, sans-serif;">Booking Details</h3>
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;"><strong>Client:</strong> {{ client_name }}</p>
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;"><strong>Date:</strong> {{ booking.scheduled_date|date:"F j, Y" }}</p>
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;"><strong>Time:</strong> {{ booking.scheduled_time }}</p>
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;"><strong>Expertise:</strong> {{ booking.expertise_needed|default:"General Consultation" }}</p>
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;"><strong>Duration:</strong> {{ booking.duration_minutes }} minutes</p>
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;"><strong>Cancellation Reason:</strong> {{ booking.cancellation_reason|default:"Not specified" }}</p>
+    </div>
+    
+    <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 15px;">This time slot is now available for other bookings.</p>
+    
+    {% if booking.cancelled_by == 'expert' %}
+    <div style="background-color: #fef3c7; padding: 15px; border-radius: 6px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #92400e; font-family: Arial, sans-serif;">Important Note</h3>
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;">Since this cancellation was initiated by you, the client has received a full refund.</p>
+      <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 8px;">Please remember that frequent cancellations may affect your expert rating and future assignments.</p>
+    </div>
+    {% endif %}
+    
+    <p style="font-family: Arial, sans-serif; color: #4b5563; margin-bottom: 15px;">If you have any questions about this cancellation, please contact the admin team.</p>
+  </td>
+</tr>
+{% endblock %}

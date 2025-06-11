@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Missed Consultation Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #fee2e2;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            border: 1px solid #e0e0e0;
+        }
+        .details {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Missed Consultation Report</h1>
+    </div>
+    
+    <div class="content">
+        <p>Hello {{ booking.expert.first_name }},</p>
+        
+        <p>We've received a report that you did not attend a scheduled consultation with <strong>{{ client_name }}</strong>.</p>
+        
+        <div class="details">
+            <h3>Consultation Details:</h3>
+            <p><strong>Booking ID:</strong> {{ booking.id }}</p>
+            <p><strong>Client:</strong> {{ client_name }}</p>
+            <p><strong>Date:</strong> {{ booking.scheduled_date|date:"F j, Y" }}</p>
+            <p><strong>Time:</strong> {{ booking.scheduled_time }}</p>
+            <p><strong>Expertise:</strong> {{ booking.expertise_needed|default:"General Consultation" }}</p>
+        </div>
+        
+        <p>The booking has been automatically cancelled and a full refund has been processed for the client.</p>
+        
+        <p>If there was a technical issue or other legitimate reason for missing this consultation, please contact our support team immediately to explain the situation.</p>
+        
+        <p>Please note that repeated no-shows may affect your expert status on our platform.</p>
+        
+        <a href="mailto:support@example.com" class="button">Contact Support</a>
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated message, please do not reply directly to this email.</p>
+        <p>&copy; 2025 Your Company Name. All rights reserved.</p>
+    </div>
+</body>
+</html>

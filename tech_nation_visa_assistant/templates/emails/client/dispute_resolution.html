@@ -1,0 +1,51 @@
+<!-- templates/emails/client/dispute_resolution.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Update on Your Dispute</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f8f9fa; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { background-color: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; }
+        .button { display: inline-block; background-color: #007bff; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Update on Your Dispute</h1>
+        </div>
+        <div class="content">
+            <p>Dear {{ dispute.client_name }},</p>
+            
+            <p>We have reviewed your dispute for booking #{{ dispute.booking.id }} and have reached a decision.</p>
+            
+            {% if is_refund %}
+            <p>We have <strong>approved</strong> your dispute and processed a refund of <strong>£{{ refund_amount }}</strong>.</p>
+            
+            <p>The refund has been processed and should appear in your account within 5-7 business days, depending on your bank's processing time.</p>
+            {% else %}
+            <p>After careful review, we have determined that the dispute does not qualify for a refund based on our policies.</p>
+            {% endif %}
+            
+            <p><strong>Resolution Notes:</strong></p>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
+                {{ dispute.resolution_notes|default:"No additional notes provided." }}
+            </div>
+            
+            <p>If you have any questions or need further assistance, please don't hesitate to contact our support team.</p>
+            
+            <p>Thank you for your understanding.</p>
+            
+            <p>Best regards,<br>
+            The Support Team</p>
+        </div>
+        <div class="footer">
+            <p>This is an automated email. Please do not reply to this message.</p>
+        </div>
+    </div>
+</body>
+</html>

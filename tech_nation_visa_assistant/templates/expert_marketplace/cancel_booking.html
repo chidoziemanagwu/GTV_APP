@@ -1,0 +1,141 @@
+{% extends 'dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Cancel Consultation{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto">
+        <div class="mb-6">
+            <a href="javascript:history.back()" class="inline-flex items-center text-blue-600 hover:text-blue-800">
+                <i class="fas fa-arrow-left mr-2"></i> Back
+            </a>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+            <div class="p-6 bg-red-50 border-b border-gray-200">
+                <h1 class="text-2xl font-bold text-gray-800">Cancel Consultation</h1>
+                <p class="text-gray-600 mt-1">Please confirm that you want to cancel this consultation</p>
+            </div>
+            
+            <div class="p-6">
+                <!-- Current Booking Info -->
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-3">Booking Details</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Expert</p>
+                            <p class="font-medium">{{ booking.expert.full_name|default:"Unassigned" }}</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-500">Expertise</p>
+                            <p class="font-medium">{{ booking.expertise_needed|default:"General Consultation" }}</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-500">Date</p>
+                            <p class="font-medium">{{ booking.scheduled_date|date:"F j, Y" }}</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-500">Time</p>
+                            <p class="font-medium">{{ booking.scheduled_time }}</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-500">Duration</p>
+                            <p class="font-medium">{{ booking.duration_minutes }} minutes</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-500">Status</p>
+                            <p class="font-medium">{{ booking.get_status_display }}</p>
+                        </div>
+                        
+                        {% if booking.consultation_fee %}
+                        <div>
+                            <p class="text-sm text-gray-500">Fee</p>
+                            <p class="font-medium">£{{ booking.consultation_fee }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Refund Policy -->
+                <div class="bg-yellow-50 p-4 rounded-lg mb-6 border border-yellow-100">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-yellow-800">Cancellation Policy</h3>
+                            <div class="mt-2 text-sm text-yellow-700">
+                                <ul class="list-disc pl-5 space-y-1">
+                                    <li>Client cancellations before the consultation/Client no-show: <strong>50% refund</strong></li>
+                                    <li>If the expert cancels/no-show: <strong>100% refund</strong></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Cancellation Form -->
+                <form method="POST" action="">
+                    {% csrf_token %}
+                    
+                    <div class="mb-6">
+                        <label for="cancellation_reason" class="block text-sm font-medium text-gray-700 mb-1">Reason for Cancellation</label>
+                        <select id="cancellation_reason" name="cancellation_reason" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500">
+                            <option value="">Select a reason</option>
+                            <option value="schedule_conflict">Schedule Conflict</option>
+                            <option value="found_alternative">Found Alternative Solution</option>
+                            <option value="no_longer_needed">No Longer Needed</option>
+                            <option value="financial_reasons">Financial Reasons</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div id="other_reason_container" class="mb-6 hidden">
+                        <label for="other_reason" class="block text-sm font-medium text-gray-700 mb-1">Please Specify</label>
+                        <textarea id="other_reason" name="other_reason" rows="3"
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500"
+                                  placeholder="Please provide more details about your reason for cancellation"></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <a href="javascript:history.back()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-300">
+                            Go Back
+                        </a>
+                        <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-300">
+                            Confirm Cancellation
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const reasonSelect = document.getElementById('cancellation_reason');
+        const otherReasonContainer = document.getElementById('other_reason_container');
+        const otherReasonInput = document.getElementById('other_reason');
+        
+        reasonSelect.addEventListener('change', function() {
+            if (this.value === 'other') {
+                otherReasonContainer.classList.remove('hidden');
+                otherReasonInput.setAttribute('required', 'required');
+            } else {
+                otherReasonContainer.classList.add('hidden');
+                otherReasonInput.removeAttribute('required');
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,182 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class=""> {# Add 'dark' class here if you want to force dark mode or manage with JS #}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>{% block expert_title %}Expert Area{% endblock %} - Tech Nation Visa Assistant</title>
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Flowbite CSS (includes Tailwind) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+    
+    {# <link rel="stylesheet" href="{% static 'css/custom_styles.css' %}"> #}
+
+    <style>
+        body { margin: 0; } /* Ensure body has no margin if sidebar is to touch edges */
+        /* Sidebar and main content flex behavior is largely handled by Tailwind and Flowbite's drawer component */
+    </style>
+
+    {% block extra_css %}
+    {# Page-specific CSS will be injected here by child templates #}
+    {% endblock %}
+</head>
+<body class="bg-gray-100 dark:bg-gray-900">
+
+<div> {# Simplified main wrapper, could be removed if body is the only direct parent of aside/main #}
+    <!-- Sidebar -->
+    <aside id="expert-sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0" aria-label="Sidebar" tabindex="-1">
+        <div class="h-full px-3 py-4 overflow-y-auto bg-white dark:bg-gray-800 shadow-lg">
+            <div class="flex justify-between items-center sm:justify-center mb-6 pt-4">
+                <a href="{% url 'expert_marketplace:expert_dashboard' %}" class="flex items-center sm:flex-col">
+                    {% if expert.profile_image %}
+                        <img class="w-16 h-16 sm:w-24 sm:h-24 rounded-full object-cover mb-0 sm:mb-2 border-2 border-primary-500" src="{{ expert.profile_image.url }}" alt="{{ expert.full_name|default:'Expert' }}">
+                    {% else %}
+                        <div class="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-primary-100 dark:bg-primary-700 flex items-center justify-center mb-0 sm:mb-2 border-2 border-primary-500">
+                            <span class="text-2xl sm:text-3xl font-semibold text-primary-600 dark:text-primary-300">{{ expert.full_name|slice:":1"|upper|default:"E" }}</span>
+                        </div>
+                    {% endif %}
+                    <div class="ml-3 sm:ml-0 sm:text-center">
+                        <h5 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{{ expert.full_name|default:"Expert User" }}</h5>
+                        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{{ expert.specialization|default:"Specialist" }}</p>
+                    </div>
+                </a>
+                <button type="button" data-drawer-hide="expert-sidebar" aria-controls="expert-sidebar" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white sm:hidden">
+                    <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    <span class="sr-only">Close menu</span>
+                </button>
+            </div>
+            <ul class="space-y-2 font-medium">
+                <li>
+                    <a href="{% url 'expert_marketplace:expert_dashboard' %}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group {% if active_nav == 'dashboard' %}bg-gray-100 dark:bg-gray-700{% endif %}">
+                        <i class="fas fa-tachometer-alt w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
+                        <span class="ms-3">Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <button type="button" class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700" aria-controls="dropdown-consultations" data-collapse-toggle="dropdown-consultations">
+                          <i class="fas fa-calendar-check w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
+                          <span class="flex-1 ms-3 text-left rtl:text-right whitespace-nowrap">Consultations</span>
+                          <i class="fas fa-chevron-down w-3 h-3"></i>
+                    </button>
+                    <ul id="dropdown-consultations" class="hidden py-2 space-y-2">
+                          <li>
+                             <a href="{% url 'expert_marketplace:expert_upcoming_consultations' %}" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 {% if active_nav == 'upcoming_consultations' %}bg-gray-100 dark:bg-gray-700{% endif %}">Upcoming</a>
+                          </li>
+                          <li>
+                             <a href="{% url 'expert_marketplace:expert_past_consultations' %}" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 {% if active_nav == 'past_consultations' %}bg-gray-100 dark:bg-gray-700{% endif %}">Past</a>
+                          </li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="{% url 'expert_marketplace:expert_profile_settings' %}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group {% if active_nav == 'profile_settings' %}bg-gray-100 dark:bg-gray-700{% endif %}">
+                        <i class="fas fa-user-cog w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
+                        <span class="ms-3">Profile Settings</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'expert_marketplace:expert_earnings' %}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group {% if active_nav == 'earnings' %}bg-gray-100 dark:bg-gray-700{% endif %}">
+                        <i class="fas fa-wallet w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
+                        <span class="ms-3">Earnings</span>
+                    </a>
+                </li>
+                 <li>
+                    <a href="{% url 'expert_marketplace:expert_support' %}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group {% if active_nav == 'support' %}bg-gray-100 dark:bg-gray-700{% endif %}">
+                        <i class="fas fa-headset w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
+                        <span class="ms-3">Support</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'expert_marketplace:expert_logout' %}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
+                        <i class="fas fa-sign-out-alt w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
+                        <span class="ms-3">Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </aside>
+
+    <!-- Main Content Area for Expert Pages -->
+    <main class="expert-main-content sm:ml-64 min-h-screen flex flex-col">
+        <!-- Hamburger for mobile, placed at the top of the main content flow -->
+        <div class="p-4 sm:hidden"> {# This div provides padding for the button on mobile #}
+            <button data-drawer-target="expert-sidebar" data-drawer-toggle="expert-sidebar" aria-controls="expert-sidebar" type="button" class="inline-flex items-center text-sm text-gray-500 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600">
+                <span class="sr-only">Open sidebar</span>
+                <svg class="w-6 h-6" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                   <path clip-rule="evenodd" fill-rule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"></path>
+                </svg>
+             </button>
+        </div>
+
+        {# Messages block: often benefits from being contained and having consistent padding #}
+        <div class="px-4 w-full"> {# Provides horizontal padding for the messages section #}
+            {% block messages %}
+                {% if messages %}
+                    <div class="container mx-auto mb-4"> {# Actual container for messages for max-width and centering #}
+                        {% for message in messages %}
+                            <div class="p-4 rounded-md
+                                {% if message.tags == 'success' %} bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100 {% endif %}
+                                {% if message.tags == 'warning' %} bg-yellow-100 text-yellow-700 dark:bg-yellow-700 dark:text-yellow-100 {% endif %}
+                                {% if message.tags == 'error' %} bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100 {% endif %}
+                                {% if message.tags == 'info' %} bg-blue-100 text-blue-700 dark:bg-blue-700 dark:text-blue-100 {% endif %}
+                                {% if not message.tags %} bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-100 {% endif %}"
+                                 role="alert">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endblock messages %}
+        </div>
+
+        {# Expert content block: child templates will define their own top-level div with padding/container as needed #}
+        {# Added flex-grow to make this section take available vertical space #}
+        <div class="flex-grow"> 
+            {% block expert_content %}
+                <!-- Default content if not overridden, with its own padding -->
+                <div class="p-4">
+                    <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">Welcome, {{ expert.full_name|default:"Expert" }}!</h1>
+                    <p class="text-gray-600 dark:text-gray-300">This is your main dashboard area. Child templates should fill this block.</p>
+                </div>
+            {% endblock expert_content %}
+        </div>
+    </main>
+</div>
+
+<!-- Flowbite JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+
+{% block extra_js %}
+{# Page-specific JS will be injected here by child templates #}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Flowbite should handle the drawer and dropdown toggling automatically
+        // via data attributes.
+
+        // If you need to manually close the drawer after a nav link click on mobile:
+        const sidebar = document.getElementById('expert-sidebar');
+        // Ensure Flowbite's instances are available or use a more direct way if needed
+        // For example, if Flowbite is initialized globally, FlowbiteInstances might be available.
+        // Check Flowbite's documentation for the most robust way to get component instances.
+        if (typeof FlowbiteInstances !== 'undefined') {
+            const drawer = FlowbiteInstances.getInstance('Drawer', 'expert-sidebar');
+
+            document.querySelectorAll('#expert-sidebar a').forEach(function(anchor) {
+                anchor.addEventListener('click', function() {
+                    if (drawer && window.innerWidth < 640 && sidebar.hasAttribute('aria-modal')) { 
+                        drawer.hide();
+                    }
+                });
+            });
+        } else {
+            console.warn('FlowbiteInstances not found. Drawer auto-hide on nav click might not work.');
+        }
+    });
+</script>
+{% endblock %}
+
+</body>
+</html>

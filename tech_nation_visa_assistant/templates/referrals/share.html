@@ -8,7 +8,7 @@
         <span class="block sm:inline">{{ error }}</span>
     </div>
     {% else %}
-    <!-- Header Section -->
+<!-- Header Section -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
         <div class="p-6">
             <h1 class="text-2xl font-bold text-gray-900 mb-2">Referral Program</h1>
@@ -16,56 +16,58 @@
         </div>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <!-- Total Referrals -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Total Referrals</p>
-                    <h3 class="text-2xl font-bold text-gray-900">{{ total_referrals }}</h3>
-                </div>
-                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <i class="fas fa-users text-blue-600"></i>
-                </div>
+<!-- Stats Cards (Keep this block, remove the duplicate one below it) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <!-- Total Referrals -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-500">Total Signups via Your Code</p>
+                <h3 class="text-2xl font-bold text-gray-900">{{ total_referrals_count|default:"0" }}</h3>
             </div>
-        </div>
-
-        <!-- Paying Customers -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Paying Customers</p>
-                    <h3 class="text-2xl font-bold text-gray-900">{{ paying_customers_count }}</h3>
-                </div>
-                <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <i class="fas fa-crown text-green-600"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Free Uses Earned -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <div class="flex items-center gap-2">
-                        <p class="text-sm font-medium text-gray-500">Free Uses Earned</p>
-                        <!-- Info Tooltip -->
-                        <div class="relative group">
-                            <i class="fas fa-info-circle text-gray-400 cursor-help"></i>
-                            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                                You earn 1 free use for each referral that becomes a paying customer. Each free use can be used for CV analysis or personal statement generation.
-                            </div>
-                        </div>
-                    </div>
-                    <h3 class="text-2xl font-bold text-gray-900">{{ total_free_uses|default:"0" }}</h3>
-                </div>
-                <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                    <i class="fas fa-gift text-purple-600"></i>
-                </div>
+            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <i class="fas fa-users text-blue-600"></i>
             </div>
         </div>
     </div>
+
+    <!-- Successful Referrals (Earned You a Free Use) -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-500">Referrals Earning You a Free Use</p>
+                <h3 class="text-2xl font-bold text-gray-900">{{ successful_referrals_count|default:"0" }}</h3>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                <i class="fas fa-award text-green-600"></i> {# Changed icon for clarity #}
+            </div>
+        </div>
+    </div>
+
+    <!-- Your Available Free Uses -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="flex items-center gap-2">
+                    <p class="text-sm font-medium text-gray-500">Your Available Free Uses</p>
+                    <div class="relative group">
+                        <i class="fas fa-info-circle text-gray-400 cursor-help"></i>
+                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
+                            You earn 1 free use for each referral that becomes a paying customer. Each free use can be used for CV analysis or personal statement generation.
+                        </div>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900">{{ request.user.profile.available_free_uses|default:"0" }}</h3>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                <i class="fas fa-gift text-purple-600"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
 
     <!-- Share Section -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
@@ -106,16 +108,15 @@
 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
     <div class="p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Your Referrals</h2>
-        
         {% if referrals %}
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Referred User</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Free Uses</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reward Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reward Earned by You</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status of This Referral</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -127,32 +128,27 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-500">{{ signup.timestamp|date:"M d, Y" }}</div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {% if signup.points_awarded or signup.has_been_rewarded %}
-                            <span class="text-sm {% if signup.points_awarded %}text-green-600{% else %}text-gray-500{% endif %}">
-                                1 free use
-                            </span>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            {% if signup.free_use_granted %}
+                                <span class="text-green-600 font-medium">1 Free Use</span>
                             {% else %}
-                            <span>-</span>
+                                <span class="text-gray-500">-</span>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            {% if signup.points_awarded %}
-                            <span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">
-                                Free Use Available
-                            </span>
-                            {% elif signup.has_been_rewarded %}
-                            <span class="px-2 py-1 text-xs font-semibold text-blue-800 bg-blue-100 rounded-full">
-                                Free Use Used
-                            </span>
+                            {% if signup.free_use_granted %}
+                                <span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">
+                                    Reward Granted
+                                </span>
                             {% elif signup.referred_user.profile.is_paid_user %}
-                            <span class="px-2 py-1 text-xs font-semibold text-orange-800 bg-orange-100 rounded-full">
-                                Free Use Not Received
-                            </span>
+                                {# Referred user is paying, but free_use_granted is false for this signup #}
+                                <span class="px-2 py-1 text-xs font-semibold text-orange-800 bg-orange-100 rounded-full">
+                                    User Paid (Reward Issue)
+                                </span>
                             {% else %}
-                            <span class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 rounded-full">
-                                Pending Payment
-                            </span>
+                                <span class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 rounded-full">
+                                    Pending Referred User Payment
+                                </span>
                             {% endif %}
                         </td>
                     </tr>
@@ -161,13 +157,7 @@
             </table>
         </div>
         {% else %}
-        <div class="text-center py-8">
-            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-users text-gray-400 text-xl"></i>
-            </div>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No referrals yet</h3>
-            <p class="text-gray-500">Share your referral link to start earning free uses!</p>
-        </div>
+        {# ... (no referrals message) ... #}
         {% endif %}
     </div>
 </div>

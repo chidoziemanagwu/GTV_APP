@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Your Consultation Has Been Rescheduled</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #f0f7ff;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            border: 1px solid #e0e0e0;
+        }
+        .details {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Your Consultation Has Been Rescheduled</h1>
+    </div>
+    
+    <div class="content">
+        <p>Hello {{ booking.name }},</p>
+        
+        <p>Your consultation with <strong>{{ expert_name }}</strong> has been successfully rescheduled.</p>
+        
+        <div class="details">
+            <h3>Previous Schedule:</h3>
+            <p><strong>Date:</strong> {{ old_date|date:"F j, Y" }}</p>
+            <p><strong>Time:</strong> {{ old_time }}</p>
+            
+            <h3>New Schedule:</h3>
+            <p><strong>Date:</strong> {{ new_date|date:"F j, Y" }}</p>
+            <p><strong>Time:</strong> {{ new_time }}</p>
+            <p><strong>Duration:</strong> {{ booking.duration_minutes }} minutes</p>
+            <p><strong>Expertise:</strong> {{ booking.expertise_needed|default:"General Consultation" }}</p>
+        </div>
+        
+        <p>Your expert has been notified of this change. If you need to make any further changes to your booking, please visit your account dashboard.</p>
+        
+        <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+        
+        <a href="{{ booking.meeting_link }}" class="button">Join Meeting at Scheduled Time</a>
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated message, please do not reply directly to this email.</p>
+        <p>&copy; 2025 Your Company Name. All rights reserved.</p>
+    </div>
+</body>
+</html>

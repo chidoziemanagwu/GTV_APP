@@ -1,0 +1,36 @@
+{% extends "emails/base_email.html" %}
+
+{% block subject %}
+Refund Confirmation for Your Booking #{{ booking.id }}
+{% endblock %}
+
+{% block content %}
+<tr>
+  <td style="padding: 20px; font-family: Arial, sans-serif; line-height: 1.6;">
+    <h2 style="color: #4f46e5; margin-bottom: 20px;">Refund Confirmation</h2>
+    
+    <p>Dear {{ booking.name }},</p>
+    
+    <p>We're writing to confirm that your booking has been cancelled and a refund has been processed.</p>
+    
+    <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
+      <p style="margin: 0 0 10px 0;"><strong>Booking Details:</strong></p>
+      <ul style="margin: 0; padding-left: 20px;">
+        <li>Booking ID: #{{ booking.id }}</li>
+        <li>Scheduled Date: {{ booking.scheduled_date|date:"F j, Y" }}</li>
+        <li>Scheduled Time: {{ booking.scheduled_time|time:"g:i A" }}</li>
+        <li>Expertise: {{ booking.expertise_needed }}</li>
+      </ul>
+    </div>
+    
+    <p>A refund of <strong>£{{ refund_amount }}</strong> has been processed to your payment method. Please allow 5-10 business days for the refund to appear in your account, depending on your payment provider.</p>
+    
+    <p>If you have any questions about this refund or would like to book another consultation in the future, please don't hesitate to contact us.</p>
+    
+    <p>Thank you for your understanding.</p>
+    
+    <p>Best regards,<br>
+    The {{ site_name }} Team</p>
+  </td>
+</tr>
+{% endblock %}

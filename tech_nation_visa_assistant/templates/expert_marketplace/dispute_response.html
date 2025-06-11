@@ -1,0 +1,157 @@
+<!-- templates/expert_marketplace/dispute_response.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Respond to Dispute - {{ dispute.booking.id }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="border-b border-gray-200 px-6 py-4 bg-blue-50">
+            <h1 class="text-2xl font-bold text-gray-800">Respond to Dispute</h1>
+            <p class="text-gray-600 mt-1">Booking #{{ dispute.booking.id }}</p>
+        </div>
+        
+        <div class="p-6">
+            {% if dispute.status == 'resolved' or dispute.status == 'rejected' %}
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700">
+                                This dispute has already been {{ dispute.status }}. No further action is required.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="text-lg font-medium text-gray-900">Resolution Details</h3>
+                    <div class="mt-2 bg-gray-50 p-4 rounded-lg">
+                        <p class="text-gray-700"><strong>Status:</strong> {{ dispute.get_status_display }}</p>
+                        <p class="text-gray-700 mt-2"><strong>Resolution Notes:</strong></p>
+                        <p class="text-gray-700">{{ dispute.resolution_notes|default:"No notes provided" }}</p>
+                        
+                        {% if dispute.status == 'resolved' and dispute.refund_amount %}
+                            <p class="text-gray-700 mt-2"><strong>Refund Amount:</strong> £{{ dispute.refund_amount }}</p>
+                            <p class="text-gray-700"><strong>Refund Status:</strong> 
+                                {% if dispute.refund_processed %}
+                                    <span class="text-green-600">Processed</span>
+                                {% else %}
+                                    <span class="text-yellow-600">Pending</span>
+                                {% endif %}
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% elif dispute.expert_response %}
+                <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-check-circle text-green-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-green-700">
+                                You have already responded to this dispute. Our team is reviewing the case.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="text-lg font-medium text-gray-900">Your Response</h3>
+                    <div class="mt-2 bg-gray-50 p-4 rounded-lg">
+                        <p class="text-gray-700">{{ dispute.expert_response }}</p>
+                        
+                        {% if dispute.expert_evidence_file %}
+                            <div class="mt-4">
+                                <a href="{{ dispute.expert_evidence_file.url }}" target="_blank" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    <i class="fas fa-file-alt mr-2"></i>View Uploaded Evidence
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700">
+                                A client has reported an issue with booking #{{ dispute.booking.id }}. Please provide your response below.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <form method="post" enctype="multipart/form-data" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">Dispute Details</h3>
+                        <div class="mt-2 bg-gray-50 p-4 rounded-lg">
+                            <p class="text-gray-700"><strong>Type:</strong> {{ dispute.get_dispute_type_display }}</p>
+                            <p class="text-gray-700"><strong>Reported:</strong> {{ dispute.reported_at|date:"F j, Y, g:i a" }}</p>
+                            <p class="text-gray-700 mt-2"><strong>Client's Reason:</strong></p>
+                            <p class="text-gray-700">{{ dispute.reason }}</p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">Booking Details</h3>
+                        <div class="mt-2 bg-gray-50 p-4 rounded-lg">
+                            <p class="text-gray-700"><strong>Scheduled Date:</strong> {{ dispute.booking.scheduled_date|date:"F j, Y" }}</p>
+                            <p class="text-gray-700"><strong>Scheduled Time:</strong> {{ dispute.booking.scheduled_time }}</p>
+                            <p class="text-gray-700"><strong>Client:</strong> {{ dispute.client_name }}</p>
+                            <p class="text-gray-700"><strong>Consultation Fee:</strong> £{{ dispute.booking.consultation_fee }}</p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="expert_response" class="block text-sm font-medium text-gray-700">Your Response</label>
+                        <div class="mt-1">
+                            <textarea id="expert_response" name="expert_response" rows="5" class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md" placeholder="Explain what happened..." required></textarea>
+                        </div>
+                        <p class="mt-2 text-sm text-gray-500">
+                            Please provide a detailed explanation of what happened. This will help us resolve the dispute fairly.
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label for="expert_evidence_file" class="block text-sm font-medium text-gray-700">Upload Evidence (optional)</label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="expert_evidence_file" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                        <span>Upload a file</span>
+                                        <input id="expert_evidence_file" name="expert_evidence_file" type="file" class="sr-only">
+                                    </label>
+                                    <p class="pl-1">or drag and drop</p>
+                                </div>
+                                <p class="text-xs text-gray-500">
+                                    PDF, PNG, JPG, GIF up to 10MB
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-5">
+                        <div class="flex justify-end">
+                            <button type="submit" class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                Submit Response
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

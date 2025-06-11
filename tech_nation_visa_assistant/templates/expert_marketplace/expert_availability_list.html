@@ -1,0 +1,57 @@
+{# templates/expert_marketplace/expert_availability_list.html #}
+{% extends "expert_marketplace/expert_base.html" %}
+{% load static %}
+
+{% block expert_title %}{{ page_title|default:"My Availability" }} - {{ expert.full_name }}{% endblock %}
+
+{% block expert_content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 pb-3 border-b border-gray-200 dark:border-gray-700">
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ page_title|default:"My Availability" }}</h1>
+        <a href="{% url 'expert_marketplace:expert_profile_settings' %}#availability-section" class="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 text-sm font-medium text-center text-white bg-primary-700 rounded-lg hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
+            Manage Slots (in Profile Settings)
+        </a>
+    </div>
+
+    {% if messages %}
+        <div class="mb-6 space-y-3">
+        {% for message in messages %}
+            <div class="p-4 text-sm rounded-lg
+                {% if message.tags == 'success' %} bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100 {% endif %}
+                {% if message.tags == 'error' %} bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100 {% endif %}"
+                 role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Current Availability Slots</h2>
+        {% if availabilities %}
+            <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for slot in availabilities %}
+                    <li class="py-3">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-md font-medium text-gray-900 dark:text-white">
+                                    {{ slot.date|date:"l, F j, Y" }}
+                                </p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">
+                                    {{ slot.start_time }} - {{ slot.end_time }}
+                                </p>
+                            </div>
+                            {# Add edit/delete links here if this page is for managing,
+                               otherwise, it's just a list view.
+                               Currently, management is on profile_settings page. #}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-gray-600 dark:text-gray-400">You have no availability slots defined.</p>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">You can add new slots in your <a href="{% url 'expert_marketplace:expert_profile_settings' %}#availability-section" class="text-primary-600 hover:underline dark:text-primary-500">Profile Settings</a>.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock expert_content %}

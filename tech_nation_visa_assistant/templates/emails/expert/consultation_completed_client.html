@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consultation Completed</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .footer {
+            text-align: center;
+            font-size: 0.9em;
+            color: #777;
+            margin-top: 20px;
+        }
+        a {
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Consultation Completed</h2>
+        </div>
+        <div class="content">
+            <p>Dear {{ user.get_full_name|default:user.email }},</p>
+
+            <p>We're writing to inform you that your consultation regarding "<strong>{{ booking.get_expertise_needed_display|default:"General Consultation" }}</strong>" with <strong>{{ expert_name }}</strong>, scheduled for {{ booking.scheduled_date|date:"F d, Y" }} at {{ booking.scheduled_time|time:"H:i" }}, has been marked as completed.</p>
+            {% if completion_notes and completion_notes != "N/A" %}
+                <p><strong>Notes from the expert:</strong></p>
+                <p style="white-space: pre-wrap; background-color: #f9f9f9; border: 1px solid #eee; padding: 10px; border-radius: 4px;">{{ completion_notes }}</p>
+            {% endif %}
+
+            <p>We hope you had a productive session. If you have any feedback or further questions, please don't hesitate to contact us.</p>
+            
+            <p>You can view the details of this booking here: 
+                <a href="{{ booking_url }}">View Booking Details</a>
+            </p>
+
+            <p>Thank you for using {{ site_name }}!</p>
+
+            <p>Sincerely,<br>
+            The {{ site_name }} Team</p>
+        </div>
+        <div class="footer">
+            <p>&copy; {% now "Y" %} {{ site_name }}. All rights reserved.</p>
+            <p>If you have any questions, please contact our support team.</p>
+        </div>
+    </div>
+</body>
+</html>

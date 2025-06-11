@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %} {# Keep if you use render_field for specific class manipulation #}
+
+{% block title %}{{ page_title|default:"Expert Login" }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 py-8 px-4">
+    <div class="w-full max-w-md">
+        {% if messages %}
+            <div class="mb-4 space-y-2">
+            {% for message in messages %}
+                <div id="alert-{{ forloop.counter }}" class="flex items-center p-4 text-sm rounded-lg 
+                    {% if message.tags == 'debug' %}bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300{% endif %}
+                    {% if message.tags == 'info' %}bg-blue-100 text-blue-700 dark:bg-blue-200 dark:text-blue-800{% endif %}
+                    {% if message.tags == 'success' %}bg-green-100 text-green-700 dark:bg-green-200 dark:text-green-800{% endif %}
+                    {% if message.tags == 'warning' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-200 dark:text-yellow-800{% endif %}
+                    {% if message.tags == 'error' %}bg-red-100 text-red-700 dark:bg-red-200 dark:text-red-800{% endif %}"
+                    role="alert">
+                    <svg class="flex-shrink-0 inline w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                    <span class="sr-only">{% if message.tags %}{{ message.tags|capfirst }}{% else %}Info{% endif %}</span>
+                    <div>
+                        <span class="font-medium">{{ message.tags|capfirst }}!</span> {{ message }}
+                    </div>
+                    <button type="button" class="ml-auto -mx-1.5 -my-1.5 bg-transparent text-gray-500 rounded-lg focus:ring-2 focus:ring-gray-400 p-1.5 hover:bg-gray-200 inline-flex h-8 w-8 dark:text-gray-300 dark:hover:bg-gray-700" data-dismiss-target="#alert-{{ forloop.counter }}" aria-label="Close">
+                        <span class="sr-only">Dismiss</span>
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    </button>
+                </div>
+            {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="bg-white shadow-md rounded-lg dark:bg-gray-800 p-6 sm:p-8">
+            <h1 class="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white text-center mb-6">
+                {{ page_title|default:"Expert Login" }}
+            </h1>
+            <form method="post" action="{% url 'expert_marketplace:expert_login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" class="space-y-4 md:space-y-6">
+                {% csrf_token %}
+                
+                <div>
+                    <label for="{{ form.username.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">{{ form.username.label_tag|default:"Email Address" }}</label>
+                    {% render_field form.username type="email" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="name@company.com" %}
+                    {% if form.username.errors %}
+                        <div class="mt-2 text-sm text-red-600 dark:text-red-500">
+                            {% for error in form.username.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="{{ form.password.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">{{ form.password.label_tag|default:"Password" }}</label>
+                    {% render_field form.password type="password" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="••••••••" %}
+                    {% if form.password.errors %}
+                        <div class="mt-2 text-sm text-red-600 dark:text-red-500">
+                            {% for error in form.password.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                {% if form.non_field_errors %}
+                    <div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800" role="alert">
+                        {% for error in form.non_field_errors %}
+                            <p class="font-medium">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <button type="submit" class="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">Login</button>
+                
+                <hr class="my-6 border-gray-300 dark:border-gray-700">
+                
+                <p class="text-sm font-light text-gray-500 dark:text-gray-400 text-center">
+                    Not an expert? <a href="{% url 'expert_marketplace:book_consultation' %}" class="font-medium text-primary-600 hover:underline dark:text-primary-500">Book a consultation</a>.
+                </p>
+                <!-- <p class="text-sm font-light text-gray-500 dark:text-gray-400 text-center">
+                    Want to become an expert? <a href="#" class="font-medium text-primary-600 hover:underline dark:text-primary-500">Apply here</a>.
+                </p>  -->
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

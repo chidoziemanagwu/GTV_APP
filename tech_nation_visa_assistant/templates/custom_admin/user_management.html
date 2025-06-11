@@ -1,0 +1,1132 @@
+{% extends 'custom_admin/base.html' %}
+
+{% block title %}User Management - TalentDocs Admin{% endblock %}
+
+{% block page_title %}User Management{% endblock %}
+{% block page_description %}Manage users, points, and account settings{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .user-avatar {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .status-active {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+    
+    .status-inactive {
+        background-color: #fef2f2;
+        color: #991b1b;
+    }
+    
+    .status-paid {
+        background-color: #ecfdf5;
+        color: #065f46;
+    }
+    
+    .status-free {
+        background-color: #f3f4f6;
+        color: #374151;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="space-y-6">
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white overflow-hidden shadow-lg rounded-xl card-hover">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-users text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Total Users</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ stats.total_users|floatformat:0 }}</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="flex items-center text-sm">
+                        <span class="text-green-600 font-medium">+{{ stats.new_users_today }}</span>
+                        <span class="text-gray-500 ml-1">today</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow-lg rounded-xl card-hover">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-crown text-yellow-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Paid Users</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ stats.paid_users|floatformat:0 }}</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="flex items-center text-sm">
+                        <span class="text-blue-600 font-medium">{{ stats.conversion_rate }}%</span>
+                        <span class="text-gray-500 ml-1">conversion</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow-lg rounded-xl card-hover">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-pound-sign text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Total Revenue</p>
+                        <p class="text-2xl font-bold text-gray-900">£{{ stats.total_revenue|floatformat:2 }}</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="flex items-center text-sm">
+                        <span class="text-green-600 font-medium">£{{ stats.revenue_this_month|floatformat:2 }}</span>
+                        <span class="text-gray-500 ml-1">this month</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow-lg rounded-xl card-hover">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-user-plus text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">New This Week</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ stats.new_users_week|floatformat:0 }}</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="flex items-center text-sm">
+                        <span class="text-gray-600 font-medium">{{ stats.free_users }}</span>
+                        <span class="text-gray-500 ml-1">free users</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Actions -->
+    <div class="bg-white shadow-lg rounded-xl">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-900">Filters & Search</h3>
+                <div class="flex space-x-3">
+                    <button onclick="exportUsers()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <i class="fas fa-download mr-2"></i>Export Users
+                    </button>
+                    <button onclick="refreshData()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <form id="filterForm" method="GET" action="" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
+                <div class="lg:col-span-2">
+                    <label for="search" class="block text-sm font-medium text-gray-700 mb-2">Search Users</label>
+                    <div class="relative">
+                        <input type="text" name="search" id="search" value="{{ search }}" 
+                               placeholder="Email, name..." 
+                               class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="is_paid" class="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
+                    <select name="is_paid" id="is_paid" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Users</option>
+                        <option value="true" {% if is_paid == 'true' %}selected{% endif %}>Paid Users</option>
+                        <option value="false" {% if is_paid == 'false' %}selected{% endif %}>Free Users</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="date_joined" class="block text-sm font-medium text-gray-700 mb-2">Date Joined</label>
+                    <select name="date_joined" id="date_joined" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Time</option>
+                        <option value="today" {% if date_joined == 'today' %}selected{% endif %}>Today</option>
+                        <option value="week" {% if date_joined == 'week' %}selected{% endif %}>This Week</option>
+                        <option value="month" {% if date_joined == 'month' %}selected{% endif %}>This Month</option>
+                    </select>
+                </div>
+                
+                <div class="flex items-end">
+                    <button type="submit" 
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <i class="fas fa-search mr-2"></i>Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">Users ({{ page_obj.paginator.count }})</h3>
+                    <p class="text-sm text-gray-500">Manage user accounts and permissions</p>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="bulkAction('activate')" class="text-sm text-green-600 hover:text-green-800 font-medium">
+                        <i class="fas fa-check-circle mr-1"></i>Bulk Activate
+                    </button>
+                    <button onclick="bulkAction('deactivate')" class="text-sm text-red-600 hover:text-red-800 font-medium">
+                        <i class="fas fa-times-circle mr-1"></i>Bulk Deactivate
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table id="usersTable" class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Details</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points & Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for user in page_obj %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <input type="checkbox" name="user_ids" value="{{ user.id }}" class="user-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-12 w-12">
+                                    <div class="h-12 w-12 rounded-full user-avatar flex items-center justify-center">
+                                        <span class="text-white font-semibold text-lg">
+                                            {{ user.first_name|first|default:user.email|first|upper }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-semibold text-gray-900">
+                                        {% if user.first_name or user.last_name %}
+                                            {{ user.first_name }} {{ user.last_name }}
+                                        {% else %}
+                                            {{ user.email|truncatechars:25 }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-sm text-gray-500">{{ user.email }}</div>
+                                    <div class="text-xs text-gray-400">ID: {{ user.id }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900 font-medium">
+                                {% if user.get_account_type_display %}
+                                    {{ user.get_account_type_display }}
+                                {% else %}
+                                    Standard User
+                                {% endif %}
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                {% if user.get_visa_path_display %}
+                                    {{ user.get_visa_path_display }}
+                                {% else %}
+                                    No visa path set
+                                {% endif %}
+                            </div>
+                            <div class="text-xs text-gray-400">
+                                Joined {{ user.date_joined|date:"M d, Y" }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-semibold text-gray-900 mb-1">
+                                {% if user.points %}{{ user.points.balance }}{% else %}0{% endif %} points
+                            </div>
+                            <div class="flex flex-col space-y-1">
+                                {% if user.profile.is_paid_user %}
+                                    <span class="status-badge status-paid">
+                                        <span class="w-1.5 h-1.5 mr-1.5 bg-green-400 rounded-full"></span>
+                                        Paid User
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge status-free">
+                                        <span class="w-1.5 h-1.5 mr-1.5 bg-gray-400 rounded-full"></span>
+                                        Free User
+                                    </span>
+                                {% endif %}
+                                
+                                {% if user.is_active %}
+                                    <span class="status-badge status-active">
+                                        <span class="w-1.5 h-1.5 mr-1.5 bg-green-400 rounded-full"></span>
+                                        Active
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge status-inactive">
+                                        <span class="w-1.5 h-1.5 mr-1.5 bg-red-400 rounded-full"></span>
+                                        Inactive
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div class="mb-1">
+                                {% if user.last_login %}
+                                    Last login: {{ user.last_login|date:"M d, H:i" }}
+                                {% else %}
+                                    Never logged in
+                                {% endif %}
+                            </div>
+                            <div class="text-xs">
+                                {% if user.profile.assessment_completed %}
+                                    <span class="text-green-600">✓ Assessment</span>
+                                {% else %}
+                                    <span class="text-gray-400">○ Assessment</span>
+                                {% endif %}
+                                
+                                {% if user.profile.documents_completed %}
+                                    <span class="text-green-600 ml-2">✓ Documents</span>
+                                {% else %}
+                                    <span class="text-gray-400 ml-2">○ Documents</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2">
+                                <button onclick="viewUserDetails({{ user.id }})" 
+                                        class="text-blue-600 hover:text-blue-900 p-2 rounded-lg hover:bg-blue-50 transition-colors"
+                                        title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="editUserPoints({{ user.id }})" 
+                                        class="text-green-600 hover:text-green-900 p-2 rounded-lg hover:bg-green-50 transition-colors"
+                                        title="Edit Points">
+                                    <i class="fas fa-coins"></i>
+                                </button>
+                                <button onclick="toggleUserStatus({{ user.id }})" 
+                                        class="text-yellow-600 hover:text-yellow-900 p-2 rounded-lg hover:bg-yellow-50 transition-colors"
+                                        title="Toggle Status">
+                                    <i class="fas fa-{% if user.is_active %}pause{% else %}play{% endif %}"></i>
+                                </button>
+                                <button onclick="sendMessage({{ user.id }})" 
+                                        class="text-purple-600 hover:text-purple-900 p-2 rounded-lg hover:bg-purple-50 transition-colors"
+                                        title="Send Message">
+                                    <i class="fas fa-envelope"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <div class="text-gray-500">
+                                <i class="fas fa-users text-4xl mb-4"></i>
+                                <p class="text-lg font-medium">No users found</p>
+                                <p class="text-sm">Try adjusting your search criteria</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if is_paid %}&is_paid={{ is_paid }}{% endif %}{% if account_type %}&account_type={{ account_type }}{% endif %}{% if date_joined %}&date_joined={{ date_joined }}{% endif %}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Previous</a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if is_paid %}&is_paid={{ is_paid }}{% endif %}{% if account_type %}&account_type={{ account_type }}{% endif %}{% if date_joined %}&date_joined={{ date_joined }}{% endif %}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Next</a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Showing <span class="font-medium">{{ page_obj.start_index }}</span> to <span class="font-medium">{{ page_obj.end_index }}</span> of <span class="font-medium">{{ page_obj.paginator.count }}</span> results
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                        {% if page_obj.has_previous %}
+                            <a href="?page=1{% if search %}&search={{ search }}{% endif %}{% if is_paid %}&is_paid={{ is_paid }}{% endif %}{% if account_type %}&account_type={{ account_type }}{% endif %}{% if date_joined %}&date_joined={{ date_joined }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">First</a>
+                            <a href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if is_paid %}&is_paid={{ is_paid }}{% endif %}{% if account_type %}&account_type={{ account_type }}{% endif %}{% if date_joined %}&date_joined={{ date_joined }}{% endif %}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">Previous</a>
+                        {% endif %}
+                        
+                        <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                        
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if is_paid %}&is_paid={{ is_paid }}{% endif %}{% if account_type %}&account_type={{ account_type }}{% endif %}{% if date_joined %}&date_joined={{ date_joined }}{% endif %}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">Next</a>
+                            <a href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if is_paid %}&is_paid={{ is_paid }}{% endif %}{% if account_type %}&account_type={{ account_type }}{% endif %}{% if date_joined %}&date_joined={{ date_joined }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">Last</a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- User Details Modal -->
+<div id="userDetailsModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full" data-modal-backdrop="static">
+    <div class="relative w-full max-w-2xl max-h-full">
+        <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+            <div class="flex items-start justify-between p-4 border-b rounded-t dark:border-gray-600">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">User Details</h3>
+                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="userDetailsModal">
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                    </svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- User details content will be loaded here -->
+                <div id="userDetailsContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Points Edit Modal -->
+<div id="pointsEditModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full" data-modal-backdrop="static">
+    <div class="relative w-full max-w-md max-h-full">
+        <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+            <div class="flex items-start justify-between p-4 border-b rounded-t dark:border-gray-600">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Edit User Points</h3>
+                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="pointsEditModal">
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                    </svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+            <div class="p-6 space-y-6">
+                <form id="pointsEditForm">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="points" class="block text-sm font-medium text-gray-700 mb-2">Points to Add/Remove</label>
+                        <input type="number" id="points" name="points" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter positive or negative value">
+                        <p class="text-xs text-gray-500 mt-1">Use positive values to add points, negative to remove</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">Reason</label>
+                        <textarea id="reason" name="reason" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter reason for points adjustment..."></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400" data-modal-hide="pointsEditModal">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            Update Points
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Message Modal -->
+<div id="messageModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full" data-modal-backdrop="static">
+    <div class="relative w-full max-w-md max-h-full">
+        <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+            <div class="flex items-start justify-between p-4 border-b rounded-t dark:border-gray-600">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Send Message</h3>
+                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="messageModal">
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                    </svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+            <div class="p-6 space-y-6">
+                <form id="messageForm">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="subject" class="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                        <input type="text" id="subject" name="subject" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter message subject...">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="message" class="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                        <textarea id="message" name="message" rows="5" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter your message..."></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400" data-modal-hide="messageModal">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            Send Message
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Action Modal -->
+<div id="bulkActionModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full" data-modal-backdrop="static">
+    <div class="relative w-full max-w-md max-h-full">
+        <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+            <div class="flex items-start justify-between p-4 border-b rounded-t dark:border-gray-600">
+                <h3 id="bulkActionTitle" class="text-xl font-semibold text-gray-900 dark:text-white">Bulk Action</h3>
+                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="bulkActionModal">
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                    </svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+            <div class="p-6 space-y-6">
+                <form id="bulkActionForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="bulkActionType" name="action_type" value="">
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Selected Users</label>
+                        <div id="bulkActionUserList" class="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2 bg-gray-50">
+                            <!-- User list will be populated here -->
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Total: <span id="selectedUserCount">0</span> users</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="bulk_reason" class="block text-sm font-medium text-gray-700 mb-2">Reason (Optional)</label>
+                        <textarea id="bulk_reason" name="reason" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter reason for this action..."></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400" data-modal-hide="bulkActionModal">
+                            Cancel
+                        </button>
+                        <button id="bulkActionSubmit" type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            Confirm
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- This is a complete script that properly initializes Flowbite modals -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Flowbite
+    initFlowbite();
+    
+    let currentUserId = null;
+
+    // Toggle select all checkboxes
+    window.toggleSelectAll = function() {
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.user-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAll.checked;
+        });
+    }
+
+    // View user details
+    window.viewUserDetails = async function(userId) {
+        try {
+            currentUserId = userId;
+            
+            // Get modal element and initialize if needed
+            const modalElement = document.getElementById('userDetailsModal');
+            let modal;
+            
+            try {
+                // Try to get existing instance
+                modal = Modal.getInstance(modalElement);
+            } catch (e) {
+                // If it fails, create a new instance
+                modal = new Modal(modalElement, {
+                    placement: 'center',
+                    backdrop: 'static',
+                    closable: true
+                });
+            }
+            
+            // Show the modal
+            modal.show();
+            
+            // Show loading state
+            document.getElementById('userDetailsContent').innerHTML = `
+                <div class="flex justify-center items-center py-8">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+            `;
+            
+            const response = await fetch(`{% url 'custom_admin:user_details' 0 %}`.replace('0', userId));
+            const data = await response.json();
+            
+            if (data.success) {
+                const user = data.user;
+                const content = `
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="space-y-6">
+                            <div class="bg-gray-50 rounded-xl p-6">
+                                <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                    <i class="fas fa-user mr-2 text-blue-600"></i>
+                                    Basic Information
+                                </h4>
+                                <dl class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <dt class="text-sm font-medium text-gray-500">Email</dt>
+                                        <dd class="text-sm text-gray-900 font-medium">${user.email}</dd>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <dt class="text-sm font-medium text-gray-500">Name</dt>
+                                        <dd class="text-sm text-gray-900">${user.first_name} ${user.last_name}</dd>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <dt class="text-sm font-medium text-gray-500">Account Type</dt>
+                                        <dd class="text-sm text-gray-900">${user.account_type}</dd>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <dt class="text-sm font-medium text-gray-500">Date Joined</dt>
+                                        <dd class="text-sm text-gray-900">${new Date(user.date_joined).toLocaleDateString()}</dd>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <dt class="text-sm font-medium text-gray-500">Last Login</dt>
+                                        <dd class="text-sm text-gray-900">${user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}</dd>
+                                    </div>
+                                </dl>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-xl p-6">
+                                <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                    <i class="fas fa-coins mr-2 text-yellow-600"></i>
+                                    Points & Status
+                                </h4>
+                                <dl class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <dt class="text-sm font-medium text-gray-500">Current Balance</dt>
+                                        <dd class="text-sm text-gray-900 font-bold">${user.points_balance} points</dd>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <dt class="text-sm font-medium text-gray-500">Lifetime Points</dt>
+                                        <dd class="text-sm text-gray-900">${user.lifetime_points} points</dd>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <dt class="text-sm font-medium text-gray-500">Paid User</dt>
+                                        <dd class="text-sm">
+                                            <span class="status-badge ${user.is_paid_user ? 'status-paid' : 'status-free'}">
+                                                ${user.is_paid_user ? 'Yes' : 'No'}
+                                            </span>
+                                        </dd>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <dt class="text-sm font-medium text-gray-500">Account Status</dt>
+                                        <dd class="text-sm">
+                                            <span class="status-badge ${user.is_active ? 'status-active' : 'status-inactive'}">
+                                                ${user.is_active ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-6">
+                            <div class="bg-gray-50 rounded-xl p-6">
+                                <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                    <i class="fas fa-credit-card mr-2 text-green-600"></i>
+                                    Recent Transactions
+                                </h4>
+                                <div class="space-y-3 max-h-64 overflow-y-auto">
+                                    ${user.recent_transactions && user.recent_transactions.length > 0 ? user.recent_transactions.map(t => `
+                                        <div class="flex justify-between items-center p-3 bg-white rounded-lg">
+                                            <div>
+                                                <div class="text-sm font-medium text-gray-900">£${t.amount}</div>
+                                                <div class="text-xs text-gray-500">${new Date(t.created_at).toLocaleDateString()}</div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="text-sm font-medium text-gray-900">${t.points} points</div>
+                                                <div class="text-xs text-gray-500">${t.status}</div>
+                                            </div>
+                                        </div>
+                                    `).join('') : '<p class="text-sm text-gray-500 text-center py-4">No transactions found</p>'}
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-xl p-6">
+                                <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                    <i class="fas fa-history mr-2 text-purple-600"></i>
+                                    Recent Activities
+                                </h4>
+                                <div class="space-y-3 max-h-64 overflow-y-auto">
+                                    ${user.recent_activities && user.recent_activities.length > 0 ? user.recent_activities.map(a => `
+                                        <div class="p-3 bg-white rounded-lg">
+                                            <div class="text-sm font-medium text-gray-900">${a.type}</div>
+                                            <div class="text-sm text-gray-600">${a.description}</div>
+                                            <div class="text-xs text-gray-500">${new Date(a.created_at).toLocaleDateString()}</div>
+                                        </div>
+                                    `).join('') : '<p class="text-sm text-gray-500 text-center py-4">No activities found</p>'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('userDetailsContent').innerHTML = content;
+            } else {
+                document.getElementById('userDetailsContent').innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                        <p class="text-red-600 font-medium">Error loading user details</p>
+                        <p class="text-gray-500 text-sm">${data.error || 'Unknown error occurred'}</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error fetching user details:', error);
+            document.getElementById('userDetailsContent').innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                    <p class="text-red-600 font-medium">Error loading user details</p>
+                    <p class="text-gray-500 text-sm">Please try again later</p>
+                </div>
+            `;
+        }
+    }
+
+    // Edit user points
+    window.editUserPoints = function(userId) {
+        currentUserId = userId;
+        
+        // Get modal element and initialize if needed
+        const modalElement = document.getElementById('pointsEditModal');
+        let modal;
+        
+        try {
+            // Try to get existing instance
+            modal = Modal.getInstance(modalElement);
+        } catch (e) {
+            // If it fails, create a new instance
+            modal = new Modal(modalElement, {
+                placement: 'center',
+                backdrop: 'static',
+                closable: true
+            });
+        }
+        
+        // Show the modal
+        modal.show();
+    }
+
+    // Send message to user
+    window.sendMessage = function(userId) {
+        currentUserId = userId;
+        
+        // Get modal element and initialize if needed
+        const modalElement = document.getElementById('messageModal');
+        let modal;
+        
+        try {
+            // Try to get existing instance
+            modal = Modal.getInstance(modalElement);
+        } catch (e) {
+            // If it fails, create a new instance
+            modal = new Modal(modalElement, {
+                placement: 'center',
+                backdrop: 'static',
+                closable: true
+            });
+        }
+        
+        // Show the modal
+        modal.show();
+    }
+
+    // Handle points form submission
+    const pointsEditForm = document.getElementById('pointsEditForm');
+    if (pointsEditForm) {
+        pointsEditForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const points = formData.get('points');
+            const reason = formData.get('reason');
+            
+            try {
+                // Get CSRF token from the form
+                const csrfToken = formData.get('csrfmiddlewaretoken');
+                
+                const response = await fetch(`{% url 'custom_admin:update_user_points' 0 %}`.replace('0', currentUserId), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        points: parseInt(points),
+                        reason: reason
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.error || 'An error occurred while updating points');
+                }
+            } catch (error) {
+                console.error('Error updating points:', error);
+                alert('Error updating points: ' + (error.message || 'Unknown error'));
+            }
+        });
+    }
+
+    // Handle message form submission
+    const messageForm = document.getElementById('messageForm');
+    if (messageForm) {
+        messageForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const subject = formData.get('subject');
+            const message = formData.get('message');
+            
+            try {
+                // Get CSRF token from the form
+                const csrfToken = formData.get('csrfmiddlewaretoken');
+                
+                const response = await fetch(`{% url 'custom_admin:send_user_message' 0 %}`.replace('0', currentUserId), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        subject: subject,
+                        message: message
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(data.message);
+                    
+                    // Get modal element and close it
+                    const modalElement = document.getElementById('messageModal');
+                    let modal;
+                    
+                    try {
+                        // Try to get existing instance
+                        modal = Modal.getInstance(modalElement);
+                        modal.hide();
+                    } catch (e) {
+                        // If it fails, just hide the modal using DOM
+                        modalElement.classList.add('hidden');
+                    }
+                } else {
+                    alert(data.error || 'An error occurred while sending the message');
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert('Error sending message: ' + (error.message || 'Unknown error'));
+            }
+        });
+    }
+
+    // Toggle user status
+    window.toggleUserStatus = async function(userId) {
+        if (!confirm('Are you sure you want to toggle this user\'s status?')) {
+            return;
+        }
+        
+        try {
+            // Get CSRF token from the page
+            const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+            
+            const response = await fetch(`{% url 'custom_admin:toggle_user_status' 0 %}`.replace('0', userId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.error || 'An error occurred while toggling user status');
+            }
+        } catch (error) {
+            console.error('Error toggling user status:', error);
+            alert('Error updating user status: ' + (error.message || 'Unknown error'));
+        }
+    }
+
+    // Bulk actions
+    window.bulkAction = function(action) {
+        const selectedUsers = document.querySelectorAll('.user-checkbox:checked');
+        
+        if (selectedUsers.length === 0) {
+            alert('Please select users first');
+            return;
+        }
+        
+        // Set the action type
+        const bulkActionType = document.getElementById('bulkActionType');
+        if (bulkActionType) {
+            bulkActionType.value = action;
+        }
+        
+        // Update modal title
+        const actionTitle = action.charAt(0).toUpperCase() + action.slice(1);
+        const bulkActionTitle = document.getElementById('bulkActionTitle');
+        if (bulkActionTitle) {
+            bulkActionTitle.textContent = `Bulk ${actionTitle} Users`;
+        }
+        
+        // Set button color based on action
+        const submitButton = document.getElementById('bulkActionSubmit');
+        if (submitButton) {
+            if (action === 'activate') {
+                submitButton.className = 'px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500';
+            } else if (action === 'deactivate') {
+                submitButton.className = 'px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500';
+            } else {
+                submitButton.className = 'px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500';
+            }
+        }
+        
+        // Populate user list
+        const userListContainer = document.getElementById('bulkActionUserList');
+        if (userListContainer) {
+            userListContainer.innerHTML = '';
+            
+            // Get user info from the table
+            selectedUsers.forEach(checkbox => {
+                const userId = checkbox.value;
+                const userRow = checkbox.closest('tr');
+                const userName = userRow.querySelector('.text-sm.font-semibold.text-gray-900').textContent.trim();
+                const userEmail = userRow.querySelector('.text-sm.text-gray-500').textContent.trim();
+                
+                const userItem = document.createElement('div');
+                userItem.className = 'flex justify-between items-center p-2 border-b border-gray-200 last:border-0';
+                userItem.innerHTML = `
+                    <div>
+                        <div class="text-sm font-medium">${userName}</div>
+                        <div class="text-xs text-gray-500">${userEmail}</div>
+                    </div>
+                    <input type="hidden" name="user_ids[]" value="${userId}">
+                    <div class="text-xs text-gray-400">ID: ${userId}</div>
+                `;
+                
+                userListContainer.appendChild(userItem);
+            });
+            
+            // Update count
+            const selectedUserCount = document.getElementById('selectedUserCount');
+            if (selectedUserCount) {
+                selectedUserCount.textContent = selectedUsers.length;
+            }
+        }
+        
+        // Get modal element and initialize if needed
+        const modalElement = document.getElementById('bulkActionModal');
+        let modal;
+        
+        try {
+            // Try to get existing instance
+            modal = Modal.getInstance(modalElement);
+        } catch (e) {
+            // If it fails, create a new instance
+            modal = new Modal(modalElement, {
+                placement: 'center',
+                backdrop: 'static',
+                closable: true
+            });
+        }
+        
+        // Show the modal
+        modal.show();
+    }
+
+    // Handle bulk action form submission
+    const bulkActionForm = document.getElementById('bulkActionForm');
+    if (bulkActionForm) {
+        bulkActionForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const actionType = formData.get('action_type');
+            const reason = formData.get('reason');
+            
+            // Get all user IDs
+            const userIds = [];
+            document.querySelectorAll('.user-checkbox:checked').forEach(checkbox => {
+                userIds.push(checkbox.value);
+            });
+            
+            try {
+                // Get CSRF token from the form
+                const csrfToken = formData.get('csrfmiddlewaretoken');
+                
+                if (!csrfToken) {
+                    throw new Error('CSRF token not found');
+                }
+                
+                const response = await fetch(`{% url 'custom_admin:bulk_user_action' %}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        action_type: actionType,
+                        user_ids: userIds,
+                        reason: reason
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.error || 'An error occurred during bulk action');
+                }
+            } catch (error) {
+                console.error('Error performing bulk action:', error);
+                alert('Error performing bulk action: ' + (error.message || 'Unknown error'));
+            }
+        });
+    }
+
+    // Export users to CSV
+    window.exportUsers = function() {
+        // Get table data
+        const table = document.getElementById('usersTable');
+        if (!table) {
+            alert('Table not found');
+            return;
+        }
+        
+        const rows = Array.from(table.querySelectorAll('tbody tr'));
+        
+        // Skip empty state row
+        if (rows.length === 1 && rows[0].querySelector('td[colspan]')) {
+            alert('No users to export');
+            return;
+        }
+        
+        // Prepare CSV content
+        const headers = ['ID', 'Email', 'Name', 'Account Type', 'Date Joined', 'Points', 'Status', 'Last Login'];
+        let csvContent = headers.join(',') + '\n';
+        
+        rows.forEach(row => {
+            // Skip if this is the "no users found" row
+            if (row.querySelector('td[colspan]')) return;
+            
+            const userId = row.querySelector('.user-checkbox').value;
+            const email = row.querySelector('.text-sm.text-gray-500').textContent.trim();
+            const name = row.querySelector('.text-sm.font-semibold.text-gray-900').textContent.trim();
+            const accountType = row.querySelectorAll('td')[2].querySelector('.text-sm.text-gray-900.font-medium').textContent.trim();
+            const dateJoined = row.querySelectorAll('td')[2].querySelector('.text-xs.text-gray-400').textContent.trim().replace('Joined ', '');
+            const points = row.querySelectorAll('td')[3].querySelector('.text-sm.font-semibold.text-gray-900').textContent.trim().replace(' points', '');
+            
+            // Get status badges
+            const statusBadges = Array.from(row.querySelectorAll('.status-badge')).map(badge => badge.textContent.trim()).join(' | ');
+            
+            // Get last login
+            const lastLoginEl = row.querySelectorAll('td')[4].querySelector('.mb-1');
+            const lastLogin = lastLoginEl ? lastLoginEl.textContent.trim().replace('Last login: ', '') : 'Never';
+            
+            // Format CSV row
+            const csvRow = [
+                userId,
+                `"${email}"`,
+                `"${name}"`,
+                `"${accountType}"`,
+                `"${dateJoined}"`,
+                points,
+                `"${statusBadges}"`,
+                `"${lastLogin}"`
+            ].join(',');
+            
+            csvContent += csvRow + '\n';
+        });
+        
+        // Create download link
+        const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', 'talentdocs_users_export.csv');
+        document.body.appendChild(link);
+        
+        // Trigger download
+        link.click();
+        
+        // Clean up
+        document.body.removeChild(link);
+    }
+
+    // Refresh data
+    window.refreshData = function() {
+        location.reload();
+    }
+});
+</script>
+{% endblock %}

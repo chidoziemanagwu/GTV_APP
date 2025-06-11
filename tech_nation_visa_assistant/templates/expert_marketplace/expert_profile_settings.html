@@ -1,0 +1,312 @@
+{% extends "expert_marketplace/expert_base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block expert_title %}{{ page_title }}{% endblock %}
+
+{% block expert_content %}
+<div class="p-4 md:p-6 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-8">{{ page_title }}</h1>
+
+    {# Display messages #}
+    {% if messages %}
+        <div class="mb-6 space-y-3">
+            {% for message in messages %}
+            <div class="flex items-start p-4 rounded-lg shadow-md border-l-4
+                {% if message.tags == 'success' %} bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-800/30 dark:text-emerald-200 dark:border-emerald-500 {% endif %}
+                {% if message.tags == 'error' %} bg-rose-50 border-rose-500 text-rose-700 dark:bg-rose-800/30 dark:text-rose-200 dark:border-rose-500 {% endif %}
+                {% if message.tags == 'info' %} bg-sky-50 border-sky-500 text-sky-700 dark:bg-sky-800/30 dark:text-sky-200 dark:border-sky-500 {% endif %}
+                {% if message.tags == 'warning' %} bg-amber-50 border-amber-500 text-amber-700 dark:bg-amber-800/30 dark:text-amber-200 dark:border-amber-500 {% endif %}"
+                 role="alert">
+                <span class="text-xl mr-3 mt-0.5">
+                    {% if message.tags == 'success' %}<i class="fas fa-check-circle"></i>{% endif %}
+                    {% if message.tags == 'error' %}<i class="fas fa-shield-alt"></i>{% endif %}
+                    {% if message.tags == 'warning' %}<i class="fas fa-exclamation-triangle"></i>{% endif %}
+                    {% if message.tags == 'info' %}<i class="fas fa-bell"></i>{% endif %}
+                </span>
+                <span class="text-sm font-medium">{{ message }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Profile Details Form -->
+    <div class="mb-10 bg-white dark:bg-gray-800 shadow-xl rounded-xl p-6 md:p-8 border border-gray-200 dark:border-gray-700">
+        <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center">
+            <i class="fas fa-user-edit mr-3 text-blue-500"></i>Update Profile Details
+        </h2>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ profile_form.media }}
+            {% for field in profile_form %}
+            <div class="mb-5">
+                <label for="{{ field.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    {{ field.label }}
+                    {% if field.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}
+                </label>
+                {% if field.name == 'profile_image' and expert.profile_image %}
+                    <div class="mb-2">
+                        <img src="{{ expert.profile_image.url }}" alt="Current profile image" class="h-24 w-24 rounded-full object-cover shadow-md">
+                    </div>
+                {% endif %}
+                {% render_field field class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-3 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" %}
+                {% if field.help_text %}<p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{{ field.help_text|safe }}</p>{% endif %}
+                {% for error in field.errors %}<p class="mt-1.5 text-xs text-red-500 dark:text-red-400">{{ error }}</p>{% endfor %}
+            </div>
+            {% endfor %}
+            <button type="submit" name="update_profile" class="inline-flex items-center text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-6 py-3 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 transition-colors">
+                <i class="fas fa-save mr-2"></i>Save Profile Changes
+            </button>
+        </form>
+    </div>
+
+    <!-- Change Password Form -->
+    <div class="mb-10 bg-white dark:bg-gray-800 shadow-xl rounded-xl p-6 md:p-8 border border-gray-200 dark:border-gray-700">
+        <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center">
+            <i class="fas fa-key mr-3 text-blue-500"></i>Change Password
+        </h2>
+        <form method="post">
+            {% csrf_token %}
+            {% for field in password_form %}
+            <div class="mb-5">
+                <label for="{{ field.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    {{ field.label }}
+                    {% if field.field.required %}<span class="text-red-500 ml-1">*</span>{% endif %}
+                </label>
+                {% render_field field class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-3 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" type=field.widget_type %}
+                {% if field.help_text %}<p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{{ field.help_text|safe }}</p>{% endif %}
+                {% for error in field.errors %}<p class="mt-1.5 text-xs text-red-500 dark:text-red-400">{{ error }}</p>{% endfor %}
+            </div>
+            {% endfor %}
+            <button type="submit" name="change_password" class="inline-flex items-center text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-6 py-3 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 transition-colors">
+                <i class="fas fa-lock mr-2"></i>Change Password
+            </button>
+        </form>
+    </div>
+
+    <!-- Availability Management Section -->
+    <div class="bg-white dark:bg-gray-800 shadow-xl rounded-xl p-6 md:p-8 border border-gray-200 dark:border-gray-700">
+        <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center">
+            <i class="fas fa-calendar-alt mr-3 text-blue-500"></i>Manage Availability Slots
+        </h2>
+        
+        <form method="post" id="availabilityJsonForm">
+            {% csrf_token %}
+            {{ availability_form.availability_json_string }} {# This is the hidden input #}
+
+            {% if availability_form.availability_json_string.errors or availability_form.non_field_errors %}
+            <div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-700/30 dark:text-red-200 border border-red-300 dark:border-red-600" role="alert">
+                <p class="font-semibold mb-1">Please correct the following errors:</p>
+                {% for error in availability_form.availability_json_string.errors %}
+                    <p><i class="fas fa-times-circle mr-1"></i>{{ error }}</p>
+                {% endfor %}
+                {% for error in availability_form.non_field_errors %}
+                    <p><i class="fas fa-times-circle mr-1"></i>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <div id="availability-slots-dynamic-container" class="space-y-4">
+                <!-- JS will populate this with slot inputs -->
+            </div>
+            
+            <div id="availability-slot-template" class="hidden">
+                <div class="availability-slot-item border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/60 relative shadow">
+                    <button type="button" class="remove-slot-btn absolute top-2 right-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 focus:outline-none p-1.5 rounded-md hover:bg-red-100 dark:hover:bg-gray-600" title="Remove this slot">
+                        <i class="fas fa-times fa-lg"></i>
+                    </button>
+                    <div class="grid md:grid-cols-3 gap-4 mt-2">
+                        <div>
+                            <label class="block mb-1.5 text-xs font-medium text-gray-700 dark:text-gray-300">Date <span class="text-red-500">*</span></label>
+                            <input type="text" name="slot_date" class="flatpickr-date bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" placeholder="YYYY-MM-DD">
+                        </div>
+                        <div>
+                            <label class="block mb-1.5 text-xs font-medium text-gray-700 dark:text-gray-300">Start Time <span class="text-red-500">*</span></label>
+                            <input type="text" name="slot_start_time" class="flatpickr-time bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" placeholder="HH:MM">
+                        </div>
+                        <div>
+                            <label class="block mb-1.5 text-xs font-medium text-gray-700 dark:text-gray-300">End Time <span class="text-red-500">*</span></label>
+                            <input type="text" name="slot_end_time" class="flatpickr-time bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" placeholder="HH:MM">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 mb-6 flex items-center gap-x-3">
+                <button type="button" id="add-dynamic-availability-slot-btn" class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium py-2 px-4 border border-blue-600 dark:border-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Add
+                </button>
+                <input type="number" id="num-slots-to-add" value="1" min="1" max="10" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-20 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                <span class="text-sm text-gray-700 dark:text-gray-300">new slot(s)</span>
+            </div>
+            
+            <button type="submit" name="update_availability" id="saveAvailabilityBtn" class="inline-flex items-center text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-6 py-3 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 transition-colors">
+                <i class="fas fa-calendar-check mr-2"></i>Save Availability
+            </button>
+        </form>
+
+    </div>
+</div>
+{% endblock expert_content %}
+
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+<style>
+    /* Ensure flatpickr calendar is above other elements if needed */
+    .flatpickr-calendar {
+        z-index: 1050; /* Adjust if necessary, higher than Bootstrap modals (1040/1050) or other overlays */
+    }
+    /* Dark theme for flatpickr - you might need to find or create a dark theme CSS for flatpickr */
+    /* Example: https://flatpickr.js.org/themes/ */
+    /* For now, the inputs themselves are styled for dark mode via Tailwind */
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const slotsContainer = document.getElementById('availability-slots-dynamic-container');
+    const addButton = document.getElementById('add-dynamic-availability-slot-btn');
+    const numSlotsInput = document.getElementById('num-slots-to-add'); // New input for number of slots
+    const slotTemplateHTML = document.getElementById('availability-slot-template').innerHTML;
+    const availabilityForm = document.getElementById('availabilityJsonForm');
+    const hiddenJsonInput = document.getElementById('{{ availability_form.availability_json_string.id_for_label }}');
+    
+    let currentSlotsData = [];
+    try {
+        const rawJsonData = '{{ current_availability_json_for_js|escapejs }}';
+        if (rawJsonData && rawJsonData.trim() !== "") {
+            const parsedData = JSON.parse(rawJsonData);
+            if (Array.isArray(parsedData)) {
+                currentSlotsData = parsedData;
+            } else {
+                console.warn("Parsed availability data was not an array. Defaulting to empty. Data:", parsedData);
+            }
+        }
+    } catch (e) {
+        console.error("Error parsing initial availability JSON:", e);
+    }
+
+    function initializeFlatpickrInElement(element) {
+        element.querySelectorAll('.flatpickr-date').forEach(el => {
+            if (!el._flatpickr) { // Check if flatpickr is already initialized
+                flatpickr(el, { 
+                    altInput: true, 
+                    altFormat: "D, M j, Y", // More readable format
+                    dateFormat: "Y-m-d", 
+                    minDate: "today" 
+                });
+            }
+        });
+        element.querySelectorAll('.flatpickr-time').forEach(el => {
+            if (!el._flatpickr) { // Check if flatpickr is already initialized
+                flatpickr(el, { 
+                    enableTime: true, 
+                    noCalendar: true, 
+                    dateFormat: "H:i", 
+                    time_24hr: true, 
+                    minuteIncrement: 15 
+                });
+            }
+        });
+    }
+
+    function renderSlot(slotData) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = slotTemplateHTML; // Use the stored template HTML
+        const newSlotElement = tempDiv.firstElementChild;
+
+        if (slotData) {
+            // When populating from existing data, set the raw value for flatpickr
+            const dateInput = newSlotElement.querySelector('input[name="slot_date"]');
+            dateInput.value = slotData.date || '';
+            
+            const startTimeInput = newSlotElement.querySelector('input[name="slot_start_time"]');
+            startTimeInput.value = slotData.start_time || '';
+
+            const endTimeInput = newSlotElement.querySelector('input[name="slot_end_time"]');
+            endTimeInput.value = slotData.end_time || '';
+        }
+        
+        initializeFlatpickrInElement(newSlotElement); // Initialize flatpickr for the new inputs
+        slotsContainer.appendChild(newSlotElement);
+
+        newSlotElement.querySelector('.remove-slot-btn').addEventListener('click', function() {
+            newSlotElement.remove();
+            // No need to update JSON here, it's done on submit
+        });
+    }
+
+    // Render initial slots from current_availability_json_for_js
+    if (Array.isArray(currentSlotsData)) {
+        currentSlotsData.forEach(slot => renderSlot(slot));
+    }
+
+    addButton.addEventListener('click', function() {
+        let numToAdd = parseInt(numSlotsInput.value, 10);
+        if (isNaN(numToAdd) || numToAdd < 1) {
+            numToAdd = 1;
+        }
+        if (numToAdd > 10) { // Max limit if you want one
+            numToAdd = 10;
+            numSlotsInput.value = 10; // Correct the input field
+        }
+        for (let i = 0; i < numToAdd; i++) {
+            renderSlot(null); // Add empty slots
+        }
+    });
+
+    availabilityForm.addEventListener('submit', function(event) {
+        // event.preventDefault(); // Uncomment for debugging to see the JSON value
+        const allSlots = [];
+        let isValid = true; // Flag for client-side validation
+
+        slotsContainer.querySelectorAll('.availability-slot-item').forEach((item, index) => {
+            const dateInput = item.querySelector('input[name="slot_date"]');
+            // Flatpickr with altInput stores the YYYY-MM-DD value in the original input.
+            const date = dateInput.value; 
+            const startTime = item.querySelector('input[name="slot_start_time"]').value;
+            const endTime = item.querySelector('input[name="slot_end_time"]').value;
+
+            // Basic client-side validation: ensure all fields in a slot are filled if any is filled
+            const isSlotPartiallyFilled = (date || startTime || endTime) && !(date && startTime && endTime);
+            if (isSlotPartiallyFilled) {
+                isValid = false;
+                // You could add a visual error indication to the specific slot item here
+                // For example, item.style.border = '2px solid red';
+                console.warn(`Slot ${index + 1} is incomplete and will not be saved.`); 
+            } else if (date && startTime && endTime) {
+                // Further validation: Ensure end time is after start time
+                if (startTime >= endTime) {
+                    isValid = false;
+                    // Add visual error indication
+                    item.querySelector('input[name="slot_end_time"]').classList.add('border-red-500');
+                    item.querySelector('input[name="slot_end_time"]').classList.add('dark:border-red-500');
+                    console.warn(`Slot ${index + 1} has start time not before end time.`);
+                } else {
+                    item.querySelector('input[name="slot_end_time"]').classList.remove('border-red-500');
+                    item.querySelector('input[name="slot_end_time"]').classList.remove('dark:border-red-500');
+                    allSlots.push({ date: date, start_time: startTime, end_time: endTime });
+                }
+            }
+            // Empty slots (all fields blank) are simply ignored and not added to allSlots.
+        });
+
+        if (!isValid) {
+            event.preventDefault(); // Prevent form submission if client-side validation fails
+            // Display a general error message to the user
+            alert("Some availability slots are incomplete or have invalid times (end time must be after start time). Please review and correct them.");
+            return;
+        }
+
+        hiddenJsonInput.value = JSON.stringify(allSlots);
+        // The form will now submit with the hidden field populated
+    });
+});
+</script>
+{% endblock %}

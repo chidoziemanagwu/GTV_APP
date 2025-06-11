@@ -1,0 +1,174 @@
+{% extends "expert_marketplace/expert_base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Past Consultations - {{ expert.full_name }}{% endblock %}
+
+{% block expert_content %}
+<div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
+
+    <!-- Page header -->
+    <div class="sm:flex sm:justify-between sm:items-center mb-8">
+        <!-- Left: Title -->
+        <div class="mb-4 sm:mb-0">
+            <h1 class="text-2xl md:text-3xl text-slate-800 dark:text-slate-100 font-bold">Past Consultations</h1>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="mb-6 p-4 bg-white dark:bg-slate-800 shadow-lg rounded-lg border border-slate-200 dark:border-slate-700">
+        <form method="get" action="{% url 'expert_marketplace:expert_past_consultations' %}">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-end">
+                <div>
+                    <label for="status_filter" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Filter by Status:</label>
+                    <select name="status" id="status_filter" class="form-select w-full mt-1 block rounded-md border-slate-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-slate-700 dark:text-slate-200">
+                        <option value="all" {% if current_status_filter == 'all' %}selected{% endif %}>All Past Bookings</option>
+                        {% for status_key, status_display in status_choices %}
+                            <option value="{{ status_key }}" {% if current_status_filter == status_key %}selected{% endif %}>{{ status_display }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <button type="submit" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-slate-900">
+                        <i class="fas fa-filter mr-2"></i>Apply Filter
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Stats -->
+    {% if stats %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-slate-800 shadow-lg rounded-lg p-5 border border-slate-200 dark:border-slate-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase">Total Displayed</div>
+                    <div class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ stats.total_displayed }}</div>
+                </div>
+                <div class="text-sky-500 text-3xl"><i class="fas fa-list-ol"></i></div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 shadow-lg rounded-lg p-5 border border-slate-200 dark:border-slate-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase">Completed</div>
+                    <div class="text-3xl font-bold text-emerald-500">{{ stats.completed }}</div>
+                </div>
+                <div class="text-emerald-500 text-3xl"><i class="fas fa-check-circle"></i></div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 shadow-lg rounded-lg p-5 border border-slate-200 dark:border-slate-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase">Cancelled/Refunded/No-Show</div>
+                    <div class="text-3xl font-bold text-rose-500">{{ stats.cancelled_or_refunded }}</div>
+                </div>
+                <div class="text-rose-500 text-3xl"><i class="fas fa-ban"></i></div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 shadow-lg rounded-lg p-5 border border-slate-200 dark:border-slate-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase">In Dispute</div>
+                    <div class="text-3xl font-bold text-amber-500">{{ stats.in_dispute }}</div>
+                </div>
+                <div class="text-amber-500 text-3xl"><i class="fas fa-gavel"></i></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Consultations Table -->
+    <div class="bg-white dark:bg-slate-800 shadow-lg rounded-lg overflow-x-auto border border-slate-200 dark:border-slate-700">
+        <div class="p-3">
+            <header class="px-5 py-4">
+                <h2 class="font-semibold text-slate-800 dark:text-slate-100">
+                    {% if current_status_filter == 'all' %}
+                        All Past Bookings
+                    {% else %}
+                        Past Bookings: {{ current_status_filter|capfirst }}
+                    {% endif %}
+                    <span class="text-slate-400 dark:text-slate-500 font-medium">({{ consultations.count }})</span>
+                </h2>
+            </header>
+            {% if consultations %}
+            <table class="table-auto w-full">
+                <thead class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-700/50">
+                    <tr>
+                        <th class="p-2 whitespace-nowrap">
+                            <div class="font-semibold text-left">Client</div>
+                        </th>
+                        <th class="p-2 whitespace-nowrap">
+                            <div class="font-semibold text-left">Scheduled Date</div>
+                        </th>
+                        <th class="p-2 whitespace-nowrap">
+                            <div class="font-semibold text-left">Time</div>
+                        </th>
+                        <th class="p-2 whitespace-nowrap">
+                            <div class="font-semibold text-left">Fee</div>
+                        </th>
+                        <th class="p-2 whitespace-nowrap">
+                            <div class="font-semibold text-center">Status</div>
+                        </th>
+                        <th class="p-2 whitespace-nowrap">
+                            <div class="font-semibold text-center">Actions</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm divide-y divide-slate-100 dark:divide-slate-700">
+                    {% for booking in consultations %}
+                    <tr>
+                        <td class="p-2 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="font-medium text-slate-800 dark:text-slate-100">{{ booking.name|default:booking.user.get_full_name|default:"N/A" }}</div>
+                            </div>
+                        </td>
+                        <td class="p-2 whitespace-nowrap">
+                            <div class="text-left">{{ booking.scheduled_date|date:"D, M j, Y" }}</div>
+                        </td>
+                        <td class="p-2 whitespace-nowrap">
+                            <div class="text-left">{{ booking.scheduled_time|time:"g:i A" }}</div>
+                        </td>
+                        <td class="p-2 whitespace-nowrap">
+                            <div class="text-left font-medium text-emerald-500">£{{ booking.consultation_fee|floatformat:2 }}</div>
+                        </td>
+                        <td class="p-2 whitespace-nowrap">
+                            <div class="text-center">
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full
+                                    {% if booking.status == 'completed' %}bg-green-100 text-green-700 
+                                    {% elif booking.status == 'cancelled' or booking.status == 'refunded' or booking.status == 'partially_refunded' or booking.status == 'expert_noshow' or booking.status == 'client_noshow' %}bg-red-100 text-red-700 
+                                    {% elif booking.status == 'dispute' %}bg-yellow-100 text-yellow-700 dark:bg-amber-700/30 dark:text-amber-200
+                                    {% else %}bg-blue-100 text-blue-600 dark:bg-slate-700 dark:text-slate-300{% endif %}">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="p-2 whitespace-nowrap">
+                            <div class="text-center">
+                                <a href="{% url 'expert_marketplace:booking_detail' booking.id %}" class="bg-gray-200 p-2 rounded text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
+                                    View Details
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="p-6 text-center">
+                <i class="fas fa-folder-open fa-3x text-slate-400 dark:text-slate-500 mb-4"></i>
+                <p class="text-slate-500 dark:text-slate-400">
+                    {% if current_status_filter == 'all' %}
+                        You have no past consultations.
+                    {% else %}
+                        No past consultations match the status: <strong>{{ current_status_filter|capfirst }}</strong>.
+                    {% endif %}
+                </p>
+                 <p class="text-sm text-slate-400 dark:text-slate-500 mt-2">Try selecting a different status or "All Past Bookings".</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

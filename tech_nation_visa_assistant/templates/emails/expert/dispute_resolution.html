@@ -1,0 +1,51 @@
+<!-- templates/emails/expert/dispute_resolution.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Resolution of Dispute</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f8f9fa; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { background-color: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; }
+        .button { display: inline-block; background-color: #007bff; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Resolution of Dispute</h1>
+        </div>
+        <div class="content">
+            <p>Dear {{ dispute.expert_name }},</p>
+            
+            <p>We have reviewed the dispute for booking #{{ dispute.booking.id }} and have reached a decision.</p>
+            
+            {% if is_refund %}
+            <p>After careful consideration, we have decided to <strong>approve</strong> the client's dispute and process a refund of <strong>£{{ refund_amount }}</strong>.</p>
+            
+            <p>This amount will be deducted from your earnings for this booking.</p>
+            {% else %}
+            <p>After careful review, we have <strong>rejected</strong> the client's dispute. No refund will be processed, and your earnings for this booking remain unchanged.</p>
+            {% endif %}
+            
+            <p><strong>Resolution Notes:</strong></p>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
+                {{ dispute.resolution_notes|default:"No additional notes provided." }}
+            </div>
+            
+            <p>If you have any questions or need further clarification, please contact our support team.</p>
+            
+            <p>Thank you for your cooperation.</p>
+            
+            <p>Best regards,<br>
+            The Support Team</p>
+        </div>
+        <div class="footer">
+            <p>This is an automated email. Please do not reply to this message.</p>
+        </div>
+    </div>
+</body>
+</html>
