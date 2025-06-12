@@ -26786,3 +26786,15 @@ WARNING 2025-06-11 19:11:18,776 basehttp "GET /static/images/default-profile.png
 WARNING 2025-06-11 19:11:18,830 log Not Found: /.well-known/appspecific/com.chrome.devtools.json
 WARNING 2025-06-11 19:11:19,962 basehttp "GET /static/images/default-profile.png HTTP/1.1" 404 1938
 WARNING 2025-06-11 19:11:20,508 basehttp "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 4340
+INFO 2025-06-12 09:10:28,930 schedulers Scheduler started successfully
+WARNING 2025-06-12 09:10:37,207 document_generator OpenAI API key not found. Document generation will not function properly.
+WARNING 2025-06-12 09:10:38,022 views OpenAI client not configured
+WARNING 2025-06-12 09:10:38,023 document_generator OpenAI API key not found. Document generation will not function properly.
+INFO 2025-06-12 09:11:26,449 schedulers Scheduler started successfully
+WARNING 2025-06-12 09:11:30,366 document_generator OpenAI API key not found. Document generation will not function properly.
+WARNING 2025-06-12 09:11:30,872 views OpenAI client not configured
+WARNING 2025-06-12 09:11:30,873 document_generator OpenAI API key not found. Document generation will not function properly.
+INFO 2025-06-12 09:12:02,359 schedulers Scheduler started successfully
+WARNING 2025-06-12 09:12:06,340 document_generator OpenAI API key not found. Document generation will not function properly.
+WARNING 2025-06-12 09:12:06,997 views OpenAI client not configured
+WARNING 2025-06-12 09:12:06,998 document_generator OpenAI API key not found. Document generation will not function properly.
