@@ -26,6 +26,9 @@ from django.urls import reverse
 from allauth.socialaccount.models import SocialAccount
 from django.core.exceptions import ValidationError
 import logging
+from django.contrib.auth.models import Group
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -472,7 +475,19 @@ def contact(request):
 
 @login_required
 def assessment(request):
-    # Check if assessment is already completed
+    # --- THIS IS THE MODIFICATION ---
+    # Check if the user is staff/superuser or belongs to an 'Expert' group
+    # Adjust the group name "Experts" if you use a different name or method to identify experts
+    is_expert = False # Default to false
+    if hasattr(request.user, 'groups'): # Check if user object has groups attribute
+        is_expert = request.user.groups.filter(name='Experts').exists()
+
+    if request.user.is_staff or request.user.is_superuser or is_expert:
+        messages.info(request, "The initial assessment is not applicable for your account type.")
+        return redirect('accounts:dashboard')
+    # --- END OF MODIFICATION ---
+
+    # Original logic for users who DO need assessment:
     profile, created = UserProfile.objects.get_or_create(user=request.user)
 
     if profile.assessment_completed:
@@ -483,22 +498,15 @@ def assessment(request):
         form = AssessmentForm(request.POST)
         if form.is_valid():
             try:
-                # Get the form data
                 user = request.user
-
-                # Update user fields from form data
                 user.background_type = form.cleaned_data.get('background_type')
                 user.years_of_experience = form.cleaned_data.get('years_experience')
-
-                # Determine visa path based on years of experience
                 if form.cleaned_data.get('years_experience') in ['5_to_10', 'more_than_10']:
                     user.visa_path = 'talent'
                 else:
                     user.visa_path = 'promise'
-
                 user.save()
 
-                # Update profile with specializations and mark assessment as completed
                 profile.tech_specializations = form.cleaned_data.get('tech_specializations', [])
                 profile.assessment_completed = True
                 profile.save()
@@ -511,17 +519,14 @@ def assessment(request):
                 return redirect('accounts:dashboard')
             except Exception as e:
                 messages.error(request, f"An error occurred: {str(e)}")
-        else:
-            # Form is invalid, errors will be displayed in the template
-            pass
     else:
-        form = AssessmentForm()  # No need for initial email here
+        form = AssessmentForm()
 
     return render(request, 'accounts/assessment.html', {
         'form': form,
         'profile': profile
     })
-# accounts/views.py
+
 
 @login_required
 def profile(request):

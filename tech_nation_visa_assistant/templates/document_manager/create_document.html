@@ -177,20 +177,20 @@
                 <div class="p-6">
                     <!-- Tab Navigation -->
                     <div class="border-b border-gray-200 mb-6">
-                        <nav class="-mb-px flex space-x-8">
-                            <button class="tab-button active py-2 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600" data-tab="strengths">
-                                Key Strengths
-                            </button>
-                            <button class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="gaps">
-                                Critical Gaps
-                            </button>
-                            <button class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="roadmap">
-                                Improvement Roadmap
-                            </button>
-                            <button class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="detailed">
-                                Detailed Analysis
-                            </button>
-                        </nav>
+                        <nav class="-mb-px flex space-x-4 sm:space-x-8 overflow-x-auto pb-2">
+    <button class="tab-button active py-2 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600 whitespace-nowrap" data-tab="strengths">
+        Key Strengths
+    </button>
+    <button class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap" data-tab="gaps">
+        Critical Gaps
+    </button>
+    <button class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap" data-tab="roadmap">
+        Improvement Roadmap
+    </button>
+    <button class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap" data-tab="detailed">
+        Detailed Analysis
+    </button>
+</nav>
                     </div>
 
                     <!-- Tab Content -->
@@ -530,68 +530,103 @@ function showAnalysisResults(data) {
         });
     }
 
-    function populateRoadmap(roadmap) {
-        const container = document.getElementById('roadmapContent');
-        container.innerHTML = '';
+function populateRoadmap(roadmap) {
+    const container = document.getElementById('roadmapContent');
+    container.innerHTML = ''; // Clear previous content
+
+    // Updated keys to match your data: immediateActions, shortTermActions, longTermActions
+    const phases = [
+        { key: 'immediateActions', name: 'Immediate (0-3 months)', color: 'red' },
+        { key: 'shortTermActions', name: 'Short Term (3-12 months)', color: 'amber' },
+        { key: 'longTermActions', name: 'Long Term (1-2 years)', color: 'green' }
+    ];
+    
+    let contentAdded = false;
+    phases.forEach(phaseInfo => {
+        // Access roadmap using the correct key (e.g., roadmap.immediateActions)
+        const actions = roadmap[phaseInfo.key]; 
         
-        const phases = ['immediate', 'short_term', 'long_term'];
-        const phaseNames = ['Immediate (0-3 months)', 'Short Term (3-12 months)', 'Long Term (1-2 years)'];
-        const phaseColors = ['red', 'amber', 'green'];
-        
-        phases.forEach((phase, index) => {
-            if (roadmap[phase] && roadmap[phase].length > 0) {
-                const phaseCard = document.createElement('div');
-                phaseCard.className = `bg-${phaseColors[index]}-50 border border-${phaseColors[index]}-200 rounded-lg p-6`;
-                
-                let actionsHTML = '';
-                roadmap[phase].forEach(action => {
-                    actionsHTML += `
-                        <li class="text-sm text-${phaseColors[index]}-800 mb-2">${escapeHtml(action)}</li>
-                    `;
-                });
-                
-                phaseCard.innerHTML = `
-                    <h4 class="text-lg font-semibold text-${phaseColors[index]}-900 mb-3">${phaseNames[index]}</h4>
-                    <ul class="list-disc ml-5">
-                        ${actionsHTML}
-                    </ul>
+        if (actions && Array.isArray(actions) && actions.length > 0) {
+            contentAdded = true;
+            const phaseCard = document.createElement('div');
+            // Ensure Tailwind JIT can pick up these classes if they are dynamically constructed
+            // For safety, you might predefine these bg/border/text color classes if issues persist
+            phaseCard.className = `bg-${phaseInfo.color}-50 border border-${phaseInfo.color}-200 rounded-lg p-6 mb-4`;
+            
+            let actionsHTML = '';
+            actions.forEach(action => {
+                actionsHTML += `
+                    <li class="text-sm text-${phaseInfo.color}-800 mb-2">${escapeHtml(action)}</li>
                 `;
-                container.appendChild(phaseCard);
-            }
-        });
+            });
+            
+            phaseCard.innerHTML = `
+                <h4 class="text-lg font-semibold text-${phaseInfo.color}-900 mb-3">${phaseInfo.name}</h4>
+                <ul class="list-disc ml-5">
+                    ${actionsHTML}
+                </ul>
+            `;
+            container.appendChild(phaseCard);
+        }
+    });
+
+    if (!contentAdded) {
+        container.innerHTML = '<p class="text-gray-600">No improvement roadmap details available at the moment.</p>';
     }
+}
 
     function populateDetailedAnalysis(detailed) {
-        const container = document.getElementById('detailedAnalysis');
-        container.innerHTML = '';
-        
-        const sections = [
-            { key: 'technical_expertise', title: 'Technical Expertise', icon: 'fa-code', color: 'blue' },
-            { key: 'leadership_innovation', title: 'Leadership & Innovation', icon: 'fa-lightbulb', color: 'purple' },
-            { key: 'industry_recognition', title: 'Industry Recognition', icon: 'fa-award', color: 'yellow' },
-            { key: 'commercial_impact', title: 'Commercial Impact', icon: 'fa-chart-line', color: 'green' }
-        ];
-        
-        sections.forEach(section => {
-            if (detailed[section.key]) {
-                const sectionCard = document.createElement('div');
-                sectionCard.className = `bg-${section.color}-50 border border-${section.color}-200 rounded-lg p-6`;
-                sectionCard.innerHTML = `
-                    <div class="flex items-center mb-4">
-                        <i class="fas ${section.icon} text-${section.color}-600 mr-3"></i>
-                        <h4 class="text-lg font-semibold text-${section.color}-900">${section.title}</h4>
-                    </div>
-                    <div class="text-sm text-${section.color}-800">
-                        <p><strong>Current State:</strong> ${escapeHtml(detailed[section.key].current_state || 'Not assessed')}</p>
-                        <p class="mt-2"><strong>Recommendations:</strong> ${escapeHtml(detailed[section.key].recommendations || 'No specific recommendations')}</p>
-                        <p class="mt-2"><strong>Priority:</strong> ${escapeHtml(detailed[section.key].priority || 'Medium')}</p>
-                    </div>
-                `;
-                container.appendChild(sectionCard);
-            }
-        });
-    }
+    const container = document.getElementById('detailedAnalysis');
+    container.innerHTML = ''; // Clear previous content
 
+    // Updated keys to match your data and adjusted titles/icons slightly
+    const sections = [
+        { key: 'technicalExpertise', title: 'Technical Expertise', icon: 'fa-code', color: 'blue' },
+        { key: 'leadershipAndImpact', title: 'Leadership & Impact', icon: 'fa-users', color: 'purple' },
+        { key: 'recognitionAndAwards', title: 'Recognition & Awards', icon: 'fa-award', color: 'amber' },
+        { key: 'innovationContributions', title: 'Innovation Contributions', icon: 'fa-lightbulb', color: 'green' } 
+        // If you have other sections like 'commercial_impact', add them here with correct keys
+    ];
+    
+    let contentAdded = false;
+    sections.forEach(section => {
+        // Access detailed analysis using the correct key (e.g., detailed.technicalExpertise)
+        const sectionData = detailed[section.key]; 
+
+        if (sectionData) {
+            contentAdded = true;
+            const sectionCard = document.createElement('div');
+            sectionCard.className = `bg-${section.color}-50 border border-${section.color}-200 rounded-lg p-6 mb-4`;
+
+            let recommendationsHtml = 'No specific recommendations';
+            if (sectionData.recommendations) {
+                if (Array.isArray(sectionData.recommendations) && sectionData.recommendations.length > 0) {
+                    recommendationsHtml = '<ul class="list-disc list-inside mt-1">' + sectionData.recommendations.map(rec => `<li>${escapeHtml(rec)}</li>`).join('') + '</ul>';
+                } else if (typeof sectionData.recommendations === 'string') {
+                    recommendationsHtml = escapeHtml(sectionData.recommendations);
+                }
+            }
+            
+            sectionCard.innerHTML = `
+                <div class="flex items-center mb-4">
+                    <i class="fas ${section.icon} text-${section.color}-600 mr-3 text-xl"></i>
+                    <h4 class="text-lg font-semibold text-${section.color}-900">${section.title}</h4>
+                </div>
+                <div class="text-sm text-${section.color}-800 space-y-2">
+                    <div><strong>Current State:</strong> ${escapeHtml(sectionData.currentState || sectionData.current_state || 'Not assessed')}</div>
+                    <div><strong>Recommendations:</strong> ${recommendationsHtml}</div>
+                    <div><strong>Priority:</strong> ${escapeHtml(sectionData.priority || 'Medium')}</div>
+                </div>
+            `;
+            container.appendChild(sectionCard);
+        }
+    });
+
+    if (!contentAdded) {
+        container.innerHTML = '<p class="text-gray-600">No detailed analysis available at the moment.</p>';
+    }
+}    
+    
     function populateActionItems(actions) {
         const container = document.getElementById('actionItems');
         container.innerHTML = '';

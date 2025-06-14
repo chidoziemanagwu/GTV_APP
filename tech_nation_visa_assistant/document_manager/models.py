@@ -198,14 +198,17 @@ class UserPoints(models.Model):
             logger.error(f"Error updating profile's is_paid_user status for {self.user.username} during add_points: {e}")
 
 
-    def use_points(self, amount):
+    def use_points(self, amount, description=None): # MODIFIED LINE
         if amount <= 0: # Prevent using zero or negative points
-            logger.warning(f"Attempted to use non-positive points ({amount}) for user {self.user.username}")
+            logger.warning(f"Attempted to use non-positive points ({amount}) for user {self.user.username}. Description: {description}")
             return False
             
         if self.balance >= amount:
             self.balance -= amount
-            self.save() # Save UserPoints first
+            self.save(update_fields=['balance']) # Explicitly save only balance here for clarity
+
+            # Log the point usage with description
+            logger.info(f"Successfully used {amount} points for user {self.user.username}. Purpose: {description}. New balance: {self.balance}")
 
             # Update the user's profile's is_paid_user status if necessary
             try:
@@ -217,10 +220,23 @@ class UserPoints(models.Model):
                 logger.error(f"UserProfile not found for user {self.user.username} during use_points.")
             except Exception as e:
                 logger.error(f"Error updating profile's is_paid_user status for {self.user.username} during use_points: {e}")
+            
+            # Optional: Create a PointTransaction record here if you want a detailed history
+            # For example:
+            # PointTransaction.objects.create(
+            #     user=self.user,
+            #     points=-amount, # Store as negative for usage
+            #     description=description,
+            #     # ... other relevant fields for a usage transaction
+            # )
+
             return True
-        return False
+        else:
+            logger.warning(f"Failed to use {amount} points for user {self.user.username}. Insufficient balance. Current balance: {self.balance}. Attempted for: {description}")
+            return False
+        
 
-
+        
 class PointsPackage(models.Model):
     name = models.CharField(max_length=100)
     points = models.IntegerField()

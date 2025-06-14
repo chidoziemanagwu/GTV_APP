@@ -52,10 +52,7 @@
             <p>Dear {{ user.get_full_name|default:user.email }},</p>
 
             <p>We're writing to inform you that your consultation regarding "<strong>{{ booking.get_expertise_needed_display|default:"General Consultation" }}</strong>" with <strong>{{ expert_name }}</strong>, scheduled for {{ booking.scheduled_date|date:"F d, Y" }} at {{ booking.scheduled_time|time:"H:i" }}, has been marked as completed.</p>
-            {% if completion_notes and completion_notes != "N/A" %}
-                <p><strong>Notes from the expert:</strong></p>
-                <p style="white-space: pre-wrap; background-color: #f9f9f9; border: 1px solid #eee; padding: 10px; border-radius: 4px;">{{ completion_notes }}</p>
-            {% endif %}
+            
 
             <p>We hope you had a productive session. If you have any feedback or further questions, please don't hesitate to contact us.</p>
             

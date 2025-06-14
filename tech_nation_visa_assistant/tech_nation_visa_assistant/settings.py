@@ -426,6 +426,7 @@ GROQ_MODEL_SETTINGS = {
 # Create cache table command to run after deployment:
 # python manage.py createcachetable
 
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
 
 # Expert Marketplace Settings
 DEFAULT_CONSULTATION_FEE = 100.00

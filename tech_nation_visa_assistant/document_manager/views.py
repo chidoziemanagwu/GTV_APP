@@ -74,12 +74,19 @@ def get_referral_points(user):
     
 
 
+# (Make sure to import re at the top of your views.py if it's not already there: import re)
+# ... other imports ...
+# from groq import Groq # Ensure Groq is imported
+# from django.conf import settings # Ensure settings is imported
+# import logging
+# logger = logging.getLogger(__name__) # Ensure logger is configured
+
 class AIProvider:
     def __init__(self):
         self.groq_client = Groq(api_key=settings.GROQ_API_KEY)
-        self.model = "llama-3.1-8b-instant"  # Use valid Groq model
+        self.model = "llama-3.1-8b-instant"  # Or your preferred model
 
-    def get_system_prompt(self):
+    def get_system_prompt(self): # Existing system prompt for personal statements
         return """You are an expert at writing personal statements for Tech Nation Global Talent Visa applications.
 
         Format your response with proper structure, using:
@@ -103,7 +110,7 @@ class AIProvider:
         Make sure to include Introduction, Technical Expertise, Leadership, and Conclusion sections."""
 
     def generate_content(self, prompt: str) -> Optional[str]:
-        """Single method using Groq only"""
+        """Generates general content (e.g., personal statements) using Groq."""
         try:
             response = self.groq_client.chat.completions.create(
                 model=self.model,
@@ -112,21 +119,63 @@ class AIProvider:
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
-                max_tokens=2000
+                max_tokens=2000 # Adjust as needed
             )
             logger.info("Successfully generated content using Groq")
             return response.choices[0].message.content
         except Exception as e:
-            logger.error(f"Error with Groq API: {str(e)}")
+            logger.error(f"Error with Groq API for general content: {str(e)}")
+            return None
+
+    def get_cv_analysis_system_prompt(self):
+        """System prompt specifically for CV analysis expecting JSON output."""
+        return """You are an expert CV analyst specializing in Tech Nation Global Talent Visa applications.
+Your task is to review the provided CV content against the visa track requirements and output your analysis in a structured JSON format.
+The user will provide the CV content and detailed instructions for the JSON output.
+Your response MUST be a single JSON object. Do NOT include any explanatory text, comments, or markdown formatting (like ```json) before or after the JSON object itself.
+The JSON object must contain a single top-level key "analysis".
+The "analysis" object should include all the fields as specified in the user's prompt.
+Adhere strictly to the requested JSON schema.
+"""
+
+    def generate_cv_analysis_content(self, prompt: str) -> Optional[str]:
+        """Generates CV analysis content using Groq, expecting structured JSON output."""
+        try:
+            response = self.groq_client.chat.completions.create(
+                model=self.model, # Consider if a different model is better for structured JSON
+                messages=[
+                    {"role": "system", "content": self.get_cv_analysis_system_prompt()},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.2,  # Lower temperature for more deterministic and structured JSON output
+                max_tokens=3000,  # Ensure this is enough for the detailed JSON
+                # If Groq supports a direct JSON mode, enable it here.
+                # For example, some APIs use: response_format={"type": "json_object"}
+            )
+            logger.info("Successfully generated CV analysis content using Groq")
+            content = response.choices[0].message.content.strip()
+
+            # Attempt to extract JSON if it's wrapped in markdown (though system prompt tries to prevent this)
+            # Regex to find ```json ... ``` block
+            match = re.search(r"```json\s*(.*?)\s*```", content, re.DOTALL | re.IGNORECASE)
+            if match:
+                logger.info("Extracted JSON from markdown block in CV analysis response.")
+                return match.group(1).strip()
+            
+            # If not in markdown, assume the content is the JSON itself (as per system prompt)
+            return content
+
+        except Exception as e:
+            logger.error(f"Error with Groq API for CV analysis: {str(e)}")
             return None
 
     def generate_content_stream(self, prompt: str):
-        """Streaming version for real-time responses"""
+        """Streaming version for real-time responses (primarily for text, not structured JSON)."""
         try:
             response = self.groq_client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": self.get_system_prompt()},
+                    {"role": "system", "content": self.get_system_prompt()}, # Uses general system prompt
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
@@ -138,8 +187,13 @@ class AIProvider:
             logger.error(f"Error with Groq streaming: {str(e)}")
             return None
 
-# Create a singleton instance
-ai_provider = AIProvider()
+# Create a singleton instance (as you had)
+ai_provider = AIProvider() # This should be defined once in your views.py
+
+
+
+
+
 
 # MISSING FUNCTION 1: extract_cv_content
 def extract_cv_content(cv_file):
@@ -874,130 +928,161 @@ def get_track_requirements(track):
 
 @login_required
 @require_points(1)  # CV Analysis costs 1 point (or one free use)
-@rate_limit(max_calls=10, window=60) # Adjusted rate limit slightly
+@rate_limit(max_calls=10, window=60)
 @require_http_methods(["POST"])
 def analyze_cv(request, *args, **kwargs):
     try:
-        # Flags from require_points decorator
         can_use_free_feature_use = kwargs.get('can_use_free_feature_use', False)
         will_deduct_ai_points = kwargs.get('will_deduct_ai_points', False)
-        points_required = kwargs.get('points_required_for_action', 1) # Default to 1 if not passed
+        points_required = kwargs.get('points_required_for_action', 1)
 
-        # --- Form and CV processing (largely as you had it) ---
         form_data = request.POST.copy()
         if 'title' not in form_data or not form_data['title']:
-            form_data['title'] = 'CV Analysis'
+            form_data['title'] = f"CV Analysis - {request.user.username}" # Auto-generate title
         if 'status' not in form_data or not form_data['status']:
-            form_data['status'] = 'draft'
+            form_data['status'] = 'draft' # Default status
         form = CVForm(form_data, request.FILES)
 
         if not form.is_valid():
+            logger.warning(f"CV analysis form invalid for {request.user.email}: {form.errors}")
             return JsonResponse({'error': 'Invalid form data', 'error_type': 'validation_error', 'form_errors': form.errors}, status=400)
 
         cv_file = request.FILES.get('cv_file')
-        track = form.cleaned_data.get('track', 'digital_technology')
+        track = form.cleaned_data.get('track', 'digital_technology') # Default track
+
         if not cv_file:
+            logger.warning(f"CV file missing for analysis attempt by {request.user.email}")
             return JsonResponse({'error': 'CV file is required', 'error_type': 'validation_error'}, status=400)
 
         try:
             cv_content = extract_cv_content(cv_file)
+            if not cv_content or len(cv_content) < 50: # Basic check for extracted content
+                 raise ValueError("Extracted CV content is too short or empty.")
         except Exception as e:
             logger.error(f"CV extraction error for {request.user.email}: {str(e)}")
             return JsonResponse({'error': f'Error extracting CV content: {str(e)}', 'error_type': 'extraction_error'}, status=400)
 
-        track_requirements = get_track_requirements(track)
-        prompt = f""" ... (your detailed prompt) ... """ # Keep your existing prompt
+        track_requirements_text = get_track_requirements(track) # This should return a string of requirements
 
+        # --- Construct the detailed prompt for the AI ---
+        prompt = f"""
+Analyze the following CV content for a Tech Nation Global Talent Visa application.
+The candidate is applying under the '{track}' track.
+
+CV Content:
+---
+{cv_content}
+---
+
+Relevant Track Requirements for '{track}':
+---
+{track_requirements_text}
+---
+
+Please provide a detailed analysis. Your response MUST be a single JSON object with a top-level key "analysis".
+The "analysis" object MUST include the following fields:
+- "overallStrengthScore": An integer score from 0 to 100, assessing overall CV strength for the visa.
+- "readinessLevelAssessment": A string (e.g., "High", "Medium", "Low", "Excellent", "Good", "Needs Improvement") indicating visa readiness.
+- "keyStrengths": A list of strings (3-5 items) describing key strengths evident in the CV, aligned with Tech Nation criteria.
+- "criticalGaps": A list of strings (3-5 items) identifying critical gaps or areas needing significant improvement for the visa application.
+- "summaryOfAlignmentWithTechNationCriteria": A concise string (2-4 sentences) summarizing how well the CV aligns with the Tech Nation criteria for the given track.
+- "improvementRoadmap": An object with the following keys, each containing a list of 2-3 actionable string recommendations:
+    - "immediateActions": List of strings for quick wins (e.g., "Quantify achievements in project X with metrics.").
+    - "shortTermActions": List of strings for actions in the next few weeks/months (e.g., "Seek a strong letter of recommendation from a leader in Y field.").
+    - "longTermActions": List of strings for longer-term development (e.g., "Publish research or a significant article in Z area.").
+- "detailedAnalysis": An object with keys representing key assessment areas. Each key MUST map to an object with "currentState" (string summary of current standing based on CV), "recommendations" (list of 1-2 specific string recommendations for this area), and "priority" (string: "High", "Medium", "Low"). Include at least:
+    - "technicalExpertise": {{ "currentState": "...", "recommendations": ["...", "..."], "priority": "..." }}
+    - "innovationContributions": {{ "currentState": "...", "recommendations": ["...", "..."], "priority": "..." }}
+    - "leadershipAndImpact": {{ "currentState": "...", "recommendations": ["...", "..."], "priority": "..." }}
+    - "recognitionAndAwards": {{ "currentState": "...", "recommendations": ["...", "..."], "priority": "..." }} (If no direct evidence, provide general advice on how to build this).
+- "immediateActionItems": A list of 3-5 objects, where each object has "priority" (integer: 1 for highest, 2 for medium, 3 for lowest) and "item" (string: a concise, actionable item derived from criticalGaps or immediateActions). Example: [{{"priority": 1, "item": "Add specific metrics to Project Alpha to demonstrate commercial impact."}}]
+
+Focus on providing actionable, specific, and constructive insights based SOLELY on the provided CV content and track requirements.
+Ensure all lists contain strings. Do not invent information not present in the CV.
+The entire response must be ONLY the JSON object. No introductory or concluding text.
+"""
+        logger.info(f"Attempting CV analysis for {request.user.email} on track '{track}'.")
         # --- AI Call ---
         try:
-            # analysis_content = ai_provider.generate_content(prompt) # Your AI call
-            # MOCK AI RESPONSE FOR NOW - REPLACE WITH YOUR ACTUAL AI CALL
-            logger.info(f"Simulating AI call for CV analysis for user {request.user.email}")
-            mock_json_response = {
-                "analysis": {
-                    "overallStrengthScore": 75, "readinessLevelAssessment": "Medium",
-                    "keyStrengths": ["Good experience in X", "Strong project Y"],
-                    "criticalGaps": ["Lack of Z", "Needs more A"],
-                    "summaryOfAlignmentWithTechNationCriteria": "Summary text...",
-                    "improvementRoadmap": {"immediateActions": ["Action 1"], "shortTermActions": ["Action 2"], "longTermActions": ["Action 3"]},
-                    "detailedAnalysis": {
-                        "technicalExpertise": {"currentState": "Good", "recommendations": "More X", "priority": "High"},
-                        "leadership": {"currentState": "Developing", "recommendations": "Lead Y", "priority": "Medium"},
-                        "recognition": {"currentState": "Some", "recommendations": "Speak at Z", "priority": "Medium"},
-                        "commercialImpact": {"currentState": "Limited", "recommendations": "Show A", "priority": "High"}
-                    },
-                    "immediateActionItems": [{"priority": 1, "item": "Do this now"}]
-                }
-            }
-            analysis_content = json.dumps(mock_json_response) # Assuming AI returns a JSON string
-            # END MOCK
+            # Use the new AIProvider method designed for CV analysis JSON output
+            analysis_content_raw = ai_provider.generate_cv_analysis_content(prompt)
             
-            if not analysis_content:
-                logger.error(f"AI provider failed to generate CV analysis for {request.user.email}")
-                return JsonResponse({'error': 'Failed to generate CV analysis from AI provider.', 'error_type': 'generation_error'}, status=500)
+            if not analysis_content_raw:
+                logger.error(f"AI provider failed to generate CV analysis for {request.user.email}. Raw response was empty.")
+                return JsonResponse({'error': 'Failed to generate CV analysis from AI provider. The response was empty.', 'error_type': 'generation_error_empty'}, status=500)
             
+            logger.debug(f"Raw AI response for CV analysis for {request.user.email}: {analysis_content_raw[:500]}") # Log snippet of raw response
+
             # --- Process AI response (parsing JSON) ---
             analysis_data = {}
             try:
-                # ... (your existing JSON parsing logic, including regex for ```json ... ```)
-                # For brevity, I'll assume direct JSON parsing here, adapt as needed
-                parsed_response = json.loads(analysis_content)
-                if 'analysis' in parsed_response:
+                parsed_response = json.loads(analysis_content_raw)
+                
+                if 'analysis' in parsed_response and isinstance(parsed_response['analysis'], dict):
                     analysis = parsed_response['analysis']
-                    analysis_data = { # Structure this as your frontend expects
+                    analysis_data = {
                         'strength_score': analysis.get('overallStrengthScore', 0),
                         'readiness_level': analysis.get('readinessLevelAssessment', 'N/A'),
                         'key_strengths': analysis.get('keyStrengths', []),
-                        # ... map all other fields from your prompt's JSON schema ...
-                        'summary': analysis.get('summaryOfAlignmentWithTechNationCriteria', ''),
+                        'critical_gaps': analysis.get('criticalGaps', []), # Added this
+                        'summary': analysis.get('summaryOfAlignmentWithTechNationCriteria', 'Summary not provided.'),
                         'improvement_roadmap': analysis.get('improvementRoadmap', {}),
                         'detailed_analysis': analysis.get('detailedAnalysis', {}),
-                        'immediate_actions': [item.get('item') for item in analysis.get('immediateActionItems', []) if item.get('item')]
+                        'immediate_actions': [item.get('item') for item in analysis.get('immediateActionItems', []) if isinstance(item, dict) and item.get('item')]
                     }
-                else: # Fallback if 'analysis' key is missing
-                    analysis_data = {"error": "AI response format unexpected", "raw": analysis_content[:500]}
-                    logger.warning(f"AI response for CV analysis for {request.user.email} did not contain 'analysis' key. Raw: {analysis_content[:200]}")
+                    logger.info(f"Successfully parsed AI JSON response for CV analysis for {request.user.email}.")
+                else:
+                    logger.warning(f"AI response for CV analysis for {request.user.email} did not contain 'analysis' key or it was not a dictionary. Raw: {analysis_content_raw[:200]}")
+                    analysis_data = {"error": "AI response format unexpected. Missing 'analysis' key or incorrect structure.", "raw_preview": analysis_content_raw[:500]}
+                    # Potentially do not charge if the format is wrong. For now, proceeding.
 
-            except json.JSONDecodeError:
-                logger.error(f"Failed to parse AI JSON response for CV analysis for {request.user.email}. Raw: {analysis_content[:500]}")
-                # ... (your existing fallback text parsing logic if JSON fails) ...
-                analysis_data = {"error": "Failed to parse AI response", "content": "Could not process the analysis."} # Simplified fallback
-                # If JSON parsing fails, you might not want to charge the user.
-                # Consider returning an error before charging.
-                # For now, proceeding to charge/use free use as an example.
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse AI JSON response for CV analysis for {request.user.email}. Error: {e}. Raw: {analysis_content_raw[:500]}")
+                analysis_data = {"error": "Failed to parse AI response. The AI did not return valid JSON.", "raw_preview": analysis_content_raw[:500]}
+                # Consider not charging the user if JSON parsing fails.
+                # For now, proceeding to charge/use free use as per original logic.
 
-            # --- Deduct free use or points *after* successful AI call and parsing ---
+            # --- Deduct free use or points *after* AI call and parsing attempt ---
             used_free_use_for_this_action = False
             points_deducted_this_action = 0
-            user_profile = request.user.profile # Already fetched in decorator, or fetch again for safety
+            user_profile = request.user.profile 
             user_points_obj, _ = UserPoints.objects.get_or_create(user=request.user)
 
+            # Only deduct if the analysis_data does not primarily indicate an error from our side or AI's inability to format
+            # This is a simple check; you might want more sophisticated logic.
+            should_charge = not analysis_data.get("error", "").startswith("AI response format unexpected") and \
+                            not analysis_data.get("error", "").startswith("Failed to parse AI response")
 
-            if can_use_free_feature_use and user_profile.available_free_uses > 0:
-                user_profile.available_free_uses -= 1
-                user_profile.save(update_fields=['available_free_uses'])
-                used_free_use_for_this_action = True
-                logger.info(f"User {request.user.email} consumed one free use for CV analysis. Remaining: {user_profile.available_free_uses}")
-            elif will_deduct_ai_points and user_points_obj.balance >= points_required:
-                try:
-                    user_points_obj.use_points(points_required) # This method should save
-                    points_deducted_this_action = points_required
-                    logger.info(f"Deducted {points_required} AI points from {request.user.email} for CV analysis. New balance: {user_points_obj.balance}")
-                except Exception as e: # Catch specific errors from use_points if any
-                    logger.error(f"Error deducting points for {request.user.email} in analyze_cv after AI call: {e}")
-                    # Potentially don't return success if points deduction fails critically
-                    return JsonResponse({'error': 'Analysis complete, but error updating points.', 'error_type': 'points_deduction_error'}, status=500)
+
+            if should_charge:
+                if can_use_free_feature_use and user_profile.available_free_uses > 0:
+                    user_profile.available_free_uses -= 1
+                    user_profile.save(update_fields=['available_free_uses'])
+                    used_free_use_for_this_action = True
+                    logger.info(f"User {request.user.email} consumed one free use for CV analysis. Remaining: {user_profile.available_free_uses}")
+                elif will_deduct_ai_points and user_points_obj.balance >= points_required:
+                    try:
+                        user_points_obj.use_points(points_required, description=f"CV Analysis for track: {track}") # Assuming use_points can take a description
+                        points_deducted_this_action = points_required
+                        logger.info(f"Deducted {points_required} AI points from {request.user.email} for CV analysis. New balance: {user_points_obj.balance}")
+                    except Exception as e:
+                        logger.error(f"Error deducting points for {request.user.email} in analyze_cv after AI call: {e}")
+                        # If points deduction fails, it's a server-side issue. The user got the analysis.
+                        # The response should still be success, but log this error for admin.
+                        # Or, if critical, return a specific error.
+                        # For now, let's assume the analysis is the primary product.
+                # If neither, the @require_points decorator should have caught it.
+                # If analysis_data contains an error (e.g. parsing failed), we still reach here.
+                # You might want to avoid charging if `analysis_data` has an "error" key.
             else:
-                # This case should ideally be caught by the decorator, but as a safeguard:
-                logger.error(f"Reached points/free_use deduction in analyze_cv for {request.user.email} without clear path. Free use available: {can_use_free_feature_use}, Points available: {will_deduct_ai_points}")
-                # Potentially return an error if neither was possible/flagged.
-                # For now, assume decorator handled insufficient funds.
+                logger.info(f"Skipped charging for CV analysis for {request.user.email} due to AI response processing error.")
 
-            # Optionally save the CVAnalysis to a model
-            # CVAnalysis.objects.create(user=request.user, cv_content=cv_content, analysis_result=analysis_data, track=track)
+
+            # Optionally save the CVAnalysis to a model if you have one
+            # e.g., CVAnalysis.objects.create(user=request.user, cv_file_name=cv_file.name, analysis_result=analysis_data, track=track, points_cost=points_deducted_this_action, used_free_use=used_free_use_for_this_action)
 
             return JsonResponse({
-                'success': True,
+                'success': True, # Success is true if we got *some* response, even if it's an error message within analysis_data
                 'analysis': analysis_data,
                 'used_free_feature_use': used_free_use_for_this_action,
                 'available_free_uses_remaining': user_profile.available_free_uses,
@@ -1005,15 +1090,13 @@ def analyze_cv(request, *args, **kwargs):
                 'ai_points_remaining': user_points_obj.balance
             })
 
-        except Exception as e: # Catch errors from AI call or other processing
-            logger.error(f"Error during AI CV analysis for {request.user.email}: {str(e)}", exc_info=True)
-            return JsonResponse({'error': f'Error analyzing CV: {str(e)}', 'error_type': 'analysis_error'}, status=500)
+        except Exception as e: # Catch errors from AI call or other processing within this block
+            logger.error(f"Error during AI CV analysis processing for {request.user.email}: {str(e)}", exc_info=True)
+            return JsonResponse({'error': f'An error occurred during CV analysis: {str(e)}', 'error_type': 'analysis_processing_error'}, status=500)
 
     except Exception as e: # Broad exception for the whole view
         logger.error(f"Unexpected error in analyze_cv view for {request.user.email}: {str(e)}", exc_info=True)
-        return JsonResponse({'error': 'An unexpected error occurred. Please try again.', 'error_type': 'server_error'}, status=500)
-
-
+        return JsonResponse({'error': 'An unexpected server error occurred. Please try again.', 'error_type': 'server_error'}, status=500)
 
 
 
