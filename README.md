@@ -1,4 +1,4 @@
-# [Your Project Name - e.g., TalentVisaNavigator / GlobalTalentKey]
+# TALENTPATH
 
 **Elevator Pitch:** [Your Project Name] is a comprehensive platform designed to empower individuals seeking the Global Talent Visa. It combines AI-powered document analysis tools (CVs, Personal Statements) with access to expert human consultations, a robust points and referral system, and secure payment processing, all aimed at simplifying and enhancing the visa application journey.
 
